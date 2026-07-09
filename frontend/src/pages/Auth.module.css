@@ -1,0 +1,94 @@
+.page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  gap: var(--sp-6);
+  padding: var(--sp-6) var(--sp-4);
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.hero {
+  text-align: center;
+  max-width: 420px;
+}
+
+.heroCard {
+  width: 180px;
+  margin: 0 auto var(--sp-5);
+  transform: rotate(-4deg);
+  animation: float 5s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: rotate(-4deg) translateY(0);
+  }
+  50% {
+    transform: rotate(-4deg) translateY(-8px);
+  }
+}
+
+.title {
+  font-size: 36px;
+}
+
+.gold {
+  color: var(--oro);
+}
+
+.subtitle {
+  color: var(--gris);
+}
+
+.panel {
+  width: 100%;
+  max-width: 400px;
+  background: var(--tribuna);
+  border: 1px solid var(--linea);
+  border-radius: var(--r-card);
+  padding: var(--sp-5);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+.switch {
+  margin: var(--sp-4) 0 0;
+  text-align: center;
+  color: var(--gris);
+  font-size: 14px;
+}
+
+.linkBtn {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--oro);
+  font-size: 14px;
+  text-decoration: underline;
+}
+
+@media (min-width: 860px) {
+  .page {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .hero {
+    text-align: left;
+  }
+
+  .heroCard {
+    margin-left: 0;
+  }
+}

@@ -1,0 +1,105 @@
+.empty {
+  text-align: center;
+  padding: var(--sp-7) var(--sp-4);
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.packs {
+  display: grid;
+  gap: var(--sp-4);
+  margin-top: var(--sp-5);
+}
+
+.pack {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--r-card);
+  padding: var(--sp-5);
+  border: 1px solid var(--linea);
+  background: var(--tribuna);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  align-items: flex-start;
+}
+
+.pack::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 6px;
+}
+
+.bronce::before {
+  background: var(--foil-bronce);
+}
+
+.plata::before {
+  background: var(--foil-plata);
+}
+
+.oro::before {
+  background: var(--foil-oro);
+}
+
+.oro {
+  border-color: rgba(240, 194, 75, 0.45);
+}
+
+.packShine {
+  position: absolute;
+  top: -60%;
+  right: -20%;
+  width: 60%;
+  height: 220%;
+  background: linear-gradient(75deg, transparent, rgba(255, 255, 255, 0.045), transparent);
+  transform: rotate(12deg);
+  pointer-events: none;
+}
+
+.packDesc {
+  color: var(--gris);
+  margin: 0;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(11, 18, 32, 0.96);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-5);
+  padding: var(--sp-5);
+  text-align: center;
+}
+
+.reveal {
+  display: flex;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.revealCard {
+  width: 150px;
+  opacity: 0;
+  transform: rotateY(90deg) scale(0.9);
+  animation: flipIn 0.5s ease-out forwards;
+}
+
+@keyframes flipIn {
+  to {
+    opacity: 1;
+    transform: rotateY(0deg) scale(1);
+  }
+}
+
+@media (min-width: 720px) {
+  .packs {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

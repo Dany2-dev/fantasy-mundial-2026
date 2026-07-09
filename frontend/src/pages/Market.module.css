@@ -1,0 +1,109 @@
+.tabs {
+  display: flex;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-4);
+  flex-wrap: wrap;
+}
+
+.tab {
+  padding: 6px 14px;
+  border-radius: var(--r-chip);
+  font-size: 14px;
+  background: transparent;
+  border: 1px solid var(--linea);
+  color: var(--gris);
+}
+
+.tabActive {
+  background: var(--oro);
+  border-color: var(--oro);
+  color: var(--noche);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--sp-3);
+}
+
+.tradeList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.trade {
+  background: var(--tribuna);
+  border: 1px solid var(--linea);
+  border-radius: var(--r-card);
+  padding: var(--sp-4);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+}
+
+.trade p {
+  margin: 0;
+}
+
+.tradeActions {
+  display: flex;
+  gap: var(--sp-2);
+}
+
+.status {
+  font-size: 13px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: var(--r-chip);
+}
+
+.pending {
+  color: var(--oro);
+  border: 1px solid var(--oro);
+}
+
+.accepted {
+  color: var(--pasto);
+  border: 1px solid var(--pasto);
+}
+
+.rejected {
+  color: var(--gris);
+  border: 1px solid var(--linea);
+}
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(11, 18, 32, 0.8);
+  display: grid;
+  place-items: center;
+  padding: var(--sp-4);
+}
+
+.modal {
+  background: var(--tribuna);
+  border: 1px solid var(--linea);
+  border-radius: var(--r-card);
+  padding: var(--sp-5);
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+.empty {
+  text-align: center;
+  padding: var(--sp-7) var(--sp-4);
+}

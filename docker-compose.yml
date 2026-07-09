@@ -1,0 +1,46 @@
+name: fantasy-mundial-2026
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: fantasy-db
+    environment:
+      POSTGRES_USER: fantasy
+      POSTGRES_PASSWORD: fantasy
+      POSTGRES_DB: fantasy
+    ports:
+      - "5433:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fantasy"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Los servicios backend/frontend solo se levantan con: docker compose --profile full up
+  backend:
+    build: ./backend
+    container_name: fantasy-backend
+    profiles: ["full"]
+    environment:
+      DATABASE_URL: postgresql://fantasy:fantasy@db:5432/fantasy
+      JWT_SECRET: cambia-esto-en-la-defensa
+      PORT: "4000"
+    ports:
+      - "4000:4000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    container_name: fantasy-frontend
+    profiles: ["full"]
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+
+volumes:
+  db_data:

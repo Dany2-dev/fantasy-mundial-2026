@@ -1,0 +1,51 @@
+/* Tokens del Design System — espejo de docs/04-design-system.md */
+:root {
+  /* Color */
+  --noche: #0b1220;
+  --tribuna: #151f36;
+  --tribuna-alta: #1c2946;
+  --linea: #26334f;
+  --crema: #f4f6fb;
+  --gris: #9aa7bf;
+  --oro: #f0c24b;
+  --oro-claro: #ffe9a8;
+  --pasto: #3ecf7a;
+  --rojo: #ff6b7a;
+
+  /* Posiciones */
+  --pos-por: #f59e0b;
+  --pos-def: #5ba8ff;
+  --pos-med: #3ecf7a;
+  --pos-del: #ff6b7a;
+
+  /* Rareza (materiales foil) */
+  --foil-oro: linear-gradient(160deg, #8a6a1f 0%, #f0c24b 35%, #fff3c4 50%, #f0c24b 65%, #6e5418 100%);
+  --foil-plata: linear-gradient(160deg, #5a6675 0%, #aab6c5 35%, #eef2f7 50%, #aab6c5 65%, #49535f 100%);
+  --foil-bronce: linear-gradient(160deg, #5e3d20 0%, #b0713a 35%, #e8b380 50%, #b0713a 65%, #4a2f18 100%);
+
+  /* Tipografía */
+  --font-display: "Bricolage Grotesque", system-ui, sans-serif;
+  --font-body: "Hanken Grotesk", system-ui, sans-serif;
+
+  /* Espaciado (escala 4px) */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+
+  /* Radios */
+  --r-input: 8px;
+  --r-card: 12px;
+  --r-carta: 16px;
+  --r-chip: 999px;
+
+  /* Sombras */
+  --shadow-card: 0 6px 24px rgba(0, 0, 0, 0.35);
+  --shadow-lift: 0 12px 32px rgba(0, 0, 0, 0.5);
+
+  /* Layout */
+  --max-w: 1100px;
+}

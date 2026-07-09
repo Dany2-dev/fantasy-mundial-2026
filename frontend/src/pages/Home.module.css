@@ -1,0 +1,84 @@
+.empty {
+  text-align: center;
+  padding: var(--sp-7) var(--sp-4);
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.grid {
+  display: grid;
+  gap: var(--sp-4);
+}
+
+.rankCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  background: var(--tribuna);
+  border: 1px solid var(--linea);
+  border-radius: var(--r-card);
+  padding: var(--sp-5);
+  text-decoration: none;
+  color: var(--crema);
+  transition: border-color 0.15s ease;
+}
+
+.rankCard:hover {
+  border-color: var(--oro);
+}
+
+.rankBig {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 44px;
+  color: var(--oro);
+  line-height: 1;
+}
+
+.bestCard {
+  background: var(--tribuna);
+  border: 1px solid var(--linea);
+  border-radius: var(--r-card);
+  padding: var(--sp-4);
+  text-align: center;
+}
+
+.bestCardInner {
+  max-width: 190px;
+  margin: var(--sp-3) auto 0;
+}
+
+.noCards {
+  padding: var(--sp-4) 0;
+}
+
+.actions {
+  display: grid;
+  gap: var(--sp-3);
+}
+
+.action {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--tribuna);
+  border: 1px solid var(--linea);
+  border-radius: var(--r-card);
+  padding: var(--sp-4);
+  color: var(--crema);
+  text-decoration: none;
+  font-size: 18px;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.action:hover {
+  border-color: var(--oro);
+  transform: translateY(-2px);
+}
+
+@media (min-width: 860px) {
+  .grid {
+    grid-template-columns: 1fr 1.2fr 1fr;
+    align-items: start;
+  }
+}

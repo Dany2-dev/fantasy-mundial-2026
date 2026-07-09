@@ -1,0 +1,101 @@
+.forms {
+  display: grid;
+  gap: var(--sp-4);
+}
+
+.formCard {
+  background: var(--tribuna);
+  border: 1px solid var(--linea);
+  border-radius: var(--r-card);
+  padding: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.codeInput {
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.section {
+  margin-top: var(--sp-6);
+}
+
+.leagueList {
+  display: flex;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+}
+
+.leagueItem {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  background: var(--tribuna);
+  border: 1px solid var(--linea);
+  min-width: 180px;
+  text-align: left;
+}
+
+.leagueActive {
+  border-color: var(--oro);
+  box-shadow: 0 0 0 1px var(--oro);
+}
+
+.standingsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--tribuna);
+  border: 1px solid var(--linea);
+  border-radius: var(--r-card);
+  overflow: hidden;
+}
+
+.table th,
+.table td {
+  padding: var(--sp-3) var(--sp-4);
+  text-align: left;
+  border-bottom: 1px solid var(--linea);
+}
+
+.table th {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  color: var(--gris);
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.num {
+  text-align: right;
+}
+
+.me {
+  background: rgba(240, 194, 75, 0.08);
+}
+
+.youTag {
+  color: var(--oro);
+  font-size: 13px;
+}
+
+@media (min-width: 720px) {
+  .forms {
+    grid-template-columns: 1fr 1fr;
+  }
+}

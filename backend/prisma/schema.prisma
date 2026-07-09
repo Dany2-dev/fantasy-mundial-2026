@@ -1,0 +1,153 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  coins     Int      @default(15000)
+  createdAt DateTime @default(now())
+
+  owned          OwnedPlayer[]
+  squads         FantasySquad[]
+  memberships    LeagueMembership[]
+  ownedLeagues   League[]
+  scores         UserGameweekScore[]
+  tradesSent     TradeOffer[]        @relation("TradeFrom")
+  tradesReceived TradeOffer[]        @relation("TradeTo")
+}
+
+model Country {
+  id      Int      @id @default(autoincrement())
+  name    String   @unique
+  flag    String
+  group   String
+  players Player[]
+}
+
+model Player {
+  id        Int     @id @default(autoincrement())
+  name      String
+  position  String // POR | DEF | MED | DEL
+  rating    Int
+  basePrice Int
+  countryId Int
+  country   Country @relation(fields: [countryId], references: [id])
+
+  owned OwnedPlayer[]
+  stats PlayerGameweekStats[]
+}
+
+model League {
+  id         String   @id @default(cuid())
+  name       String
+  inviteCode String   @unique
+  ownerId    String
+  createdAt  DateTime @default(now())
+  owner      User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  members      LeagueMembership[]
+  ownedPlayers OwnedPlayer[]
+  squads       FantasySquad[]
+  scores       UserGameweekScore[]
+  trades       TradeOffer[]
+}
+
+model LeagueMembership {
+  id       String   @id @default(cuid())
+  userId   String
+  leagueId String
+  joinedAt DateTime @default(now())
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  league   League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, leagueId])
+}
+
+// Exclusividad por liga: un jugador solo puede tener UN dueño dentro de cada liga.
+model OwnedPlayer {
+  id         String   @id @default(cuid())
+  userId     String
+  leagueId   String
+  playerId   Int
+  acquiredAt DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  league     League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  player     Player   @relation(fields: [playerId], references: [id])
+
+  @@unique([leagueId, playerId])
+  @@index([userId, leagueId])
+}
+
+model FantasySquad {
+  id        String @id @default(cuid())
+  userId    String
+  leagueId  String
+  formation String @default("4-4-2")
+  playerIds String @default("") // ids separados por coma, en orden de slot
+  captainId Int?
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  league    League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, leagueId])
+}
+
+model TradeOffer {
+  id                String   @id @default(cuid())
+  leagueId          String
+  fromUserId        String
+  toUserId          String
+  offeredPlayerId   Int
+  requestedPlayerId Int
+  coins             Int      @default(0)
+  status            String   @default("pending") // pending | accepted | rejected
+  createdAt         DateTime @default(now())
+  league            League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  fromUser          User     @relation("TradeFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser            User     @relation("TradeTo", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  @@index([leagueId])
+  @@index([toUserId, status])
+}
+
+model Gameweek {
+  id       Int                   @id @default(autoincrement())
+  number   Int                   @unique
+  deadline DateTime
+  status   String                @default("upcoming")
+  stats    PlayerGameweekStats[]
+  scores   UserGameweekScore[]
+}
+
+model PlayerGameweekStats {
+  id         String   @id @default(cuid())
+  playerId   Int
+  gameweekId Int
+  goals      Int      @default(0)
+  assists    Int      @default(0)
+  points     Int      @default(0)
+  player     Player   @relation(fields: [playerId], references: [id])
+  gameweek   Gameweek @relation(fields: [gameweekId], references: [id])
+
+  @@unique([playerId, gameweekId])
+}
+
+model UserGameweekScore {
+  id         String   @id @default(cuid())
+  userId     String
+  leagueId   String
+  gameweekId Int
+  points     Int      @default(0)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  league     League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  gameweek   Gameweek @relation(fields: [gameweekId], references: [id])
+
+  @@unique([userId, leagueId, gameweekId])
+}

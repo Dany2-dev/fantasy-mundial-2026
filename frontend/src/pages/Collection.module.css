@@ -1,0 +1,38 @@
+.headerRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-3);
+}
+
+.filters {
+  display: flex;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-4);
+  flex-wrap: wrap;
+}
+
+.filterChip {
+  padding: 6px 14px;
+  border-radius: var(--r-chip);
+  font-size: 14px;
+  background: transparent;
+  border: 1px solid var(--linea);
+  color: var(--gris);
+}
+
+.filterActive {
+  background: var(--oro);
+  border-color: var(--oro);
+  color: var(--noche);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--sp-3);
+}
+
+.empty {
+  text-align: center;
+  padding: var(--sp-7) var(--sp-4);
+}

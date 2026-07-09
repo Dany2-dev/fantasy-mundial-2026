@@ -1,0 +1,13 @@
+# BONUS certificado (+1): docker compose --profile full -f docker-compose.yml -f docker-compose.ssl.yml up -d --build
+# Antes genera el certificado (ver docs/06-virtualizacion-devops.md):
+#   openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+#     -keyout certs/fantasy.key -out certs/fantasy.crt \
+#     -subj "/CN=fantasy.local" -addext "subjectAltName=DNS:fantasy.local,DNS:localhost"
+services:
+  frontend:
+    ports:
+      - "8080:80"
+      - "8443:443"
+    volumes:
+      - ./certs:/etc/nginx/certs:ro
+      - ./frontend/nginx-ssl.conf:/etc/nginx/templates/default.conf.template:ro
