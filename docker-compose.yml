@@ -18,7 +18,6 @@ services:
       timeout: 3s
       retries: 10
 
-  # Los servicios backend/frontend solo se levantan con: docker compose --profile full up
   backend:
     build: ./backend
     container_name: fantasy-backend
