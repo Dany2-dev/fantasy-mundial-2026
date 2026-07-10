@@ -1,0 +1,7 @@
+.placeholder {
+  text-align: center;
+  padding: var(--sp-7) var(--sp-4);
+  border: 1px dashed var(--borde);
+  border-radius: var(--r-card);
+  margin-top: var(--sp-4);
+}
