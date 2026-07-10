@@ -13,7 +13,7 @@ router.get("/", async (req, res) => {
 
   const owned = await prisma.ownedPlayer.findMany({
     where: { userId, leagueId },
-    include: { player: { include: { country: true } } },
+    include: { player: { include: { team: true } } },
     orderBy: { player: { rating: "desc" } },
   });
   res.json({ collection: owned.map((o) => ({ ownedId: o.id, acquiredAt: o.acquiredAt, ...o.player })) });
@@ -33,7 +33,7 @@ router.get("/market", async (req, res) => {
   const owned = await prisma.ownedPlayer.findMany({
     where: { leagueId, NOT: { userId } },
     include: {
-      player: { include: { country: true } },
+      player: { include: { team: true } },
       user: { select: { id: true, name: true } },
     },
     orderBy: { player: { rating: "desc" } },

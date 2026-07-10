@@ -2,6 +2,7 @@ import cors from "cors";
 import express from "express";
 import authRouter from "./routes/auth";
 import collectionRouter from "./routes/collection";
+import competitionsRouter from "./routes/competitions";
 import leaguesRouter from "./routes/leagues";
 import matchesRouter from "./routes/matches";
 import packsRouter from "./routes/packs";
@@ -17,6 +18,7 @@ app.get("/api/health", (_req, res) => res.json({ ok: true, name: "Fantasy Mundia
 
 app.use("/api/auth", authRouter);
 app.use("/api", playersRouter); // /api/players, /api/countries
+app.use("/api/competitions", competitionsRouter);
 app.use("/api/leagues", leaguesRouter);
 app.use("/api/packs", packsRouter);
 app.use("/api/collection", collectionRouter);

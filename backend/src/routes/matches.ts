@@ -16,13 +16,13 @@ function shape(m: {
   status: string;
   homeScore: number | null;
   awayScore: number | null;
-  homeCountry: { flag: string; logoUrl: string | null } | null;
-  awayCountry: { flag: string; logoUrl: string | null } | null;
+  homeTeam: { flag: string | null; logoUrl: string | null } | null;
+  awayTeam: { flag: string | null; logoUrl: string | null } | null;
 }) {
   return {
     id: m.id,
-    home: { name: m.homeName, flag: m.homeCountry?.flag ?? "🏳️", logoUrl: m.homeCountry?.logoUrl ?? null },
-    away: { name: m.awayName, flag: m.awayCountry?.flag ?? "🏳️", logoUrl: m.awayCountry?.logoUrl ?? null },
+    home: { name: m.homeName, flag: m.homeTeam?.flag ?? null, logoUrl: m.homeTeam?.logoUrl ?? null },
+    away: { name: m.awayName, flag: m.awayTeam?.flag ?? null, logoUrl: m.awayTeam?.logoUrl ?? null },
     group: m.group,
     round: m.round,
     roundLabel: m.round != null ? gwLabel(m.round) : null,
@@ -33,30 +33,35 @@ function shape(m: {
   };
 }
 
-const withCountries = {
-  homeCountry: { select: { flag: true, logoUrl: true } },
-  awayCountry: { select: { flag: true, logoUrl: true } },
+const withTeams = {
+  homeTeam: { select: { flag: true, logoUrl: true } },
+  awayTeam: { select: { flag: true, logoUrl: true } },
 } as const;
 
-// Calendario real (opcional ?status= y ?round=).
+// Calendario real (opcional ?competitionId= ?status= ?round=).
 router.get("/", requireAuth, async (req, res) => {
-  const { status, round } = req.query;
+  const { status, round, competitionId } = req.query;
   const matches = await prisma.match.findMany({
     where: {
+      ...(typeof competitionId === "string" && competitionId ? { competitionId: Number(competitionId) } : {}),
       ...(typeof status === "string" && status ? { status } : {}),
       ...(typeof round === "string" && round ? { round: Number(round) } : {}),
     },
-    include: withCountries,
+    include: withTeams,
     orderBy: { utcTime: "asc" },
   });
   res.json({ matches: matches.map(shape) });
 });
 
-// Partidos en vivo ahora mismo.
-router.get("/live", requireAuth, async (_req, res) => {
+// Partidos en vivo ahora mismo (opcional ?competitionId=).
+router.get("/live", requireAuth, async (req, res) => {
+  const { competitionId } = req.query;
   const matches = await prisma.match.findMany({
-    where: { status: "live" },
-    include: withCountries,
+    where: {
+      status: "live",
+      ...(typeof competitionId === "string" && competitionId ? { competitionId: Number(competitionId) } : {}),
+    },
+    include: withTeams,
     orderBy: { utcTime: "asc" },
   });
   res.json({ matches: matches.map(shape) });

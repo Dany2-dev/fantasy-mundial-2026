@@ -24,70 +24,85 @@ model User {
   tradesReceived TradeOffer[]        @relation("TradeTo")
 }
 
-model Country {
-  id       Int     @id @default(autoincrement())
-  name     String  @unique
-  flag     String
-  group    String
-  fotmobId Int?    @unique // id de FotMob (selección) para datos reales
-  logoUrl  String? // escudo real del CDN de FotMob
-  players  Player[]
+// Competencia real de FotMob: liga doméstica (LaLiga, Liga MX…), copa o el Mundial.
+// Es lo que el usuario elige al crear su liga privada de fantasy.
+model Competition {
+  id        Int      @id @default(autoincrement())
+  fotmobId  Int      @unique
+  name      String
+  ccode     String? // país (ESP, MEX, ENG) o INT para internacionales
+  type      String   @default("league") // league | cup
+  logoUrl   String?
+  priority  Int      @default(100) // orden en el selector (menor = arriba)
+  isCurrent Boolean  @default(false) // "en temporada ahora" (Mundial mientras dure)
+  season    String?
+  createdAt DateTime @default(now())
 
-  homeMatches Match[] @relation("HomeMatches")
-  awayMatches Match[] @relation("AwayMatches")
+  teams     Team[]
+  players   Player[]
+  matches   Match[]
+  gameweeks Gameweek[]
+  leagues   League[]
+}
+
+// Equipo dentro de una competencia: club (Real Madrid) o selección (México).
+model Team {
+  id            Int         @id @default(autoincrement())
+  competitionId Int
+  fotmobId      Int
+  name          String
+  logoUrl       String?
+  flag          String? // emoji de bandera solo para selecciones
+  group         String? // grupo (fase de grupos del Mundial)
+  competition   Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+
+  players     Player[]
+  homeMatches Match[]  @relation("HomeMatches")
+  awayMatches Match[]  @relation("AwayMatches")
+
+  @@unique([competitionId, fotmobId])
 }
 
 model Player {
-  id        Int     @id @default(autoincrement())
-  name      String
-  position  String // POR | DEF | MED | DEL
-  rating    Int
-  basePrice Int
-  countryId Int
-  fotmobId  Int?    @unique // id de FotMob para cruzar ratings/goles reales
-  photoUrl  String? // foto real del jugador (CDN de FotMob)
-  age       Int?
-  country   Country @relation(fields: [countryId], references: [id])
+  id            Int         @id @default(autoincrement())
+  competitionId Int
+  teamId        Int
+  fotmobId      Int
+  name          String
+  position      String // POR | DEF | MED | DEL
+  rating        Int
+  basePrice     Int
+  photoUrl      String?
+  age           Int?
+  competition   Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  team          Team        @relation(fields: [teamId], references: [id], onDelete: Cascade)
 
   owned OwnedPlayer[]
   stats PlayerGameweekStats[]
+
+  @@unique([competitionId, fotmobId])
+  @@index([competitionId])
+  @@index([teamId])
 }
 
-// Fixtures reales del Mundial 2026 (fuente FotMob). round = número de jornada.
-model Match {
-  id              Int       @id @default(autoincrement())
-  fotmobId        Int       @unique
-  homeCountryId   Int?
-  awayCountryId   Int?
-  homeName        String
-  awayName        String
-  group           String?
-  round           Int? // 1-3 grupos, 4-9 eliminatorias (ver lib/rounds)
-  utcTime         DateTime?
-  status          String    @default("scheduled") // scheduled | live | finished
-  homeScore       Int?
-  awayScore       Int?
-  detailsSyncedAt DateTime? // control de idempotencia para el sync de puntos
-  homeCountry     Country?  @relation("HomeMatches", fields: [homeCountryId], references: [id])
-  awayCountry     Country?  @relation("AwayMatches", fields: [awayCountryId], references: [id])
-
-  @@index([status])
-  @@index([round])
-}
-
+// Liga privada de fantasy (creada por un usuario), atada a UNA competencia real.
 model League {
-  id         String   @id @default(cuid())
-  name       String
-  inviteCode String   @unique
-  ownerId    String
-  createdAt  DateTime @default(now())
-  owner      User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  id            String      @id @default(cuid())
+  name          String
+  inviteCode    String      @unique
+  ownerId       String
+  competitionId Int
+  createdAt     DateTime    @default(now())
+  owner         User        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  competition   Competition @relation(fields: [competitionId], references: [id])
 
   members      LeagueMembership[]
   ownedPlayers OwnedPlayer[]
   squads       FantasySquad[]
   scores       UserGameweekScore[]
   trades       TradeOffer[]
+
+  @@index([competitionId])
 }
 
 model LeagueMembership {
@@ -110,7 +125,7 @@ model OwnedPlayer {
   acquiredAt DateTime @default(now())
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   league     League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
-  player     Player   @relation(fields: [playerId], references: [id])
+  player     Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
 
   @@unique([leagueId, playerId])
   @@index([userId, leagueId])
@@ -147,13 +162,19 @@ model TradeOffer {
   @@index([toUserId, status])
 }
 
+// Jornada de una competencia (matchday de liga, o ronda del Mundial).
 model Gameweek {
-  id       Int                   @id @default(autoincrement())
-  number   Int                   @unique
-  deadline DateTime
-  status   String                @default("upcoming")
-  stats    PlayerGameweekStats[]
-  scores   UserGameweekScore[]
+  id            Int         @id @default(autoincrement())
+  competitionId Int
+  number        Int
+  deadline      DateTime
+  status        String      @default("upcoming")
+  competition   Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+
+  stats  PlayerGameweekStats[]
+  scores UserGameweekScore[]
+
+  @@unique([competitionId, number])
 }
 
 model PlayerGameweekStats {
@@ -163,8 +184,8 @@ model PlayerGameweekStats {
   goals      Int      @default(0)
   assists    Int      @default(0)
   points     Int      @default(0)
-  player     Player   @relation(fields: [playerId], references: [id])
-  gameweek   Gameweek @relation(fields: [gameweekId], references: [id])
+  player     Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  gameweek   Gameweek @relation(fields: [gameweekId], references: [id], onDelete: Cascade)
 
   @@unique([playerId, gameweekId])
 }
@@ -177,7 +198,31 @@ model UserGameweekScore {
   points     Int      @default(0)
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   league     League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
-  gameweek   Gameweek @relation(fields: [gameweekId], references: [id])
+  gameweek   Gameweek @relation(fields: [gameweekId], references: [id], onDelete: Cascade)
 
   @@unique([userId, leagueId, gameweekId])
+}
+
+// Fixture real de una competencia (fuente FotMob).
+model Match {
+  id              Int         @id @default(autoincrement())
+  competitionId   Int
+  fotmobId        Int         @unique
+  homeTeamId      Int?
+  awayTeamId      Int?
+  homeName        String
+  awayName        String
+  group           String?
+  round           Int? // matchday de liga o ronda del Mundial
+  utcTime         DateTime?
+  status          String      @default("scheduled") // scheduled | live | finished
+  homeScore       Int?
+  awayScore       Int?
+  detailsSyncedAt DateTime?
+  competition     Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  homeTeam        Team?       @relation("HomeMatches", fields: [homeTeamId], references: [id])
+  awayTeam        Team?       @relation("AwayMatches", fields: [awayTeamId], references: [id])
+
+  @@index([competitionId, status])
+  @@index([competitionId, round])
 }

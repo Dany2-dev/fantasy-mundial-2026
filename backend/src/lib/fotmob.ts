@@ -9,7 +9,6 @@
 import { roundNumberFor } from "./rounds";
 
 const BASE = process.env.FOTMOB_BASE ?? "https://www.fotmob.com";
-export const FOTMOB_LEAGUE_ID = Number(process.env.FOTMOB_LEAGUE_ID ?? 77);
 const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
   "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
@@ -23,9 +22,11 @@ const HEADERS: Record<string, string> = {
 
 let _buildId: string | null = null;
 
-// Escudo de selección y foto de jugador (CDN de FotMob).
+// Escudos / logos / fotos (CDN de FotMob).
 export const teamLogoUrl = (teamId: number) =>
   `https://images.fotmob.com/image_resources/logo/teamlogo/${teamId}.png`;
+export const leagueLogoUrl = (leagueId: number) =>
+  `https://images.fotmob.com/image_resources/logo/leaguelogo/${leagueId}.png`;
 export const playerPhotoUrl = (playerId: number) =>
   `https://images.fotmob.com/image_resources/playerimages/${playerId}.png`;
 
@@ -69,6 +70,7 @@ export async function getBuildId(force = false): Promise<string> {
 }
 
 // ---------- tipos ----------
+export type FMLeagueDetails = { fotmobId: number; name: string; ccode: string | null; type: string };
 export type FMTeam = { fotmobId: number; name: string; group: string | null };
 export type FMMatch = {
   fotmobId: number;
@@ -117,22 +119,33 @@ function scoreParts(scoreStr: string | undefined): [number | null, number | null
   return [null, null];
 }
 
-// ---------- liga: equipos + partidos ----------
-export async function getLeague(): Promise<{ teams: FMTeam[]; matches: FMMatch[] }> {
+// ---------- liga: detalles, equipos y partidos (genérico para cualquier competencia) ----------
+// Los equipos se derivan de los fixtures (funciona igual en ligas, copas y el Mundial).
+// `groupStageOnly` limita a los equipos de fase de grupos A-L (para el Mundial, así
+// se excluyen selecciones de repechaje que aparecen bajo la misma liga).
+export async function getLeague(
+  leagueId: number,
+  opts: { groupStageOnly?: boolean } = {}
+): Promise<{ details: FMLeagueDetails; teams: FMTeam[]; matches: FMMatch[] }> {
   const build = await getBuildId();
-  const path = `/_next/data/${build}/en/leagues/${FOTMOB_LEAGUE_ID}.json?id=${FOTMOB_LEAGUE_ID}`;
+  const path = `/_next/data/${build}/en/leagues/${leagueId}.json?id=${leagueId}`;
   let data: any;
   try {
     data = await fetchJson<any>(`${BASE}${path}`);
   } catch {
     const fresh = await getBuildId(true);
-    data = await fetchJson<any>(
-      `${BASE}/_next/data/${fresh}/en/leagues/${FOTMOB_LEAGUE_ID}.json?id=${FOTMOB_LEAGUE_ID}`
-    );
+    data = await fetchJson<any>(`${BASE}/_next/data/${fresh}/en/leagues/${leagueId}.json?id=${leagueId}`);
   }
   const pp = data.pageProps ?? {};
-  const allMatches: any[] = pp.fixtures?.allMatches ?? [];
+  const det = pp.details ?? {};
+  const details: FMLeagueDetails = {
+    fotmobId: Number(det.id ?? leagueId),
+    name: det.name ?? `League ${leagueId}`,
+    ccode: det.country ?? null,
+    type: det.type ?? "league",
+  };
 
+  const allMatches: any[] = pp.fixtures?.allMatches ?? [];
   const matches: FMMatch[] = allMatches.map((m) => {
     const [hs, as_] = scoreParts(m.status?.scoreStr);
     const st = m.status ?? {};
@@ -155,17 +168,17 @@ export async function getLeague(): Promise<{ teams: FMTeam[]; matches: FMMatch[]
     };
   });
 
-  // Solo las 48 selecciones de la fase de grupos (grupos A-L).
+  // Equipos únicos derivados de los fixtures.
   const teamMap = new Map<number, FMTeam>();
   for (const m of matches) {
-    if (!m.group || !/^[A-L]$/.test(m.group)) continue;
-    if (m.homeId && !teamMap.has(m.homeId))
-      teamMap.set(m.homeId, { fotmobId: m.homeId, name: m.homeName!, group: m.group });
-    if (m.awayId && !teamMap.has(m.awayId))
-      teamMap.set(m.awayId, { fotmobId: m.awayId, name: m.awayName!, group: m.group });
+    if (opts.groupStageOnly && (!m.group || !/^[A-L]$/.test(m.group))) continue;
+    if (m.homeId && m.homeName && !teamMap.has(m.homeId))
+      teamMap.set(m.homeId, { fotmobId: m.homeId, name: m.homeName, group: m.group });
+    if (m.awayId && m.awayName && !teamMap.has(m.awayId))
+      teamMap.set(m.awayId, { fotmobId: m.awayId, name: m.awayName, group: m.group });
   }
 
-  return { teams: [...teamMap.values()], matches };
+  return { details, teams: [...teamMap.values()], matches };
 }
 
 // ---------- plantilla de un equipo ----------
