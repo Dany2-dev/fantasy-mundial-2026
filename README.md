@@ -80,3 +80,4 @@ Frontend en <http://localhost:8080> (nginx sirve el build y hace proxy de `/api`
 5. Proponer intercambios (carta + monedas) a otros m√°nagers de la liga.
 
 <!-- verificaciÛn de pipeline CI/CD -->
+<!-- trigger ci -->
