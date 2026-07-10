@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
+import FlipReveal from "../components/FlipReveal";
 import { IconCoin } from "../components/icons";
-import PlayerCard from "../components/PlayerCard";
 import { setCoins } from "../store/authSlice";
 import { fetchCollection } from "../store/collectionSlice";
 import { useAppDispatch, useAppSelector } from "../store/store";
@@ -97,9 +97,7 @@ export default function Packs() {
           <h2>Nuevas cartas</h2>
           <div className={styles.reveal}>
             {result.map((p, i) => (
-              <div key={p.id} className={styles.revealCard} style={{ animationDelay: `${i * 0.45}s` }}>
-                <PlayerCard player={p} />
-              </div>
+              <FlipReveal key={p.id} player={p} delay={500 + i * 650} />
             ))}
           </div>
           <button className="primary" onClick={() => setResult(null)}>

@@ -99,20 +99,6 @@
   justify-content: center;
 }
 
-.revealCard {
-  width: 150px;
-  opacity: 0;
-  transform: rotateY(90deg) scale(0.9);
-  animation: flipIn 0.5s ease-out forwards;
-}
-
-@keyframes flipIn {
-  to {
-    opacity: 1;
-    transform: rotateY(0deg) scale(1);
-  }
-}
-
 @media (min-width: 720px) {
   .packs {
     grid-template-columns: repeat(3, 1fr);

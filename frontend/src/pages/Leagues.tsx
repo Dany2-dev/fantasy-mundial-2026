@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import { api } from "../api/client";
-import PlayerCard from "../components/PlayerCard";
+import FlipReveal from "../components/FlipReveal";
 import { IconCheck, IconTrophy } from "../components/icons";
 import { fetchCollection } from "../store/collectionSlice";
 import { createLeague, joinLeague, setActiveLeague } from "../store/leagueSlice";
@@ -236,9 +236,7 @@ export default function Leagues() {
           <p className="caption">11 cartas gratis para arrancar — la mejor la elegimos capitán.</p>
           <div className={styles.reveal}>
             {starterPack.map((p, i) => (
-              <div key={p.id} className={styles.revealCard} style={{ animationDelay: `${i * 0.12}s` }}>
-                <PlayerCard player={p} size="sm" />
-              </div>
+              <FlipReveal key={p.id} player={p} delay={300 + i * 220} size="sm" />
             ))}
           </div>
           <button className="primary" onClick={() => setStarterPack(null)}>

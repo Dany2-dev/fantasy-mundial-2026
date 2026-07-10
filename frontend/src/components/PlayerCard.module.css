@@ -1,15 +1,6 @@
-/* Silueta de escudo recortada por código: la firma visual de la carta. */
+/* Silueta de escudo FUT recortada con curvas reales (SVG en CardClipDefs). */
 .shield {
-  clip-path: polygon(
-    14% 0%,
-    86% 0%,
-    100% 10%,
-    100% 94%,
-    92% 100%,
-    8% 100%,
-    0% 94%,
-    0% 10%
-  );
+  clip-path: url(#futShield);
 }
 
 .card {
@@ -49,7 +40,26 @@
   composes: shield;
   position: absolute;
   inset: 0;
-  background: var(--metal-foil);
+  background:
+    /* textura: cruces arriba, puntos abajo-izq (como el foil real de FUT) */
+    radial-gradient(circle at 22% 28%, rgba(255, 255, 255, 0.22) 0 3px, transparent 3.5px) 0 0 / 22px 22px,
+    repeating-linear-gradient(
+        45deg,
+        transparent 0 9px,
+        rgba(255, 255, 255, 0.14) 9px 10px,
+        transparent 10px 19px,
+        rgba(255, 255, 255, 0.14) 19px 20px
+      )
+      0 0 / 28px 28px,
+    /* swoosh diagonal brillante, la firma de la carta */
+      linear-gradient(
+        122deg,
+        transparent 30%,
+        rgba(255, 255, 255, 0.75) 45%,
+        rgba(255, 255, 255, 0.15) 52%,
+        transparent 62%
+      ),
+    var(--metal-foil);
   filter: drop-shadow(var(--shadow-card));
 }
 

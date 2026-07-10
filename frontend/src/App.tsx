@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { getToken } from "./api/client";
+import CardClipDefs from "./components/CardClipDefs";
 import Layout from "./components/Layout";
 import { fetchMe } from "./store/authSlice";
 import { fetchLeagues } from "./store/leagueSlice";
@@ -30,21 +31,24 @@ export default function App() {
   }
 
   return (
-    <Routes>
-      <Route path="/acceso" element={<Auth />} />
-      {user ? (
-        <Route element={<Layout />}>
-          <Route path="/" element={<Home />} />
-          <Route path="/sobres" element={<Packs />} />
-          <Route path="/coleccion" element={<Collection />} />
-          <Route path="/once" element={<Squad />} />
-          <Route path="/mercado" element={<Market />} />
-          <Route path="/ligas" element={<Leagues />} />
-        </Route>
-      ) : (
-        <Route path="*" element={<Navigate to="/acceso" replace />} />
-      )}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <>
+      <CardClipDefs />
+      <Routes>
+        <Route path="/acceso" element={<Auth />} />
+        {user ? (
+          <Route element={<Layout />}>
+            <Route path="/" element={<Home />} />
+            <Route path="/sobres" element={<Packs />} />
+            <Route path="/coleccion" element={<Collection />} />
+            <Route path="/once" element={<Squad />} />
+            <Route path="/mercado" element={<Market />} />
+            <Route path="/ligas" element={<Leagues />} />
+          </Route>
+        ) : (
+          <Route path="*" element={<Navigate to="/acceso" replace />} />
+        )}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
   );
 }
