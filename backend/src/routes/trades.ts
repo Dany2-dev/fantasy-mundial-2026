@@ -13,7 +13,7 @@ const include = {
 
 async function withPlayers(trades: Awaited<ReturnType<typeof prisma.tradeOffer.findMany>>) {
   const ids = [...new Set(trades.flatMap((t) => [t.offeredPlayerId, t.requestedPlayerId]))];
-  const players = await prisma.player.findMany({ where: { id: { in: ids } }, include: { country: true } });
+  const players = await prisma.player.findMany({ where: { id: { in: ids } }, include: { team: true } });
   const byId = new Map(players.map((p) => [p.id, p]));
   return trades.map((t) => ({
     ...t,

@@ -1,0 +1,185 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(13, 17, 23, 0.6);
+  display: grid;
+  place-items: center;
+  padding: var(--sp-4);
+  overflow-y: auto;
+}
+
+.modal {
+  position: relative;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-card);
+  padding: var(--sp-5);
+  width: 100%;
+  max-width: 460px;
+  max-height: calc(100vh - var(--sp-6));
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.closeBtn {
+  position: absolute;
+  top: var(--sp-3);
+  right: var(--sp-3);
+  padding: 6px;
+  background: var(--superficie-alta);
+  border: 1px solid var(--borde);
+  border-radius: 50%;
+  color: var(--tinta-media);
+  line-height: 0;
+}
+
+.head {
+  display: flex;
+  gap: var(--sp-4);
+  align-items: flex-start;
+}
+
+.headCard {
+  width: 110px;
+  flex: none;
+}
+
+.headInfo {
+  flex: 1;
+  min-width: 0;
+  padding-top: var(--sp-2);
+}
+
+.headInfo h3 {
+  margin: 0 0 2px;
+  font-size: 18px;
+}
+
+.headSub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--tinta-media);
+  font-size: 13px;
+  margin: 0 0 var(--sp-2);
+}
+
+.ownerBlock {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.clauseTag,
+.protectedTag,
+.listedTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: var(--r-chip);
+  background: var(--superficie-alta);
+  border: 1px solid var(--borde);
+  color: var(--tinta-media);
+}
+
+.protectedTag {
+  color: var(--wc-azul-vivo);
+  border-color: var(--wc-azul-vivo);
+}
+
+.listedTag {
+  color: var(--wc-verde);
+  border-color: var(--wc-verde);
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  background: var(--superficie-alta);
+  border-radius: var(--r-input);
+}
+
+.actionRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.inputBtn {
+  display: flex;
+  gap: var(--sp-2);
+}
+
+.inputBtn input {
+  flex: 1;
+  min-width: 0;
+}
+
+.statsTitle {
+  margin: 0;
+  font-size: 15px;
+}
+
+.statsList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.statRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-input);
+}
+
+.statGw {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.statNums {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+
+.statChip {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: var(--r-chip);
+  background: var(--superficie-alta);
+}
+
+.statPoints {
+  font-weight: 800;
+  color: var(--wc-rojo);
+  font-size: 14px;
+  min-width: 44px;
+  text-align: right;
+}

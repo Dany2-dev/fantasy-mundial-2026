@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Player, rarityOf } from "../types";
 import Flag from "./Flag";
 import styles from "./PlayerCard.module.css";
@@ -18,39 +19,65 @@ const POS_LABEL: Record<Player["position"], string> = {
   DEL: "Delantero",
 };
 
+function initials(name: string) {
+  const parts = name.trim().split(/\s+/);
+  const first = parts[0]?.[0] ?? "";
+  const last = parts.length > 1 ? parts[parts.length - 1][0] : "";
+  return (first + last).toUpperCase();
+}
+
 export default function PlayerCard({ player, size = "md", ownerName, captain, selected, onClick }: Props) {
   const rarity = rarityOf(player.rating);
+  const [photoFailed, setPhotoFailed] = useState(false);
   const Tag = onClick ? "button" : "div";
+  const showPhoto = player.photoUrl && !photoFailed;
+
   return (
     <Tag
-      className={[
-        styles.card,
-        styles[rarity],
-        styles[size],
-        selected ? styles.selected : "",
-        onClick ? styles.clickable : "",
-      ].join(" ")}
+      className={[styles.card, styles[rarity], styles[size], selected ? styles.selected : ""].join(" ")}
       onClick={onClick}
       type={onClick ? "button" : undefined}
       aria-label={onClick ? `${player.name}, ${POS_LABEL[player.position]}, media ${player.rating}` : undefined}
     >
-      <div className={styles.inner}>
-        <div className={styles.top}>
+      <span className={styles.foil} aria-hidden="true" />
+
+      <div className={styles.panel}>
+        <div className={styles.stats}>
           <span className={styles.rating}>{player.rating}</span>
           <span className={`${styles.pos} ${styles[`pos${player.position}`]}`}>{player.position}</span>
-        </div>
-        <div className={styles.flag} aria-hidden="true">
-          <Flag country={player.country} size={size === "sm" ? 30 : 42} />
-        </div>
-        <div className={styles.name}>{player.name}</div>
-        <div className={styles.country}>{player.country.name}</div>
-        {ownerName && <div className={styles.owner}>de {ownerName}</div>}
-        {captain && (
-          <span className={styles.captain} title="Capitán (puntos x2)">
-            C
+          <span className={styles.crest} aria-hidden="true">
+            <Flag team={player.team} size={size === "sm" ? 16 : 22} />
           </span>
-        )}
+        </div>
+
+        <div className={styles.photoWrap}>
+          {showPhoto ? (
+            <img
+              src={player.photoUrl ?? undefined}
+              alt=""
+              className={styles.photo}
+              loading="lazy"
+              onError={() => setPhotoFailed(true)}
+            />
+          ) : (
+            <div className={`${styles.initials} ${styles[`bg${player.position}`]}`}>{initials(player.name)}</div>
+          )}
+        </div>
+
+        <div className={styles.info}>
+          <span className={styles.name}>{player.name}</span>
+          <span className={styles.teamName}>{player.team.name}</span>
+        </div>
+
+        {onClick && <span className={styles.sheen} aria-hidden="true" />}
       </div>
+
+      {ownerName && <div className={styles.owner}>de {ownerName}</div>}
+      {captain && (
+        <span className={styles.captain} title="Capitán (puntos x2)">
+          C
+        </span>
+      )}
     </Tag>
   );
 }

@@ -2,6 +2,8 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { AuthRequest, requireAuth } from "../middleware/auth";
+import { currentGameweek } from "../services/gameweeks";
+import { grantStarterPack } from "../services/starterPack";
 
 const router = Router();
 router.use(requireAuth);
@@ -15,7 +17,14 @@ router.get("/", async (req, res) => {
   const userId = (req as AuthRequest).userId;
   const memberships = await prisma.leagueMembership.findMany({
     where: { userId },
-    include: { league: { include: { _count: { select: { members: true } } } } },
+    include: {
+      league: {
+        include: {
+          _count: { select: { members: true } },
+          competition: { select: { id: true, name: true, logoUrl: true } },
+        },
+      },
+    },
     orderBy: { joinedAt: "asc" },
   });
   res.json({
@@ -25,24 +34,39 @@ router.get("/", async (req, res) => {
       inviteCode: m.league.inviteCode,
       ownerId: m.league.ownerId,
       memberCount: m.league._count.members,
+      competitionId: m.league.competitionId,
+      competition: m.league.competition
+        ? { id: m.league.competition.id, name: m.league.competition.name, logoUrl: m.league.competition.logoUrl }
+        : null,
     })),
   });
 });
 
 router.post("/", async (req, res) => {
   const userId = (req as AuthRequest).userId;
-  const parsed = z.object({ name: z.string().min(3, "El nombre necesita al menos 3 caracteres") }).safeParse(req.body);
+  const parsed = z
+    .object({
+      name: z.string().min(3, "El nombre necesita al menos 3 caracteres"),
+      competitionId: z.number().int("Elige una competencia"),
+    })
+    .safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0].message });
+
+  const competition = await prisma.competition.findUnique({ where: { id: parsed.data.competitionId } });
+  if (!competition) return res.status(400).json({ error: "Esa competencia no existe" });
 
   const league = await prisma.league.create({
     data: {
       name: parsed.data.name,
       inviteCode: inviteCode(),
       ownerId: userId,
+      competitionId: competition.id,
       members: { create: { userId } },
     },
   });
-  res.status(201).json({ league });
+
+  const starterPack = await grantStarterPack(userId, league.id, competition.id);
+  res.status(201).json({ league, starterPack });
 });
 
 router.post("/join", async (req, res) => {
@@ -59,7 +83,8 @@ router.post("/join", async (req, res) => {
   if (already) return res.status(409).json({ error: "Ya eres miembro de esta liga" });
 
   await prisma.leagueMembership.create({ data: { userId, leagueId: league.id } });
-  res.status(201).json({ league });
+  const starterPack = await grantStarterPack(userId, league.id, league.competitionId);
+  res.status(201).json({ league, starterPack });
 });
 
 // Detalle + clasificación
@@ -70,6 +95,7 @@ router.get("/:id", async (req, res) => {
     include: {
       members: { include: { user: { select: { id: true, name: true } } } },
       scores: true,
+      competition: { select: { id: true, name: true, logoUrl: true, type: true } },
     },
   });
   if (!league) return res.status(404).json({ error: "Liga no encontrada" });
@@ -97,8 +123,17 @@ router.get("/:id", async (req, res) => {
     })
     .sort((a, b) => b.points - a.points || b.teamValue - a.teamValue);
 
+  const gameweek = await currentGameweek(league.competitionId);
+
   res.json({
-    league: { id: league.id, name: league.name, inviteCode: league.inviteCode, ownerId: league.ownerId },
+    league: {
+      id: league.id,
+      name: league.name,
+      inviteCode: league.inviteCode,
+      ownerId: league.ownerId,
+      competition: league.competition,
+      currentGameweek: gameweek,
+    },
     standings,
   });
 });

@@ -18,6 +18,22 @@
   --pos-med: #3ecf7a;
   --pos-del: #ff6b7a;
 
+  /* Tema claro (sistema 60-30-10: blanco/negro + rojo·azul·verde Mundial).
+     Conviven con los tokens oscuros de arriba: las cartas FUT y el fondo del
+     hero de acceso siguen usando --noche/--tribuna a propósito. */
+  --bg: #ffffff;
+  --superficie: #ffffff;
+  --superficie-alta: #f1f4f8;
+  --borde: #e3e8ef;
+  --tinta: #0d1117;
+  --tinta-media: #5b6675;
+  --wc-rojo: #e61d25;
+  --wc-azul: #2a398d;
+  --wc-azul-vivo: #2f43c4;
+  --wc-verde: #2fa84f;
+  --wc-oro: #f3c14a;
+  --wc-oro-oscuro: #d49a17;
+
   /* Rareza (materiales foil) */
   --foil-oro: linear-gradient(160deg, #8a6a1f 0%, #f0c24b 35%, #fff3c4 50%, #f0c24b 65%, #6e5418 100%);
   --foil-plata: linear-gradient(160deg, #5a6675 0%, #aab6c5 35%, #eef2f7 50%, #aab6c5 65%, #49535f 100%);
@@ -47,5 +63,5 @@
   --shadow-lift: 0 12px 32px rgba(0, 0, 0, 0.5);
 
   /* Layout */
-  --max-w: 1100px;
+  --max-w: 1600px;
 }

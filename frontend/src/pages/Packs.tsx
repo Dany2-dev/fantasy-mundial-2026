@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
-import PlayerCard from "../components/PlayerCard";
+import FlipReveal from "../components/FlipReveal";
+import { IconCoin } from "../components/icons";
 import { setCoins } from "../store/authSlice";
 import { fetchCollection } from "../store/collectionSlice";
 import { useAppDispatch, useAppSelector } from "../store/store";
@@ -64,6 +65,7 @@ export default function Packs() {
         {PACKS.map((p) => (
           <div key={p.tier} className={`${styles.pack} ${styles[p.tier]}`}>
             <span className={styles.packShine} aria-hidden="true" />
+            <img className={styles.packArt} src={`/packs/${p.tier}.png`} alt="" aria-hidden="true" />
             <h2>{p.label}</h2>
             <p className={styles.packDesc}>{p.desc}</p>
             <button
@@ -71,10 +73,18 @@ export default function Packs() {
               disabled={opening !== null || (user?.coins ?? 0) < p.cost}
               onClick={() => openPack(p.tier)}
             >
-              {opening === p.tier ? "Abriendo…" : `Abrir por ${p.cost.toLocaleString("es-MX")} 🪙`}
+              {opening === p.tier ? (
+                "Abriendo…"
+              ) : (
+                <span className={styles.costLabel}>
+                  Abrir por {p.cost.toLocaleString("es-MX")} <IconCoin size={15} />
+                </span>
+              )}
             </button>
             {(user?.coins ?? 0) < p.cost && (
-              <span className="caption">Te faltan {(p.cost - (user?.coins ?? 0)).toLocaleString("es-MX")} 🪙</span>
+              <span className={`caption ${styles.missing}`}>
+                Te faltan {(p.cost - (user?.coins ?? 0)).toLocaleString("es-MX")} <IconCoin size={12} />
+              </span>
             )}
           </div>
         ))}
@@ -84,12 +94,10 @@ export default function Packs() {
 
       {result && (
         <div className={styles.overlay} role="dialog" aria-label="Cartas obtenidas">
-          <h2>¡Nuevas cartas!</h2>
+          <h2>Nuevas cartas</h2>
           <div className={styles.reveal}>
             {result.map((p, i) => (
-              <div key={p.id} className={styles.revealCard} style={{ animationDelay: `${i * 0.45}s` }}>
-                <PlayerCard player={p} />
-              </div>
+              <FlipReveal key={p.id} player={p} delay={500 + i * 650} />
             ))}
           </div>
           <button className="primary" onClick={() => setResult(null)}>

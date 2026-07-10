@@ -80,6 +80,8 @@ const DATA: { name: string; flag: string; group: string; players: SeedPlayer[] }
   },
 ];
 
+// Seed OFFLINE de respaldo (sin red): una sola competencia con 8 selecciones.
+// El seed real multi-competencia está en seed-competitions.ts (npm run db:seed:fotmob).
 async function main() {
   const count = await prisma.player.count();
   if (count > 0) {
@@ -87,29 +89,44 @@ async function main() {
     return;
   }
 
+  const competition = await prisma.competition.upsert({
+    where: { fotmobId: 77 },
+    update: {},
+    create: {
+      fotmobId: 77,
+      name: "Copa Mundial (offline)",
+      ccode: "INT",
+      type: "cup",
+      priority: 1,
+      isCurrent: true,
+    },
+  });
+
   for (const c of DATA) {
-    const country = await prisma.country.create({
-      data: { name: c.name, flag: c.flag, group: c.group },
+    const team = await prisma.team.create({
+      data: { competitionId: competition.id, fotmobId: 900000 + DATA.indexOf(c), name: c.name, flag: c.flag, group: c.group },
     });
     await prisma.player.createMany({
-      data: c.players.map(([name, position, rating]) => ({
+      data: c.players.map(([name, position, rating], i) => ({
+        competitionId: competition.id,
+        teamId: team.id,
+        fotmobId: team.id * 100 + i, // id sintético estable en modo offline
         name,
         position,
         rating,
         basePrice: rating * 120,
-        countryId: country.id,
       })),
     });
     console.log(`✔ ${c.flag} ${c.name}: ${c.players.length} jugadores`);
   }
 
   await prisma.gameweek.upsert({
-    where: { number: 1 },
+    where: { competitionId_number: { competitionId: competition.id, number: 1 } },
     update: {},
-    create: { number: 1, deadline: new Date("2026-06-11T18:00:00Z"), status: "upcoming" },
+    create: { competitionId: competition.id, number: 1, deadline: new Date("2026-06-11T18:00:00Z"), status: "upcoming" },
   });
 
-  console.log("Seed completo 🎉");
+  console.log("Seed offline completo 🎉");
 }
 
 main()

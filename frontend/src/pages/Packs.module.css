@@ -16,8 +16,9 @@
   overflow: hidden;
   border-radius: var(--r-card);
   padding: var(--sp-5);
-  border: 1px solid var(--linea);
-  background: var(--tribuna);
+  border: 1px solid var(--borde);
+  background: var(--superficie);
+  box-shadow: 0 8px 24px -18px rgba(13, 17, 23, 0.5);
   display: flex;
   flex-direction: column;
   gap: var(--sp-2);
@@ -58,9 +59,23 @@
   pointer-events: none;
 }
 
+.packArt {
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.4));
+}
+
 .packDesc {
-  color: var(--gris);
+  color: var(--tinta-media);
   margin: 0;
+}
+
+.costLabel,
+.missing {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 }
 
 .overlay {
@@ -82,20 +97,6 @@
   gap: var(--sp-4);
   flex-wrap: wrap;
   justify-content: center;
-}
-
-.revealCard {
-  width: 150px;
-  opacity: 0;
-  transform: rotateY(90deg) scale(0.9);
-  animation: flipIn 0.5s ease-out forwards;
-}
-
-@keyframes flipIn {
-  to {
-    opacity: 1;
-    transform: rotateY(0deg) scale(1);
-  }
 }
 
 @media (min-width: 720px) {

@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { prisma } from "../lib/prisma";
 import { AuthRequest, requireAuth } from "../middleware/auth";
+import { initialClause, protectionExpiry } from "../services/economy";
+import { eliteThreshold } from "../services/rarity";
 
 const router = Router();
 router.use(requireAuth);
@@ -43,6 +45,7 @@ router.post("/open", async (req, res) => {
 
   const membership = await prisma.leagueMembership.findUnique({
     where: { userId_leagueId: { userId, leagueId: String(leagueId) } },
+    include: { league: { select: { competitionId: true } } },
   });
   if (!membership) return res.status(403).json({ error: "No eres miembro de esta liga" });
 
@@ -51,25 +54,29 @@ router.post("/open", async (req, res) => {
     return res.status(400).json({ error: `Te faltan ${pack.cost - user.coins} monedas` });
   }
 
-  // Exclusividad por liga: solo jugadores SIN dueño en esta liga pueden salir.
+  // Exclusividad por liga: solo jugadores de ESTA competencia SIN dueño en esta liga.
   const taken = await prisma.ownedPlayer.findMany({
     where: { leagueId: String(leagueId) },
     select: { playerId: true },
   });
   const takenIds = new Set(taken.map((t) => t.playerId));
-  const pool = (await prisma.player.findMany({ include: { country: true } })).filter(
-    (p) => !takenIds.has(p.id)
-  );
+  const pool = (
+    await prisma.player.findMany({
+      where: { competitionId: membership.league.competitionId },
+      include: { team: true },
+    })
+  ).filter((p) => !takenIds.has(p.id));
 
   if (pool.length < pack.count) {
     return res.status(409).json({ error: "Ya casi no quedan cartas libres en esta liga" });
   }
 
-  // El sobre Oro garantiza al menos una carta 85+ si existe alguna libre.
+  // El sobre Oro garantiza al menos un crack (top ~4% de la competencia) si existe alguna libre.
   const picked: typeof pool = [];
   const available = [...pool];
   if (tier === "oro") {
-    const elite = available.filter((p) => p.rating >= 85);
+    const threshold = await eliteThreshold(membership.league.competitionId);
+    const elite = available.filter((p) => p.rating >= threshold);
     if (elite.length > 0) {
       const idx = Math.floor(Math.random() * elite.length);
       picked.push(elite[idx]);
@@ -90,7 +97,13 @@ router.post("/open", async (req, res) => {
       select: { coins: true },
     }),
     prisma.ownedPlayer.createMany({
-      data: picked.map((p) => ({ userId, leagueId: String(leagueId), playerId: p.id })),
+      data: picked.map((p) => ({
+        userId,
+        leagueId: String(leagueId),
+        playerId: p.id,
+        clause: initialClause(p.basePrice),
+        protectedUntil: protectionExpiry(),
+      })),
     }),
   ]);
 

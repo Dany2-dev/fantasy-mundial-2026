@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
+import { IconClose } from "../components/icons";
 import PlayerCard from "../components/PlayerCard";
 import { fetchCollection } from "../store/collectionSlice";
 import { useAppDispatch, useAppSelector } from "../store/store";
@@ -104,7 +105,7 @@ export default function Squad() {
         method: "PUT",
         body: JSON.stringify({ leagueId: activeLeagueId, formation, playerIds, captainId }),
       });
-      setMsg({ kind: "ok", text: "Once guardado ✔" });
+      setMsg({ kind: "ok", text: "Once guardado" });
     } catch (e) {
       setMsg({ kind: "error", text: e instanceof Error ? e.message : "No se pudo guardar" });
     }
@@ -185,7 +186,7 @@ export default function Squad() {
                     <div className={styles.filledSlot}>
                       <PlayerCard player={player} size="sm" captain={captainId === player.id} />
                       <button className={styles.removeBtn} onClick={() => clearSlot(slotIndex)} title="Quitar">
-                        ✕
+                        <IconClose size={13} />
                       </button>
                     </div>
                   ) : (

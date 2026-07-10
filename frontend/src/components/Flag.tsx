@@ -1,6 +1,7 @@
-import { Country } from "../types";
+import { Team } from "../types";
+import { IconShield } from "./icons";
 
-// Windows no renderiza emojis de banderas; usamos imágenes con el emoji de respaldo.
+// Selecciones internacionales sin logoUrl: usamos la bandera vía flagcdn.
 const ISO: Record<string, string> = {
   "México": "mx",
   Argentina: "ar",
@@ -12,14 +13,23 @@ const ISO: Record<string, string> = {
   Alemania: "de",
 };
 
-export default function Flag({ country, size = 40 }: { country: Country; size?: number }) {
-  const iso = ISO[country.name];
-  if (!iso) {
+export default function Flag({ team, size = 40 }: { team: Team; size?: number }) {
+  if (team.logoUrl) {
     return (
-      <span style={{ fontSize: size * 0.8, lineHeight: 1 }} aria-hidden="true">
-        {country.flag}
-      </span>
+      <img
+        src={team.logoUrl}
+        alt=""
+        width={size}
+        height={size}
+        style={{ borderRadius: 4, objectFit: "contain", boxShadow: "0 1px 4px rgba(0,0,0,.4)" }}
+        loading="lazy"
+      />
     );
+  }
+
+  const iso = team.flag ? ISO[team.name] : undefined;
+  if (!iso) {
+    return <IconShield size={size} aria-hidden="true" style={{ opacity: 0.6 }} />;
   }
   return (
     <img

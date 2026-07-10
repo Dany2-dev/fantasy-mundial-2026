@@ -1,84 +1,146 @@
-/* La carta es el elemento firma: material foil según rareza */
-.card {
-  position: relative;
-  border: none;
-  border-radius: var(--r-carta);
-  padding: 2px; /* grosor del marco foil */
-  background: var(--foil-bronce);
-  box-shadow: var(--shadow-card);
-  text-align: center;
-  font-family: var(--font-body);
-  color: var(--crema);
-  width: 100%;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+/* Silueta de escudo FUT recortada con curvas reales (SVG en CardClipDefs). */
+.shield {
+  clip-path: url(#futShield);
 }
 
-.plata {
-  background: var(--foil-plata);
+.card {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 5 / 7;
+  border: none;
+  padding: 0;
+  background: none;
+  text-align: left;
+  font-family: var(--font-body);
+  color: var(--crema);
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), filter 0.2s ease;
 }
 
 .oro {
-  background: var(--foil-oro);
+  --metal-rgb: 240, 194, 75;
+  --metal-light: var(--oro-claro);
+  --metal-foil: var(--foil-oro);
 }
 
-.clickable {
+.plata {
+  --metal-rgb: 175, 187, 201;
+  --metal-light: #eef2f7;
+  --metal-foil: var(--foil-plata);
+}
+
+.bronce {
+  --metal-rgb: 176, 113, 58;
+  --metal-light: #e8b380;
+  --metal-foil: var(--foil-bronce);
+}
+
+/* Marco: capa exterior con el gradiente foil, recortada al escudo */
+.foil {
+  composes: shield;
+  position: absolute;
+  inset: 0;
+  background:
+    /* textura: cruces arriba, puntos abajo-izq (como el foil real de FUT) */
+    radial-gradient(circle at 22% 28%, rgba(255, 255, 255, 0.22) 0 3px, transparent 3.5px) 0 0 / 22px 22px,
+    repeating-linear-gradient(
+        45deg,
+        transparent 0 9px,
+        rgba(255, 255, 255, 0.14) 9px 10px,
+        transparent 10px 19px,
+        rgba(255, 255, 255, 0.14) 19px 20px
+      )
+      0 0 / 28px 28px,
+    /* swoosh diagonal brillante, la firma de la carta */
+      linear-gradient(
+        122deg,
+        transparent 30%,
+        rgba(255, 255, 255, 0.75) 45%,
+        rgba(255, 255, 255, 0.15) 52%,
+        transparent 62%
+      ),
+    var(--metal-foil);
+  filter: drop-shadow(var(--shadow-card));
+}
+
+button.card {
   cursor: pointer;
 }
 
-.clickable:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-lift);
+button.card:hover {
+  transform: translateY(-5px) scale(1.015);
+  filter: drop-shadow(0 0 14px rgba(var(--metal-rgb), 0.35));
+}
+
+button.card:active {
+  transform: translateY(-2px) scale(1.005);
+}
+
+button.card:focus-visible {
+  outline: none;
+  filter: drop-shadow(0 0 0 3px var(--oro)) drop-shadow(0 0 14px rgba(240, 194, 75, 0.5));
 }
 
 .selected {
-  outline: 3px solid var(--oro);
-  outline-offset: 2px;
+  filter: drop-shadow(0 0 0 3px var(--oro)) drop-shadow(0 0 16px rgba(240, 194, 75, 0.55));
 }
 
-.inner {
+/* Panel: capa interior oscura, inset uniforme sobre el foil = borde metálico */
+.panel {
+  composes: shield;
+  position: absolute;
+  inset: 3px;
+  overflow: hidden;
   background:
-    radial-gradient(120% 80% at 50% 0%, rgba(255, 255, 255, 0.08), transparent 55%),
+    radial-gradient(120% 70% at 50% 0%, rgba(var(--metal-rgb), 0.16), transparent 60%),
     var(--tribuna);
-  border-radius: calc(var(--r-carta) - 2px);
-  padding: var(--sp-3);
+}
+
+.sm .panel {
+  inset: 2px;
+}
+
+/* Columna de datos: media, posición y escudo del equipo, como una FUT card */
+.stats {
+  position: absolute;
+  top: 7%;
+  left: 9%;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  min-height: 150px;
-}
-
-.sm .inner {
-  min-height: 108px;
-  padding: var(--sp-2);
-}
-
-.top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
+  align-items: flex-start;
+  gap: 4px;
+  z-index: 1;
 }
 
 .rating {
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: 26px;
-  color: var(--oro-claro);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.5px;
   line-height: 1;
+  color: var(--metal-light);
+}
+
+.md .rating {
+  font-size: 28px;
 }
 
 .sm .rating {
-  font-size: 20px;
+  font-size: 19px;
 }
 
 .pos {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.6px;
+  letter-spacing: 0.5px;
   padding: 2px 8px;
   border-radius: var(--r-chip);
   color: var(--noche);
+}
+
+.sm .pos {
+  font-size: 8px;
+  padding: 1px 6px;
 }
 
 .posPOR {
@@ -97,56 +159,155 @@
   background: var(--pos-del);
 }
 
-.flag {
-  font-size: 34px;
-  line-height: 1.2;
-  margin-top: var(--sp-1);
+.crest {
+  display: flex;
+  margin-top: 2px;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5));
 }
 
-.sm .flag {
+/* Foto recortada y flotante: más pequeña que el panel, no a sangre completa */
+.photoWrap {
+  position: absolute;
+  left: 50%;
+  top: 30%;
+  width: 58%;
+  height: 42%;
+  transform: translateX(-50%);
+  overflow: hidden;
+  border-radius: 6px 6px 40% 40%;
+  mask-image: linear-gradient(to bottom, black 72%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 72%, transparent 100%);
+}
+
+.photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+
+.initials {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  color: rgba(244, 246, 251, 0.55);
+}
+
+.bgPOR {
+  background: color-mix(in srgb, var(--pos-por) 30%, var(--tribuna-alta));
+}
+
+.bgDEF {
+  background: color-mix(in srgb, var(--pos-def) 30%, var(--tribuna-alta));
+}
+
+.bgMED {
+  background: color-mix(in srgb, var(--pos-med) 30%, var(--tribuna-alta));
+}
+
+.bgDEL {
+  background: color-mix(in srgb, var(--pos-del) 30%, var(--tribuna-alta));
+}
+
+.md .initials {
   font-size: 24px;
 }
 
+.sm .initials {
+  font-size: 16px;
+}
+
+.info {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: 8%;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  text-align: center;
+}
+
 .name {
-  font-weight: 700;
-  font-size: 14px;
-  line-height: 1.25;
-  margin-top: auto;
+  font-weight: 800;
+  font-size: 13px;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .sm .name {
-  font-size: 12px;
+  font-size: 10px;
 }
 
-.country {
-  font-size: 12px;
+.teamName {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
   color: var(--gris);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
-.sm .country {
+.sm .teamName {
   display: none;
 }
 
+/* Barrido de luz sobre el foil, solo al pasar el cursor: la carta "reacciona" como un holográfico */
+.sheen {
+  composes: shield;
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    115deg,
+    transparent 42%,
+    rgba(255, 255, 255, 0.22) 50%,
+    transparent 58%
+  );
+  transform: translateX(-130%);
+  transition: transform 0.5s ease;
+  pointer-events: none;
+}
+
+button.card:hover .sheen {
+  transform: translateX(130%);
+}
+
 .owner {
-  font-size: 12px;
+  position: absolute;
+  bottom: -18px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 11px;
   color: var(--oro);
-  margin-top: 2px;
 }
 
 .captain {
   position: absolute;
-  top: -8px;
-  right: -8px;
-  width: 26px;
-  height: 26px;
+  top: -6px;
+  right: 4%;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   background: var(--oro);
   color: var(--noche);
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: 14px;
+  font-size: 13px;
   display: flex;
   align-items: center;
   justify-content: center;
   box-shadow: var(--shadow-card);
+  z-index: 2;
 }
