@@ -35,7 +35,7 @@ export async function grantStarterPack(userId: string, leagueId: string, competi
   const taken = await prisma.ownedPlayer.findMany({ where: { leagueId }, select: { playerId: true } });
   const takenIds = new Set(taken.map((t) => t.playerId));
 
-  const all = await prisma.player.findMany({ where: { competitionId } });
+  const all = await prisma.player.findMany({ where: { competitionId }, include: { team: true } });
   const pool = all.filter((p) => !takenIds.has(p.id));
   if (pool.length < 11) return null; // la competencia aún no tiene plantilla suficiente
 

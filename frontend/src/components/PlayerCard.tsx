@@ -66,7 +66,7 @@ export default function PlayerCard({ player, size = "md", ownerName, captain, se
 
         <div className={styles.info}>
           <span className={styles.name}>{player.name}</span>
-          <span className={styles.teamName}>{player.team.name}</span>
+          <span className={styles.teamName}>{player.team?.name ?? ""}</span>
         </div>
 
         {onClick && <span className={styles.sheen} aria-hidden="true" />}

@@ -13,7 +13,10 @@ const ISO: Record<string, string> = {
   Alemania: "de",
 };
 
-export default function Flag({ team, size = 40 }: { team: Team; size?: number }) {
+export default function Flag({ team, size = 40 }: { team: Team | null | undefined; size?: number }) {
+  if (!team) {
+    return <IconShield size={size} aria-hidden="true" style={{ opacity: 0.6 }} />;
+  }
   if (team.logoUrl) {
     return (
       <img
