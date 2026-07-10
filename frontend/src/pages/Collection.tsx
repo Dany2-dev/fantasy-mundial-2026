@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import PlayerCard from "../components/PlayerCard";
+import PlayerDetailModal from "../components/PlayerDetailModal";
 import { fetchCollection } from "../store/collectionSlice";
 import { useAppDispatch, useAppSelector } from "../store/store";
 import styles from "./Collection.module.css";
@@ -12,6 +13,7 @@ export default function Collection() {
   const activeLeagueId = useAppSelector((s) => s.leagues.activeLeagueId);
   const { items, status } = useAppSelector((s) => s.collection);
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>("Todos");
+  const [openPlayerId, setOpenPlayerId] = useState<number | null>(null);
 
   useEffect(() => {
     if (activeLeagueId) dispatch(fetchCollection(activeLeagueId));
@@ -61,9 +63,18 @@ export default function Collection() {
 
       <div className={styles.grid}>
         {visible.map((p) => (
-          <PlayerCard key={p.id} player={p} />
+          <PlayerCard key={p.id} player={p} onClick={() => setOpenPlayerId(p.id)} />
         ))}
       </div>
+
+      {openPlayerId != null && (
+        <PlayerDetailModal
+          playerId={openPlayerId}
+          leagueId={activeLeagueId}
+          onClose={() => setOpenPlayerId(null)}
+          onChanged={() => dispatch(fetchCollection(activeLeagueId))}
+        />
+      )}
     </div>
   );
 }

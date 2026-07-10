@@ -15,15 +15,15 @@
   padding: 6px 14px;
   border-radius: var(--r-chip);
   font-size: 14px;
-  background: transparent;
-  border: 1px solid var(--linea);
-  color: var(--gris);
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  color: var(--tinta-media);
 }
 
 .filterActive {
-  background: var(--oro);
-  border-color: var(--oro);
-  color: var(--noche);
+  background: var(--wc-rojo);
+  border-color: var(--wc-rojo);
+  color: #fff;
 }
 
 .grid {

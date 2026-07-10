@@ -1,4 +1,5 @@
 .page {
+  position: relative;
   min-height: 100vh;
   display: grid;
   place-items: center;
@@ -6,11 +7,43 @@
   padding: var(--sp-6) var(--sp-4);
   max-width: 960px;
   margin: 0 auto;
+  overflow: hidden;
+}
+
+/* position:fixed a propósito: escapa del max-width de .page para cubrir
+   todo el viewport, no solo la columna central de contenido. */
+.veil {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: var(--noche);
+}
+
+.veil::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 60%, rgba(11, 18, 32, 0.75) 88%, var(--noche) 100%);
+}
+
+.veil :global(canvas) {
+  opacity: 0.95;
+  filter: contrast(1.15);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .veil :global(canvas) {
+    display: none;
+  }
 }
 
 .hero {
+  position: relative;
+  z-index: 1;
   text-align: center;
   max-width: 420px;
+  /* El hero se sienta sobre el veil oscuro (a propósito): texto claro. */
+  color: var(--crema);
 }
 
 .heroCard {
@@ -35,7 +68,7 @@
 }
 
 .gold {
-  color: var(--oro);
+  color: var(--wc-rojo);
 }
 
 .subtitle {
@@ -43,12 +76,15 @@
 }
 
 .panel {
+  position: relative;
+  z-index: 1;
   width: 100%;
   max-width: 400px;
-  background: var(--tribuna);
-  border: 1px solid var(--linea);
+  background: var(--superficie);
+  border: 1px solid var(--borde);
   border-radius: var(--r-card);
   padding: var(--sp-5);
+  box-shadow: 0 20px 48px -20px rgba(0, 0, 0, 0.5);
 }
 
 .form {
@@ -57,16 +93,10 @@
   gap: var(--sp-4);
 }
 
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-1);
-}
-
 .switch {
   margin: var(--sp-4) 0 0;
   text-align: center;
-  color: var(--gris);
+  color: var(--tinta-media);
   font-size: 14px;
 }
 
@@ -74,9 +104,35 @@
   background: none;
   border: none;
   padding: 0;
-  color: var(--oro);
+  color: var(--wc-rojo);
   font-size: 14px;
   text-decoration: underline;
+}
+
+.submitLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.submitBtn {
+  position: relative;
+  overflow: hidden;
+}
+
+.btnGlow {
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  bottom: -1px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(11, 18, 32, 0.7), transparent);
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+.submitBtn:hover .btnGlow {
+  opacity: 1;
 }
 
 @media (min-width: 860px) {

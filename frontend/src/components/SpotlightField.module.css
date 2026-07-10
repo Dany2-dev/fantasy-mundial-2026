@@ -1,0 +1,32 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+.spotlight {
+  position: relative;
+  border-radius: var(--r-input);
+}
+
+.spotlight::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: radial-gradient(140px circle at var(--spot-x, 50%) var(--spot-y, 50%), var(--wc-azul-vivo), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.spotlight:hover::before,
+.spotlight:focus-within::before {
+  opacity: 0.6;
+}
+
+.spotlight :global(input) {
+  position: relative;
+  z-index: 1;
+}

@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { api } from "../api/client";
-import { League } from "../types";
+import { League, Player } from "../types";
 
 const ACTIVE_KEY = "fm26_liga_activa";
 
@@ -21,14 +21,23 @@ export const fetchLeagues = createAsyncThunk("leagues/fetch", async () => {
   return data.leagues;
 });
 
-export const createLeague = createAsyncThunk("leagues/create", async (name: string) => {
-  const data = await api<{ league: League }>("/leagues", { method: "POST", body: JSON.stringify({ name }) });
-  return data.league;
-});
+export const createLeague = createAsyncThunk(
+  "leagues/create",
+  async (body: { name: string; competitionId: number }) => {
+    const data = await api<{ league: League; starterPack: Player[] | null }>("/leagues", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+    return data;
+  }
+);
 
 export const joinLeague = createAsyncThunk("leagues/join", async (code: string) => {
-  const data = await api<{ league: League }>("/leagues/join", { method: "POST", body: JSON.stringify({ code }) });
-  return data.league;
+  const data = await api<{ league: League; starterPack: Player[] | null }>("/leagues/join", {
+    method: "POST",
+    body: JSON.stringify({ code }),
+  });
+  return data;
 });
 
 const leagueSlice = createSlice({
@@ -61,14 +70,14 @@ const leagueSlice = createSlice({
         }
       })
       .addCase(createLeague.fulfilled, (state, action) => {
-        state.leagues.push({ ...action.payload, memberCount: 1 });
-        state.activeLeagueId = action.payload.id;
-        localStorage.setItem(ACTIVE_KEY, action.payload.id);
+        state.leagues.push({ ...action.payload.league, memberCount: 1 });
+        state.activeLeagueId = action.payload.league.id;
+        localStorage.setItem(ACTIVE_KEY, action.payload.league.id);
       })
       .addCase(joinLeague.fulfilled, (state, action) => {
-        state.leagues.push(action.payload);
-        state.activeLeagueId = action.payload.id;
-        localStorage.setItem(ACTIVE_KEY, action.payload.id);
+        state.leagues.push(action.payload.league);
+        state.activeLeagueId = action.payload.league.id;
+        localStorage.setItem(ACTIVE_KEY, action.payload.league.id);
       });
   },
 });

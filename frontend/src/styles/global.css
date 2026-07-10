@@ -11,11 +11,8 @@ body {
   font-family: var(--font-body);
   font-size: 16px;
   line-height: 1.5;
-  color: var(--crema);
-  background:
-    radial-gradient(1200px 600px at 80% -10%, rgba(240, 194, 75, 0.07), transparent 60%),
-    radial-gradient(900px 500px at 10% 110%, rgba(62, 207, 122, 0.05), transparent 60%),
-    var(--noche);
+  color: var(--tinta);
+  background: var(--bg);
   min-height: 100vh;
 }
 
@@ -47,24 +44,24 @@ p {
 }
 
 a {
-  color: var(--oro);
+  color: var(--wc-rojo);
 }
 
 button {
   font-family: var(--font-body);
   font-size: 16px;
   font-weight: 600;
-  border: none;
+  border: 1px solid transparent;
   border-radius: var(--r-input);
   padding: 10px 18px;
   cursor: pointer;
-  background: var(--tribuna-alta);
-  color: var(--crema);
+  background: var(--superficie-alta);
+  color: var(--tinta);
   transition: transform 0.15s ease, filter 0.15s ease;
 }
 
 button:hover:not(:disabled) {
-  filter: brightness(1.12);
+  filter: brightness(1.05);
 }
 
 button:active:not(:disabled) {
@@ -77,41 +74,42 @@ button:disabled {
 }
 
 button.primary {
-  background: var(--oro);
-  color: var(--noche);
+  background: linear-gradient(135deg, #ff2d36 0%, var(--wc-rojo) 55%, #b3141b 100%);
+  color: #fff;
+  box-shadow: 0 8px 22px -10px var(--wc-rojo);
 }
 
 button.danger {
   background: transparent;
-  color: var(--rojo);
-  border: 1px solid var(--rojo);
+  color: var(--wc-rojo);
+  border: 1px solid var(--wc-rojo);
 }
 
 button.ghost {
-  background: transparent;
-  color: var(--gris);
-  border: 1px solid var(--linea);
+  background: var(--superficie-alta);
+  color: var(--tinta);
+  border: 1px solid var(--borde);
 }
 
 input,
 select {
   font-family: var(--font-body);
   font-size: 16px;
-  color: var(--crema);
-  background: var(--noche);
-  border: 1px solid var(--linea);
+  color: var(--tinta);
+  background: var(--superficie);
+  border: 1px solid var(--borde);
   border-radius: var(--r-input);
   padding: 10px 12px;
   width: 100%;
 }
 
 input::placeholder {
-  color: var(--gris);
+  color: var(--tinta-media);
   opacity: 0.7;
 }
 
 :focus-visible {
-  outline: 2px solid var(--oro);
+  outline: 2px solid var(--wc-azul-vivo);
   outline-offset: 2px;
 }
 
@@ -120,26 +118,26 @@ input::placeholder {
 }
 
 .error-text {
-  color: var(--rojo);
+  color: var(--wc-rojo);
   font-size: 14px;
   margin: var(--sp-2) 0 0;
 }
 
 .ok-text {
-  color: var(--pasto);
+  color: var(--wc-verde);
   font-size: 14px;
   margin: var(--sp-2) 0 0;
 }
 
 .muted {
-  color: var(--gris);
+  color: var(--tinta-media);
 }
 
 .caption {
   font-size: 13px;
   font-weight: 500;
   letter-spacing: 0.4px;
-  color: var(--gris);
+  color: var(--tinta-media);
 }
 
 @media (prefers-reduced-motion: reduce) {

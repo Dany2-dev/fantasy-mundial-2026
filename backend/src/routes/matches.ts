@@ -75,7 +75,8 @@ router.post("/sync", async (req, res) => {
     return res.status(401).json({ error: "Token de sincronización inválido" });
   }
   try {
-    const result = await syncResults({ force: Boolean(req.body?.force) });
+    const competitionId = req.body?.competitionId ? Number(req.body.competitionId) : undefined;
+    const result = await syncResults({ force: Boolean(req.body?.force), competitionId });
     res.json({ ok: true, ...result });
   } catch (e) {
     res.status(500).json({ error: e instanceof Error ? e.message : "Sync falló" });

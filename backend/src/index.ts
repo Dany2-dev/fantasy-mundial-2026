@@ -1,9 +1,11 @@
 import cors from "cors";
 import express from "express";
 import authRouter from "./routes/auth";
+import clauseRouter from "./routes/clause";
 import collectionRouter from "./routes/collection";
 import competitionsRouter from "./routes/competitions";
 import leaguesRouter from "./routes/leagues";
+import listingsRouter from "./routes/listings";
 import matchesRouter from "./routes/matches";
 import packsRouter from "./routes/packs";
 import playersRouter from "./routes/players";
@@ -25,6 +27,8 @@ app.use("/api/collection", collectionRouter);
 app.use("/api/squad", squadRouter);
 app.use("/api/trades", tradesRouter);
 app.use("/api/matches", matchesRouter);
+app.use("/api/clause", clauseRouter);
+app.use("/api/listings", listingsRouter);
 
 // Manejador de errores: nunca filtrar detalles internos al cliente
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

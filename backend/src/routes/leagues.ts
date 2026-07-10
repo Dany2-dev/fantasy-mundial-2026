@@ -2,6 +2,8 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { AuthRequest, requireAuth } from "../middleware/auth";
+import { currentGameweek } from "../services/gameweeks";
+import { grantStarterPack } from "../services/starterPack";
 
 const router = Router();
 router.use(requireAuth);
@@ -62,7 +64,9 @@ router.post("/", async (req, res) => {
       members: { create: { userId } },
     },
   });
-  res.status(201).json({ league });
+
+  const starterPack = await grantStarterPack(userId, league.id, competition.id);
+  res.status(201).json({ league, starterPack });
 });
 
 router.post("/join", async (req, res) => {
@@ -79,7 +83,8 @@ router.post("/join", async (req, res) => {
   if (already) return res.status(409).json({ error: "Ya eres miembro de esta liga" });
 
   await prisma.leagueMembership.create({ data: { userId, leagueId: league.id } });
-  res.status(201).json({ league });
+  const starterPack = await grantStarterPack(userId, league.id, league.competitionId);
+  res.status(201).json({ league, starterPack });
 });
 
 // Detalle + clasificación
@@ -118,6 +123,8 @@ router.get("/:id", async (req, res) => {
     })
     .sort((a, b) => b.points - a.points || b.teamValue - a.teamValue);
 
+  const gameweek = await currentGameweek(league.competitionId);
+
   res.json({
     league: {
       id: league.id,
@@ -125,6 +132,7 @@ router.get("/:id", async (req, res) => {
       inviteCode: league.inviteCode,
       ownerId: league.ownerId,
       competition: league.competition,
+      currentGameweek: gameweek,
     },
     standings,
   });

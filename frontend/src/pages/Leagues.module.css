@@ -4,8 +4,8 @@
 }
 
 .formCard {
-  background: var(--tribuna);
-  border: 1px solid var(--linea);
+  background: var(--superficie);
+  border: 1px solid var(--borde);
   border-radius: var(--r-card);
   padding: var(--sp-4);
   display: flex;
@@ -18,6 +18,38 @@
   letter-spacing: 4px;
   font-weight: 700;
   text-align: center;
+}
+
+.notStarted {
+  margin: 0;
+  font-size: 13px;
+  color: var(--wc-oro-oscuro);
+  background: color-mix(in srgb, var(--wc-oro) 12%, transparent);
+  border: 1px solid var(--wc-oro);
+  border-radius: var(--r-input);
+  padding: var(--sp-2) var(--sp-3);
+}
+
+.leagueMeta {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.metaChip {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: var(--r-chip);
+  background: var(--superficie-alta);
+  border: 1px solid var(--borde);
+  color: var(--tinta-media);
+}
+
+.metaChip[data-accent="red"] {
+  color: var(--wc-rojo);
+  border-color: var(--wc-rojo);
 }
 
 .section {
@@ -35,15 +67,15 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 2px;
-  background: var(--tribuna);
-  border: 1px solid var(--linea);
+  background: var(--superficie);
+  border: 1px solid var(--borde);
   min-width: 180px;
   text-align: left;
 }
 
 .leagueActive {
-  border-color: var(--oro);
-  box-shadow: 0 0 0 1px var(--oro);
+  border-color: var(--wc-rojo);
+  box-shadow: 0 0 0 1px var(--wc-rojo);
 }
 
 .standingsHeader {
@@ -54,11 +86,22 @@
   flex-wrap: wrap;
 }
 
+.copyBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.trophyIcon {
+  color: var(--wc-oro-oscuro);
+  vertical-align: -4px;
+}
+
 .table {
   width: 100%;
   border-collapse: collapse;
-  background: var(--tribuna);
-  border: 1px solid var(--linea);
+  background: var(--superficie);
+  border: 1px solid var(--borde);
   border-radius: var(--r-card);
   overflow: hidden;
 }
@@ -67,14 +110,14 @@
 .table td {
   padding: var(--sp-3) var(--sp-4);
   text-align: left;
-  border-bottom: 1px solid var(--linea);
+  border-bottom: 1px solid var(--borde);
 }
 
 .table th {
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.4px;
-  color: var(--gris);
+  color: var(--tinta-media);
 }
 
 .table tbody tr:last-child td {
@@ -86,16 +129,53 @@
 }
 
 .me {
-  background: rgba(240, 194, 75, 0.08);
+  background: color-mix(in srgb, var(--wc-rojo) 6%, transparent);
 }
 
 .youTag {
-  color: var(--oro);
+  color: var(--wc-rojo);
   font-size: 13px;
 }
 
 @media (min-width: 720px) {
   .forms {
     grid-template-columns: 1fr 1fr;
+  }
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(11, 18, 32, 0.96);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-4);
+  padding: var(--sp-5);
+  text-align: center;
+  color: var(--crema);
+}
+
+.reveal {
+  display: flex;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 720px;
+}
+
+.revealCard {
+  width: 96px;
+  opacity: 0;
+  transform: rotateY(90deg) scale(0.9);
+  animation: leaguesFlipIn 0.45s ease-out forwards;
+}
+
+@keyframes leaguesFlipIn {
+  to {
+    opacity: 1;
+    transform: rotateY(0deg) scale(1);
   }
 }

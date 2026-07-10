@@ -22,6 +22,7 @@ model User {
   scores         UserGameweekScore[]
   tradesSent     TradeOffer[]        @relation("TradeFrom")
   tradesReceived TradeOffer[]        @relation("TradeTo")
+  listings       PlayerListing[]
 }
 
 // Competencia real de FotMob: liga doméstica (LaLiga, Liga MX…), copa o el Mundial.
@@ -77,8 +78,9 @@ model Player {
   competition   Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
   team          Team        @relation(fields: [teamId], references: [id], onDelete: Cascade)
 
-  owned OwnedPlayer[]
-  stats PlayerGameweekStats[]
+  owned    OwnedPlayer[]
+  stats    PlayerGameweekStats[]
+  listings PlayerListing[]
 
   @@unique([competitionId, fotmobId])
   @@index([competitionId])
@@ -101,6 +103,7 @@ model League {
   squads       FantasySquad[]
   scores       UserGameweekScore[]
   trades       TradeOffer[]
+  listings     PlayerListing[]
 
   @@index([competitionId])
 }
@@ -118,17 +121,35 @@ model LeagueMembership {
 
 // Exclusividad por liga: un jugador solo puede tener UN dueño dentro de cada liga.
 model OwnedPlayer {
-  id         String   @id @default(cuid())
-  userId     String
-  leagueId   String
-  playerId   Int
-  acquiredAt DateTime @default(now())
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  league     League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
-  player     Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  id              String    @id @default(cuid())
+  userId          String
+  leagueId        String
+  playerId        Int
+  acquiredAt      DateTime  @default(now())
+  clause          Int       @default(0) // precio de clausulazo (subible por el dueño)
+  protectedUntil  DateTime? // no se puede clausular antes de esta fecha
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  league          League    @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  player          Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
 
   @@unique([leagueId, playerId])
   @@index([userId, leagueId])
+}
+
+// Venta abierta: el dueño pone su carta en el mercado a un precio fijo.
+model PlayerListing {
+  id        String   @id @default(cuid())
+  leagueId  String
+  sellerId  String
+  playerId  Int
+  price     Int
+  createdAt DateTime @default(now())
+  league    League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  seller    User     @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([leagueId, playerId])
+  @@index([leagueId])
 }
 
 model FantasySquad {

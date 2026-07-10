@@ -1,6 +1,9 @@
 import { FormEvent, useState } from "react";
 import { Navigate } from "react-router-dom";
+import DarkVeil from "../components/DarkVeil";
 import PlayerCard from "../components/PlayerCard";
+import { IconCoin } from "../components/icons";
+import SpotlightField from "../components/SpotlightField";
 import { login, register } from "../store/authSlice";
 import { useAppDispatch, useAppSelector } from "../store/store";
 import { Player } from "../types";
@@ -12,8 +15,9 @@ const DEMO_CARD: Player = {
   position: "DEL",
   rating: 91,
   basePrice: 10920,
-  countryId: 0,
-  country: { id: 0, name: "Francia", flag: "🇫🇷", group: "D" },
+  photoUrl: "https://images.fotmob.com/image_resources/playerimages/787761.png",
+  teamId: 0,
+  team: { id: 0, name: "Francia", logoUrl: null, flag: "FR" },
 };
 
 export default function Auth() {
@@ -34,6 +38,10 @@ export default function Auth() {
 
   return (
     <div className={styles.page}>
+      <div className={styles.veil}>
+        <DarkVeil />
+      </div>
+
       <section className={styles.hero}>
         <div className={styles.heroCard}>
           <PlayerCard player={DEMO_CARD} />
@@ -51,8 +59,7 @@ export default function Auth() {
         <h2>{mode === "login" ? "Inicia sesión" : "Crea tu cuenta"}</h2>
         <form onSubmit={handleSubmit} className={styles.form}>
           {mode === "register" && (
-            <label className={styles.field}>
-              <span className="caption">Nombre</span>
+            <SpotlightField label="Nombre">
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -60,10 +67,9 @@ export default function Auth() {
                 required
                 minLength={2}
               />
-            </label>
+            </SpotlightField>
           )}
-          <label className={styles.field}>
-            <span className="caption">Email</span>
+          <SpotlightField label="Email">
             <input
               type="email"
               value={email}
@@ -71,9 +77,8 @@ export default function Auth() {
               placeholder="tu@email.com"
               required
             />
-          </label>
-          <label className={styles.field}>
-            <span className="caption">Contraseña</span>
+          </SpotlightField>
+          <SpotlightField label="Contraseña">
             <input
               type="password"
               value={password}
@@ -82,12 +87,21 @@ export default function Auth() {
               required
               minLength={6}
             />
-          </label>
+          </SpotlightField>
 
           {error && <p className="error-text">{error}</p>}
 
-          <button className="primary" type="submit" disabled={status === "loading"}>
-            {status === "loading" ? "Un momento…" : mode === "login" ? "Entrar" : "Crear cuenta y recibir 15,000 🪙"}
+          <button className={`primary ${styles.submitBtn}`} type="submit" disabled={status === "loading"}>
+            {status === "loading" ? (
+              "Un momento…"
+            ) : mode === "login" ? (
+              "Entrar"
+            ) : (
+              <span className={styles.submitLabel}>
+                Crear cuenta y recibir 15,000 <IconCoin size={16} />
+              </span>
+            )}
+            <span className={styles.btnGlow} aria-hidden="true" />
           </button>
         </form>
 

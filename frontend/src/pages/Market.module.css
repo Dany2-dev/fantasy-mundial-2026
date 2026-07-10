@@ -1,3 +1,8 @@
+.inlineIcon {
+  vertical-align: -2px;
+  color: var(--wc-oro-oscuro);
+}
+
 .tabs {
   display: flex;
   gap: var(--sp-2);
@@ -9,15 +14,15 @@
   padding: 6px 14px;
   border-radius: var(--r-chip);
   font-size: 14px;
-  background: transparent;
-  border: 1px solid var(--linea);
-  color: var(--gris);
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  color: var(--tinta-media);
 }
 
 .tabActive {
-  background: var(--oro);
-  border-color: var(--oro);
-  color: var(--noche);
+  background: var(--wc-rojo);
+  border-color: var(--wc-rojo);
+  color: #fff;
 }
 
 .grid {
@@ -33,8 +38,8 @@
 }
 
 .trade {
-  background: var(--tribuna);
-  border: 1px solid var(--linea);
+  background: var(--superficie);
+  border: 1px solid var(--borde);
   border-radius: var(--r-card);
   padding: var(--sp-4);
   display: flex;
@@ -61,33 +66,33 @@
 }
 
 .pending {
-  color: var(--oro);
-  border: 1px solid var(--oro);
+  color: var(--wc-oro-oscuro);
+  border: 1px solid var(--wc-oro);
 }
 
 .accepted {
-  color: var(--pasto);
-  border: 1px solid var(--pasto);
+  color: var(--wc-verde);
+  border: 1px solid var(--wc-verde);
 }
 
 .rejected {
-  color: var(--gris);
-  border: 1px solid var(--linea);
+  color: var(--tinta-media);
+  border: 1px solid var(--borde);
 }
 
 .modalBackdrop {
   position: fixed;
   inset: 0;
   z-index: 50;
-  background: rgba(11, 18, 32, 0.8);
+  background: rgba(13, 17, 23, 0.55);
   display: grid;
   place-items: center;
   padding: var(--sp-4);
 }
 
 .modal {
-  background: var(--tribuna);
-  border: 1px solid var(--linea);
+  background: var(--superficie);
+  border: 1px solid var(--borde);
   border-radius: var(--r-card);
   padding: var(--sp-5);
   width: 100%;

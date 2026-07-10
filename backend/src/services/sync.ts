@@ -39,17 +39,23 @@ async function refreshFixtures(competitionFotmobIds: number[]): Promise<number> 
   return updated;
 }
 
-export async function syncResults(opts: { limit?: number; force?: boolean } = {}): Promise<SyncResult> {
-  const { limit = 60, force = false } = opts;
+export async function syncResults(
+  opts: { limit?: number; force?: boolean; competitionId?: number } = {}
+): Promise<SyncResult> {
+  const { limit = 60, force = false, competitionId } = opts;
 
-  // Solo refrescamos/sincronizamos competencias que existen en BD.
-  const comps = await prisma.competition.findMany({ select: { id: true, fotmobId: true } });
+  // Solo refrescamos/sincronizamos competencias que existen en BD (o solo la pedida).
+  const comps = await prisma.competition.findMany({
+    where: competitionId ? { id: competitionId } : undefined,
+    select: { id: true, fotmobId: true },
+  });
   const matchesUpdated = await refreshFixtures(comps.map((c) => c.fotmobId));
 
   const pending = await prisma.match.findMany({
     where: {
       status: { in: ["finished", "live"] },
       round: { not: null },
+      ...(competitionId ? { competitionId } : {}),
       ...(force ? {} : { detailsSyncedAt: null }),
     },
     orderBy: { utcTime: "asc" },

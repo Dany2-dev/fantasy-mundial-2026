@@ -1,0 +1,71 @@
+/* Envoltorio en grid: colapsar 1fr→0fr anima el alto sin el layout-thrash
+   de animar height/max-height/padding directamente (evita reflow en cascada). */
+.wrap {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 0.3s ease;
+}
+
+.wrap.hidden {
+  grid-template-rows: 0fr;
+}
+
+.banner {
+  position: relative;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+  padding: 10px var(--sp-6) 10px var(--sp-4);
+  background: linear-gradient(90deg, #6e5418 0%, var(--oro) 50%, #6e5418 100%);
+  color: var(--noche);
+  text-align: center;
+  overflow: hidden;
+  min-height: 0;
+  animation: dropIn 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes dropIn {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.content {
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.content :global(a) {
+  color: var(--noche);
+  text-decoration: underline;
+  font-weight: 800;
+}
+
+.close {
+  position: absolute;
+  right: var(--sp-3);
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--noche);
+  opacity: 0.7;
+  padding: 4px;
+  display: flex;
+}
+
+.close:hover {
+  opacity: 1;
+}
