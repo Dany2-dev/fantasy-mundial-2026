@@ -25,11 +25,16 @@ model User {
 }
 
 model Country {
-  id      Int      @id @default(autoincrement())
-  name    String   @unique
-  flag    String
-  group   String
-  players Player[]
+  id       Int     @id @default(autoincrement())
+  name     String  @unique
+  flag     String
+  group    String
+  fotmobId Int?    @unique // id de FotMob (selección) para datos reales
+  logoUrl  String? // escudo real del CDN de FotMob
+  players  Player[]
+
+  homeMatches Match[] @relation("HomeMatches")
+  awayMatches Match[] @relation("AwayMatches")
 }
 
 model Player {
@@ -39,10 +44,35 @@ model Player {
   rating    Int
   basePrice Int
   countryId Int
+  fotmobId  Int?    @unique // id de FotMob para cruzar ratings/goles reales
+  photoUrl  String? // foto real del jugador (CDN de FotMob)
+  age       Int?
   country   Country @relation(fields: [countryId], references: [id])
 
   owned OwnedPlayer[]
   stats PlayerGameweekStats[]
+}
+
+// Fixtures reales del Mundial 2026 (fuente FotMob). round = número de jornada.
+model Match {
+  id              Int       @id @default(autoincrement())
+  fotmobId        Int       @unique
+  homeCountryId   Int?
+  awayCountryId   Int?
+  homeName        String
+  awayName        String
+  group           String?
+  round           Int? // 1-3 grupos, 4-9 eliminatorias (ver lib/rounds)
+  utcTime         DateTime?
+  status          String    @default("scheduled") // scheduled | live | finished
+  homeScore       Int?
+  awayScore       Int?
+  detailsSyncedAt DateTime? // control de idempotencia para el sync de puntos
+  homeCountry     Country?  @relation("HomeMatches", fields: [homeCountryId], references: [id])
+  awayCountry     Country?  @relation("AwayMatches", fields: [awayCountryId], references: [id])
+
+  @@index([status])
+  @@index([round])
 }
 
 model League {

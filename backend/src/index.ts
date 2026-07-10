@@ -3,6 +3,7 @@ import express from "express";
 import authRouter from "./routes/auth";
 import collectionRouter from "./routes/collection";
 import leaguesRouter from "./routes/leagues";
+import matchesRouter from "./routes/matches";
 import packsRouter from "./routes/packs";
 import playersRouter from "./routes/players";
 import squadRouter from "./routes/squad";
@@ -21,6 +22,7 @@ app.use("/api/packs", packsRouter);
 app.use("/api/collection", collectionRouter);
 app.use("/api/squad", squadRouter);
 app.use("/api/trades", tradesRouter);
+app.use("/api/matches", matchesRouter);
 
 // Manejador de errores: nunca filtrar detalles internos al cliente
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
