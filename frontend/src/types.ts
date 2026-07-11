@@ -72,6 +72,13 @@ export interface MarketCard extends Player {
   owner: { id: string; name: string };
 }
 
+export interface GameweekScore {
+  gameweek: number;
+  gameweekLabel: string;
+  status: "upcoming" | "finished";
+  points: number;
+}
+
 export interface Trade {
   id: string;
   leagueId: string;

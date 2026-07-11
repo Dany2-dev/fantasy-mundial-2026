@@ -37,7 +37,7 @@ interface MenuItem {
 const MENU: MenuItem[] = [
   { to: "/sobres", title: "Tienda de sobres", desc: "Abre Bronce, Plata y Oro. Consigue a las estrellas.", Icon: IconPack, accent: "red", photo: "/brand/wc26-red.jpg", big: true },
   { to: "/ligas", title: "Ligas privadas", desc: "Compite con tus amigos.", Icon: IconTrophy, accent: "blue", photo: "/brand/wc26-blue.jpg" },
-  { to: "/once", title: "Mi once", desc: "Coloca tus cartas en el césped.", Icon: IconBall, accent: "green" },
+  { to: "/once", title: "Mi once", desc: "Coloca tus cartas en el césped.", Icon: IconBall, accent: "green", },
   { to: "/coleccion", title: "Mi colección", desc: "Todas tus cartas.", Icon: IconCards, accent: "gold" },
   { to: "/mercado", title: "Mercado", desc: "Compra, vende, negocia.", Icon: IconExchange, accent: "blue" },
 ];
@@ -98,7 +98,7 @@ export default function Home() {
     <div className={styles.page}>
       {/* ===== Hero ===== */}
       <section className={styles.hero}>
-        <img src="/brand/stripes.jpg" alt="" className={styles.heroArt} aria-hidden="true" />
+        <img src="/brand/wc26-red.jpg" alt="" className={styles.heroArt} aria-hidden="true" />
         <span className={styles.heroWash} aria-hidden="true" />
 
         <div className={styles.heroGrid}>

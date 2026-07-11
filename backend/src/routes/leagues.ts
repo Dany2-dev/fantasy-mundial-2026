@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { AuthRequest, requireAuth } from "../middleware/auth";
 import { currentGameweek } from "../services/gameweeks";
+import { gwLabel } from "../lib/rounds";
 import { grantStarterPack } from "../services/starterPack";
 
 const router = Router();
@@ -135,6 +136,32 @@ router.get("/:id", async (req, res) => {
       currentGameweek: gameweek,
     },
     standings,
+  });
+});
+
+// Tus puntos jornada a jornada en esta liga (para Historial).
+router.get("/:id/scores", async (req, res) => {
+  const userId = (req as AuthRequest).userId;
+  const leagueId = req.params.id;
+
+  const membership = await prisma.leagueMembership.findUnique({
+    where: { userId_leagueId: { userId, leagueId } },
+  });
+  if (!membership) return res.status(403).json({ error: "No eres miembro de esta liga" });
+
+  const scores = await prisma.userGameweekScore.findMany({
+    where: { userId, leagueId },
+    include: { gameweek: { select: { number: true, status: true } } },
+    orderBy: { gameweek: { number: "desc" } },
+  });
+
+  res.json({
+    scores: scores.map((s) => ({
+      gameweek: s.gameweek.number,
+      gameweekLabel: gwLabel(s.gameweek.number),
+      status: s.gameweek.status,
+      points: s.points,
+    })),
   });
 });
 

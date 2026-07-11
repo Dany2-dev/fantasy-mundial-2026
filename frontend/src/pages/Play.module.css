@@ -1,7 +1,72 @@
-.placeholder {
-  text-align: center;
-  padding: var(--sp-7) var(--sp-4);
-  border: 1px dashed var(--borde);
+.headerRow {
+  margin-bottom: var(--sp-4);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--sp-3);
+}
+
+.card {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
   border-radius: var(--r-card);
-  margin-top: var(--sp-4);
+  padding: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  opacity: 0.85;
+}
+
+.cardHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.emoji {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.soonTag {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: var(--r-chip);
+  background: var(--superficie-alta);
+  color: var(--tinta-media);
+  border: 1px solid var(--borde);
+}
+
+.cardTitle {
+  font-size: 16px;
+  margin: 0;
+}
+
+.cardDesc {
+  color: var(--tinta-media);
+  font-size: 13.5px;
+  margin: 0;
+  flex: 1;
+}
+
+.cardFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  margin-top: var(--sp-1);
+}
+
+.reward {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 800;
+  font-size: 14px;
+  color: var(--wc-oro-oscuro);
 }
