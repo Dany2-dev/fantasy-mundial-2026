@@ -11,6 +11,14 @@
       href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Hanken+Grotesk:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
+    <!-- Fotos de jugadores y escudos (FotMob) y banderas de respaldo: la
+         primera conexión a un origen nuevo cuesta un handshake completo
+         (DNS+TCP+TLS) — precalentarla aquí evita ese costo en la primera
+         carta que se pinta. -->
+    <link rel="preconnect" href="https://images.fotmob.com" crossorigin />
+    <link rel="dns-prefetch" href="https://images.fotmob.com" />
+    <link rel="preconnect" href="https://flagcdn.com" crossorigin />
+    <link rel="dns-prefetch" href="https://flagcdn.com" />
   </head>
   <body>
     <div id="root"></div>

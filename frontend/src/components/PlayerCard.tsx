@@ -1,7 +1,11 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Player, rarityOf } from "../types";
 import Flag from "./Flag";
 import styles from "./PlayerCard.module.css";
+
+// Si la foto no termina de cargar en este tiempo (CDN lenta o bloqueada),
+// se cae a las iniciales en vez de dejar el hueco en blanco indefinidamente.
+const PHOTO_TIMEOUT_MS = 6000;
 
 interface Props {
   player: Player;
@@ -29,8 +33,16 @@ function initials(name: string) {
 export default function PlayerCard({ player, size = "md", ownerName, captain, selected, onClick }: Props) {
   const rarity = rarityOf(player.rating);
   const [photoFailed, setPhotoFailed] = useState(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const Tag = onClick ? "button" : "div";
   const showPhoto = player.photoUrl && !photoFailed;
+
+  useEffect(() => {
+    setPhotoFailed(false);
+    if (!player.photoUrl) return;
+    timeoutRef.current = setTimeout(() => setPhotoFailed(true), PHOTO_TIMEOUT_MS);
+    return () => clearTimeout(timeoutRef.current);
+  }, [player.photoUrl]);
 
   return (
     <Tag
@@ -57,6 +69,8 @@ export default function PlayerCard({ player, size = "md", ownerName, captain, se
               alt=""
               className={styles.photo}
               loading="lazy"
+              decoding="async"
+              onLoad={() => clearTimeout(timeoutRef.current)}
               onError={() => setPhotoFailed(true)}
             />
           ) : (
