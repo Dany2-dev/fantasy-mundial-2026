@@ -1,0 +1,59 @@
+import { IconCoin } from "../components/icons";
+import styles from "./Play.module.css";
+
+interface Game {
+  slug: string;
+  title: string;
+  desc: string;
+  reward: string;
+  emoji: string;
+}
+
+// Alejandro trabaja el diseño de esta página. Hub de minijuegos estilo
+// futbol-11.com para ganar monedas y abrir sobres — la lógica de cada
+// juego se conecta después; por ahora las tarjetas ya tienen contenido real.
+const GAMES: Game[] = [
+  { slug: "quiz", title: "¿Quién es?", emoji: "⚡", desc: "Identifica jugadores reales por su foto. Entre más rápido respondas, más monedas ganas.", reward: "Hasta 500" },
+  { slug: "predicciones", title: "Predicciones del día", emoji: "📅", desc: "Pronostica los resultados de los partidos de hoy.", reward: "100 / acierto" },
+  { slug: "adivina-rating", title: "Adivina el rating", emoji: "⭐", desc: "Adivina el overall de cartas reales. Entre más cerca, mayor la recompensa.", reward: "Hasta 1,600" },
+  { slug: "bandera", title: "¿De qué selección?", emoji: "🌍", desc: "Asocia jugadores con su selección o club real.", reward: "Hasta 400" },
+  { slug: "cara-o-cruz", title: "¿Quién tiene más rating?", emoji: "🆚", desc: "Dos jugadores cara a cara: elige cuál tiene el overall más alto.", reward: "Hasta 1,200" },
+  { slug: "posicion", title: "¿Cuál es su posición?", emoji: "🎯", desc: "Mira la foto y el nombre. ¿Portero, defensa, medio o delantero?", reward: "Hasta 1,000" },
+  { slug: "precio-justo", title: "¿Cuánto vale en el mercado?", emoji: "🪙", desc: "Conoces el rating y la posición. Adivina el valor de mercado exacto.", reward: "Hasta 1,400" },
+];
+
+export default function Play() {
+  return (
+    <div>
+      <div className={styles.headerRow}>
+        <div>
+          <h1>Jugar</h1>
+          <p className="muted">Completa retos y acumula monedas para fichar a los mejores.</p>
+        </div>
+      </div>
+
+      <div className={styles.grid}>
+        {GAMES.map((g) => (
+          <div key={g.slug} className={styles.card}>
+            <div className={styles.cardHead}>
+              <span className={styles.emoji} aria-hidden="true">
+                {g.emoji}
+              </span>
+              <span className={styles.soonTag}>Próximamente</span>
+            </div>
+            <h2 className={styles.cardTitle}>{g.title}</h2>
+            <p className={styles.cardDesc}>{g.desc}</p>
+            <div className={styles.cardFoot}>
+              <span className={styles.reward}>
+                <IconCoin size={15} /> {g.reward}
+              </span>
+              <button className="ghost" disabled>
+                Jugar
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}

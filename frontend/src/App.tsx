@@ -8,10 +8,14 @@ import { fetchLeagues } from "./store/leagueSlice";
 import { useAppDispatch, useAppSelector } from "./store/store";
 import Auth from "./pages/Auth";
 import Collection from "./pages/Collection";
+import History from "./pages/History";
 import Home from "./pages/Home";
 import Leagues from "./pages/Leagues";
 import Market from "./pages/Market";
+import Matches from "./pages/Matches";
 import Packs from "./pages/Packs";
+import Play from "./pages/Play";
+import Rivals from "./pages/Rivals";
 import Squad from "./pages/Squad";
 
 export default function App() {
@@ -43,6 +47,10 @@ export default function App() {
             <Route path="/once" element={<Squad />} />
             <Route path="/mercado" element={<Market />} />
             <Route path="/ligas" element={<Leagues />} />
+            <Route path="/partidos" element={<Matches />} />
+            <Route path="/rivales" element={<Rivals />} />
+            <Route path="/historial" element={<History />} />
+            <Route path="/jugar" element={<Play />} />
           </Route>
         ) : (
           <Route path="*" element={<Navigate to="/acceso" replace />} />

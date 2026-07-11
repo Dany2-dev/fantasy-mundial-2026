@@ -1,0 +1,57 @@
+.empty {
+  text-align: center;
+  padding: var(--sp-7) var(--sp-4);
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.rivalsList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  margin-top: var(--sp-4);
+}
+
+.rivalCard {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-card);
+  padding: var(--sp-4);
+}
+
+.rivalHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--sp-3);
+}
+
+.rivalName {
+  font-size: 17px;
+  margin: 0 0 2px;
+}
+
+.pendingBadge {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: var(--r-chip);
+  background: color-mix(in srgb, var(--wc-oro) 14%, transparent);
+  color: var(--wc-oro-oscuro);
+  border: 1px solid var(--wc-oro);
+  white-space: nowrap;
+}
+
+.cardsRow {
+  display: flex;
+  gap: var(--sp-3);
+  overflow-x: auto;
+  padding: 2px 2px 6px;
+}
+
+.miniCard {
+  width: 100px;
+  flex: 0 0 auto;
+}
