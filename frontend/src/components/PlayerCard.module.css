@@ -1,4 +1,9 @@
-/* Silueta de escudo FUT recortada con curvas reales (SVG en CardClipDefs). */
+/* ============================================================
+   FC25 CARD STYLE — silueta FUT recortada con curvas reales
+   (SVG en CardClipDefs), con degradado y efectos propios por rango:
+   bronce, plata, oro y legendario.
+============================================================ */
+
 .shield {
   clip-path: url(#futShield);
 }
@@ -11,197 +16,266 @@
   border: none;
   padding: 0;
   background: none;
+  overflow: visible;
   text-align: left;
   font-family: var(--font-body);
   color: var(--crema);
-  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), filter 0.2s ease;
+  cursor: pointer;
+  transform-style: preserve-3d;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), filter 0.35s ease;
+}
+
+button.card:hover {
+  transform: translateY(-8px) scale(1.03);
+  filter: drop-shadow(0 0 16px rgba(var(--metal-rgb), 0.5)) drop-shadow(0 14px 26px rgba(0, 0, 0, 0.45));
+}
+
+button.card:active {
+  transform: translateY(-3px) scale(1.01);
+}
+
+button.card:focus-visible,
+.selected {
+  outline: none;
+  filter: drop-shadow(0 0 0 3px var(--oro)) drop-shadow(0 0 22px rgba(255, 210, 80, 0.6));
+}
+
+/* ============================================================
+   RANGOS — cada uno define su paleta metálica; todo lo demás
+   (borde, brillo, fondo del panel) se deriva de estas variables.
+============================================================ */
+
+.bronce {
+  --metal-rgb: 183, 118, 67;
+  --metal-light: #ffd3ab;
+  --metal-dark: #47250f;
+  --metal-foil: linear-gradient(140deg, #f7c699 0%, #d78a47 22%, #955225 42%, #ffc48b 58%, #a55d2e 76%, #e7aa72 100%);
+}
+
+.plata {
+  --metal-rgb: 185, 194, 208;
+  --metal-light: #ffffff;
+  --metal-dark: #333a45;
+  --metal-foil: linear-gradient(140deg, #ffffff 0%, #d9dee6 20%, #9aa4b7 42%, #eef2f8 58%, #b5becc 80%, #ffffff 100%);
 }
 
 .oro {
   --metal-rgb: 240, 194, 75;
-  --metal-light: var(--oro-claro);
-  --metal-foil: var(--foil-oro);
+  --metal-light: #fff7d8;
+  --metal-dark: #5a3a00;
+  --metal-foil: linear-gradient(140deg, #ffe59f 0%, #ffd164 12%, #bb7a00 28%, #fff5c7 46%, #c88400 60%, #fff0b8 78%, #d89a18 100%);
 }
 
-.plata {
-  --metal-rgb: 175, 187, 201;
-  --metal-light: #eef2f7;
-  --metal-foil: var(--foil-plata);
+/* Legendario: por encima del oro, foil prismático violeta/rosa/dorado y un
+   fondo de "núcleo" animado en vez del degradado plano de los otros rangos. */
+.legendario {
+  --metal-rgb: 190, 110, 255;
+  --metal-light: #f6ecff;
+  --metal-dark: #1a0630;
+  --metal-foil: linear-gradient(140deg, #ffe9ff 0%, #d9a6ff 16%, #7b2fff 32%, #2d0b57 46%, #ff7ad1 62%, #4b1a86 80%, #ffd76f 100%);
 }
 
-.bronce {
-  --metal-rgb: 176, 113, 58;
-  --metal-light: #e8b380;
-  --metal-foil: var(--foil-bronce);
-}
+/* ============================================================
+   BORDE METÁLICO — recortado al escudo, con brillo diagonal
+   animado al pasar el cursor. Su color/tono viene del rango.
+============================================================ */
 
-/* Marco: capa exterior con el gradiente foil, recortada al escudo */
 .foil {
   composes: shield;
   position: absolute;
   inset: 0;
+  overflow: hidden;
   background:
-    /* textura: cruces arriba, puntos abajo-izq (como el foil real de FUT) */
-    radial-gradient(circle at 22% 28%, rgba(255, 255, 255, 0.22) 0 3px, transparent 3.5px) 0 0 / 22px 22px,
-    repeating-linear-gradient(
-        45deg,
-        transparent 0 9px,
-        rgba(255, 255, 255, 0.14) 9px 10px,
-        transparent 10px 19px,
-        rgba(255, 255, 255, 0.14) 19px 20px
-      )
-      0 0 / 28px 28px,
-    /* swoosh diagonal brillante, la firma de la carta */
-      linear-gradient(
-        122deg,
-        transparent 30%,
-        rgba(255, 255, 255, 0.75) 45%,
-        rgba(255, 255, 255, 0.15) 52%,
-        transparent 62%
-      ),
+    radial-gradient(circle at 50% 8%, rgba(255, 255, 255, 0.42), transparent 18%),
+    repeating-linear-gradient(125deg, rgba(255, 255, 255, 0.05) 0px, rgba(255, 255, 255, 0.05) 2px, transparent 2px, transparent 16px),
+    repeating-linear-gradient(-55deg, rgba(255, 255, 255, 0.04) 0px, rgba(255, 255, 255, 0.04) 1px, transparent 1px, transparent 24px),
     var(--metal-foil);
-  filter: drop-shadow(var(--shadow-card));
+  box-shadow:
+    inset 0 0 2px rgba(255, 255, 255, 0.95),
+    inset 0 0 18px rgba(255, 255, 255, 0.3),
+    inset 0 -12px 30px rgba(0, 0, 0, 0.25),
+    0 0 18px rgba(var(--metal-rgb), 0.35);
 }
 
-button.card {
-  cursor: pointer;
+.foil::before {
+  content: "";
+  position: absolute;
+  inset: -35%;
+  background: linear-gradient(120deg, transparent 34%, rgba(255, 255, 255, 0.85) 48%, rgba(255, 255, 255, 0.18) 54%, transparent 66%);
+  transform: translateX(-180%) rotate(12deg);
+  transition: transform 0.9s;
 }
 
-button.card:hover {
-  transform: translateY(-5px) scale(1.015);
-  filter: drop-shadow(0 0 14px rgba(var(--metal-rgb), 0.35));
+button.card:hover .foil::before {
+  transform: translateX(180%) rotate(12deg);
 }
 
-button.card:active {
-  transform: translateY(-2px) scale(1.005);
+/* El legendario respira solo: un pulso lento en el borde que lo distingue
+   incluso sin interacción, reservado a este rango para no saturar la lista. */
+.legendario .foil {
+  animation: pulseGlow 2.6s ease-in-out infinite;
 }
 
-button.card:focus-visible {
-  outline: none;
-  filter: drop-shadow(0 0 0 3px var(--oro)) drop-shadow(0 0 14px rgba(240, 194, 75, 0.5));
-}
+/* ============================================================
+   PANEL INTERIOR — fondo tintado con el color del rango
+   (oro/plata/bronce quedan discretos; legendario tiene su propio
+   núcleo animado más abajo).
+============================================================ */
 
-.selected {
-  filter: drop-shadow(0 0 0 3px var(--oro)) drop-shadow(0 0 16px rgba(240, 194, 75, 0.55));
-}
-
-/* Panel: capa interior con degradado de color (según rareza), inset uniforme sobre el foil = borde metálico */
 .panel {
   composes: shield;
   position: absolute;
-  inset: 3px;
+  inset: 4px;
   overflow: hidden;
   background:
-    radial-gradient(140% 90% at 18% -8%, rgba(var(--metal-rgb), 0.45), transparent 55%),
-    linear-gradient(
-      160deg,
-      color-mix(in srgb, var(--metal-light) 22%, var(--tribuna)) 0%,
-      var(--tribuna) 42%,
-      var(--tribuna-alta) 100%
-    );
+    radial-gradient(120% 65% at 50% -6%, rgba(var(--metal-rgb), 0.4), transparent 55%),
+    radial-gradient(90% 50% at 50% 108%, rgba(var(--metal-rgb), 0.16), transparent 60%),
+    linear-gradient(180deg, var(--metal-dark) 0%, #10131c 55%, #070810 100%);
 }
 
 .panel::before {
   content: "";
   position: absolute;
   inset: 0;
-  background: repeating-linear-gradient(
-    135deg,
-    transparent 0 14px,
-    rgba(255, 255, 255, 0.035) 14px 15px
-  );
+  background: repeating-linear-gradient(135deg, transparent 0 14px, rgba(255, 255, 255, 0.04) 14px 15px);
   pointer-events: none;
 }
 
-.panel::after {
+/* ---- Núcleo exclusivo del legendario: rayos giratorios + halo flotante ---- */
+.legendario .panel {
+  background:
+    radial-gradient(circle at 50% 42%, rgba(168, 70, 255, 0.45), transparent 55%),
+    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.18), transparent 38%),
+    linear-gradient(180deg, #46206f 0%, #2d124e 34%, #18092f 68%, #0d051c 100%);
+}
+
+.legendario .panel::before {
+  background: repeating-conic-gradient(from -10deg, rgba(255, 255, 255, 0.14) 0deg, rgba(255, 255, 255, 0.14) 3deg, transparent 3deg, transparent 10deg);
+  opacity: 0.25;
+  transform: scale(1.7);
+  animation: raysRotate 30s linear infinite;
+}
+
+.legendario .panel::after {
   content: "";
   position: absolute;
-  inset: 0;
-  background: linear-gradient(to top, rgba(11, 18, 32, 0.62) 0%, transparent 34%);
+  left: 50%;
+  top: 42%;
+  width: 70%;
+  height: 70%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(155, 80, 255, 0.9) 0%, rgba(120, 40, 255, 0.35) 45%, transparent 75%);
+  filter: blur(22px);
   pointer-events: none;
+  animation: floatGlow 4s ease-in-out infinite;
 }
 
-.sm .panel {
-  inset: 2px;
+.particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.55;
+  background-image:
+    radial-gradient(#ffffff 1.4px, transparent 1.5px),
+    radial-gradient(rgba(180, 110, 255, 0.9) 1.6px, transparent 1.7px),
+    radial-gradient(rgba(255, 220, 130, 0.8) 1.3px, transparent 1.4px);
+  background-size: 90px 90px, 130px 130px, 170px 170px;
+  background-position: 10px 15px, 60px 90px, 120px 45px;
 }
 
-/* Columna de datos: media, posición y escudo del equipo, como una FUT card */
+@keyframes raysRotate {
+  from { transform: scale(1.7) rotate(0deg); }
+  to { transform: scale(1.7) rotate(360deg); }
+}
+
+@keyframes floatGlow {
+  0%, 100% { transform: translate(-50%, -50%) scale(0.95); }
+  50% { transform: translate(-50%, -50%) scale(1.05); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(var(--metal-rgb), 0.25)); }
+  50% { filter: drop-shadow(0 0 20px rgba(var(--metal-rgb), 0.65)); }
+}
+
+/* ============================================================
+   STATS — media, posición y escudo del equipo
+============================================================ */
+
 .stats {
   position: absolute;
   top: 7%;
-  left: 9%;
+  left: 8%;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 4px;
-  z-index: 1;
+  gap: 6px;
 }
 
 .rating {
   font-family: var(--font-display);
-  font-weight: 800;
+  font-weight: 900;
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.5px;
-  line-height: 1;
+  letter-spacing: -1px;
+  line-height: 0.9;
   color: var(--metal-light);
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.4), 0 3px 6px rgba(0, 0, 0, 0.55);
 }
 
 .md .rating {
-  font-size: 28px;
+  font-size: 36px;
 }
 
 .sm .rating {
-  font-size: 19px;
+  font-size: 24px;
 }
 
 .pos {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  padding: 2px 8px;
-  border-radius: var(--r-chip);
-  color: var(--noche);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #081019;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.5), 0 2px 6px rgba(0, 0, 0, 0.35);
 }
 
 .sm .pos {
   font-size: 8px;
-  padding: 1px 6px;
+  padding: 2px 7px;
 }
 
-.posPOR {
-  background: var(--pos-por);
-}
-
-.posDEF {
-  background: var(--pos-def);
-}
-
-.posMED {
-  background: var(--pos-med);
-}
-
-.posDEL {
-  background: var(--pos-del);
-}
+.posPOR { background: linear-gradient(#6ce5ff, #1fb3ff); }
+.posDEF { background: linear-gradient(#75ffb7, #2fc87c); }
+.posMED { background: linear-gradient(#ffd866, #ffaf1f); }
+.posDEL { background: linear-gradient(#ff8989, #ff4040); }
 
 .crest {
+  margin-top: 4px;
   display: flex;
-  margin-top: 2px;
-  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5));
+  justify-content: center;
+  align-items: center;
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.25)) drop-shadow(0 3px 5px rgba(0, 0, 0, 0.45));
 }
 
-/* Foto recortada y flotante: más pequeña que el panel, no a sangre completa */
+/* ============================================================
+   FOTO DEL JUGADOR
+============================================================ */
+
 .photoWrap {
   position: absolute;
   left: 50%;
-  top: 30%;
-  width: 58%;
-  height: 42%;
+  top: 24%;
+  width: 62%;
+  height: 46%;
   transform: translateX(-50%);
   overflow: hidden;
-  border-radius: 6px 6px 40% 40%;
-  mask-image: linear-gradient(to bottom, black 72%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to bottom, black 72%, transparent 100%);
+  z-index: 1;
+  border-radius: 10px 10px 40% 40%;
+  mask-image: linear-gradient(to bottom, black 78%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 78%, transparent 100%);
+  filter: drop-shadow(0 0 16px rgba(var(--metal-rgb), 0.35)) drop-shadow(0 8px 18px rgba(0, 0, 0, 0.45));
 }
 
 .photo {
@@ -209,6 +283,12 @@ button.card:focus-visible {
   height: 100%;
   object-fit: cover;
   object-position: top center;
+  transition: transform 0.45s ease, filter 0.45s ease;
+}
+
+button.card:hover .photo {
+  transform: scale(1.05);
+  filter: brightness(1.05) contrast(1.06) saturate(1.06);
 }
 
 .initials {
@@ -218,33 +298,27 @@ button.card:focus-visible {
   align-items: center;
   justify-content: center;
   font-family: var(--font-display);
-  font-weight: 800;
-  color: rgba(244, 246, 251, 0.55);
-}
-
-.bgPOR {
-  background: color-mix(in srgb, var(--pos-por) 30%, var(--tribuna-alta));
-}
-
-.bgDEF {
-  background: color-mix(in srgb, var(--pos-def) 30%, var(--tribuna-alta));
-}
-
-.bgMED {
-  background: color-mix(in srgb, var(--pos-med) 30%, var(--tribuna-alta));
-}
-
-.bgDEL {
-  background: color-mix(in srgb, var(--pos-del) 30%, var(--tribuna-alta));
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.45);
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
 }
 
 .md .initials {
-  font-size: 24px;
+  font-size: 30px;
 }
 
 .sm .initials {
-  font-size: 16px;
+  font-size: 18px;
 }
+
+.bgPOR { background: radial-gradient(circle, #69e6ff 0%, #19314d 100%); }
+.bgDEF { background: radial-gradient(circle, #72ffc2 0%, #163b35 100%); }
+.bgMED { background: radial-gradient(circle, #ffe477 0%, #473818 100%); }
+.bgDEL { background: radial-gradient(circle, #ff9090 0%, #4d1919 100%); }
+
+/* ============================================================
+   INFO — nombre y equipo
+============================================================ */
 
 .info {
   position: absolute;
@@ -255,84 +329,128 @@ button.card:focus-visible {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 3px;
   text-align: center;
 }
 
 .name {
-  font-weight: 800;
-  font-size: 13px;
-  line-height: 1.2;
+  width: 100%;
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 0.3px;
+  line-height: 1.15;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 100%;
+  color: #fff;
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.3), 0 3px 8px rgba(0, 0, 0, 0.65);
 }
 
 .sm .name {
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .teamName {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.2px;
-  color: var(--gris);
+  letter-spacing: 0.3px;
+  color: #d7dce7;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
+  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.65);
 }
 
 .sm .teamName {
   display: none;
 }
 
-/* Barrido de luz sobre el foil, solo al pasar el cursor: la carta "reacciona" como un holográfico */
+/* ============================================================
+   SHINE HOLOGRÁFICO — barrido al pasar el cursor
+============================================================ */
+
 .sheen {
   composes: shield;
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    115deg,
-    transparent 42%,
-    rgba(255, 255, 255, 0.22) 50%,
-    transparent 58%
-  );
-  transform: translateX(-130%);
-  transition: transform 0.5s ease;
+  background: linear-gradient(120deg, transparent 30%, rgba(255, 255, 255, 0.85) 46%, rgba(255, 255, 255, 0.18) 52%, transparent 64%);
+  transform: translateX(-180%) rotate(10deg);
+  transition: transform 0.9s cubic-bezier(0.19, 1, 0.22, 1);
   pointer-events: none;
+  mix-blend-mode: screen;
 }
 
 button.card:hover .sheen {
-  transform: translateX(130%);
+  transform: translateX(180%) rotate(10deg);
 }
+
+/* ============================================================
+   DESTELLOS — puntos de brillo fijos sobre el marco
+============================================================ */
+
+.card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  clip-path: url(#futShield);
+  background:
+    radial-gradient(circle at 22% 20%, rgba(255, 255, 255, 0.65) 0 2px, transparent 3px),
+    radial-gradient(circle at 78% 32%, rgba(255, 255, 255, 0.45) 0 2px, transparent 3px),
+    radial-gradient(circle at 35% 70%, rgba(255, 220, 120, 0.55) 0 2px, transparent 3px),
+    radial-gradient(circle at 70% 78%, rgba(var(--metal-rgb), 0.5) 0 2px, transparent 3px);
+  opacity: 0.65;
+}
+
+/* ============================================================
+   OWNER / CAPITÁN
+============================================================ */
 
 .owner {
   position: absolute;
-  bottom: -18px;
   left: 0;
   right: 0;
+  bottom: -22px;
   text-align: center;
   font-size: 11px;
-  color: var(--oro);
+  font-weight: 700;
+  color: #ffd86f;
+  text-shadow: 0 0 8px rgba(255, 215, 100, 0.45);
 }
 
 .captain {
   position: absolute;
-  top: -6px;
+  top: -8px;
   right: 4%;
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
-  background: var(--oro);
-  color: var(--noche);
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 13px;
   display: flex;
-  align-items: center;
   justify-content: center;
-  box-shadow: var(--shadow-card);
+  align-items: center;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 900;
+  color: #2a1b00;
+  background: radial-gradient(circle at 30% 30%, #fff7b5, #ffd343 60%, #b57900);
+  box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.6), 0 0 10px rgba(255, 215, 90, 0.65), 0 4px 10px rgba(0, 0, 0, 0.45);
   z-index: 2;
+}
+
+.sm .captain {
+  width: 20px;
+  height: 20px;
+  font-size: 11px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .card *,
+  .card *::before,
+  .card *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
