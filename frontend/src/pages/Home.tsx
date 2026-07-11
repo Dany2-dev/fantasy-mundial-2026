@@ -2,7 +2,19 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import Flag from "../components/Flag";
-import { IconArrowRight, IconBall, IconCards, IconCoin, IconExchange, IconPack, IconTrophy } from "../components/icons";
+import {
+  IconArrowRight,
+  IconBall,
+  IconCalendar,
+  IconCards,
+  IconClock,
+  IconCoin,
+  IconExchange,
+  IconGamepad,
+  IconPack,
+  IconTrophy,
+  IconUsers,
+} from "../components/icons";
 import PlayerCard from "../components/PlayerCard";
 import PlayerDetailModal from "../components/PlayerDetailModal";
 import { fetchCollection } from "../store/collectionSlice";
@@ -40,6 +52,10 @@ const MENU: MenuItem[] = [
   { to: "/once", title: "Mi once", desc: "Coloca tus cartas en el césped.", Icon: IconBall, accent: "green", },
   { to: "/coleccion", title: "Mi colección", desc: "Todas tus cartas.", Icon: IconCards, accent: "gold" },
   { to: "/mercado", title: "Mercado", desc: "Compra, vende, negocia.", Icon: IconExchange, accent: "blue" },
+  { to: "/partidos", title: "Partidos", desc: "Calendario en vivo de tu competencia.", Icon: IconCalendar, accent: "red" },
+  { to: "/rivales", title: "Rivales", desc: "Los mánagers de tu liga.", Icon: IconUsers, accent: "green" },
+  { to: "/historial", title: "Historial", desc: "Tus jornadas y tus movimientos.", Icon: IconClock, accent: "gold" },
+  { to: "/jugar", title: "Jugar", desc: "Minijuegos para ganar monedas.", Icon: IconGamepad, accent: "blue" },
 ];
 
 export default function Home() {

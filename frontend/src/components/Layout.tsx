@@ -1,38 +1,69 @@
 import { motion } from "motion/react";
 import { useEffect, useState } from "react";
-import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import { useScrollHidden } from "../hooks/useScrollHidden";
 import { logout } from "../store/authSlice";
 import { clearLeagues, setActiveLeague } from "../store/leagueSlice";
 import { useAppDispatch, useAppSelector } from "../store/store";
 import { Trade } from "../types";
-import { IconBall, IconCards, IconCoin, IconExchange, IconHome, IconLogOut, IconPack, IconTrophy } from "./icons";
+import {
+  IconBall,
+  IconCalendar,
+  IconCards,
+  IconClock,
+  IconClose,
+  IconCoin,
+  IconExchange,
+  IconGamepad,
+  IconHome,
+  IconLogOut,
+  IconMore,
+  IconPack,
+  IconTrophy,
+  IconUsers,
+} from "./icons";
 import styles from "./Layout.module.css";
 import StickyBanner from "./StickyBanner";
 
-const NAV = [
+// Los 5 de uso diario van siempre visibles en el tab bar móvil.
+const PRIMARY_NAV = [
   { to: "/", label: "Inicio", Icon: IconHome },
   { to: "/sobres", label: "Sobres", Icon: IconPack },
   { to: "/coleccion", label: "Colección", Icon: IconCards },
   { to: "/once", label: "Mi Once", Icon: IconBall },
   { to: "/mercado", label: "Mercado", Icon: IconExchange },
-  { to: "/ligas", label: "Ligas", Icon: IconTrophy },
 ];
+// El resto vive detrás de "Más" en móvil; en escritorio el riel ya cabe todo.
+const MORE_NAV = [
+  { to: "/ligas", label: "Ligas", Icon: IconTrophy },
+  { to: "/partidos", label: "Partidos", Icon: IconCalendar },
+  { to: "/rivales", label: "Rivales", Icon: IconUsers },
+  { to: "/historial", label: "Historial", Icon: IconClock },
+  { to: "/jugar", label: "Jugar", Icon: IconGamepad },
+];
+const NAV = [...PRIMARY_NAV, ...MORE_NAV];
 
 export default function Layout() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   const user = useAppSelector((s) => s.auth.user);
   const { leagues, activeLeagueId } = useAppSelector((s) => s.leagues);
   const [offer, setOffer] = useState<Trade | null>(null);
+  const [moreOpen, setMoreOpen] = useState(false);
   const hidden = useScrollHidden();
+  const moreActive = MORE_NAV.some((item) => location.pathname === item.to);
 
   function handleLogout() {
     dispatch(logout());
     dispatch(clearLeagues());
     navigate("/acceso");
   }
+
+  useEffect(() => {
+    setMoreOpen(false);
+  }, [location.pathname]);
 
   useEffect(() => {
     if (!activeLeagueId || !user) {
@@ -132,6 +163,28 @@ export default function Layout() {
         </main>
       </div>
 
+      {/* Móvil: hoja con el resto de páginas, se abre desde "Más". */}
+      {moreOpen && (
+        <div className={styles.moreBackdrop} onClick={() => setMoreOpen(false)}>
+          <div className={styles.moreSheet} onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Más páginas">
+            <div className={styles.moreHead}>
+              <span className={styles.moreTitle}>Más</span>
+              <button className={styles.moreClose} onClick={() => setMoreOpen(false)} aria-label="Cerrar">
+                <IconClose size={18} />
+              </button>
+            </div>
+            <div className={styles.moreGrid}>
+              {MORE_NAV.map(({ to, label, Icon }) => (
+                <NavLink key={to} to={to} className={styles.moreItem}>
+                  <Icon size={22} aria-hidden="true" />
+                  <span>{label}</span>
+                </NavLink>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Móvil: tab bar inferior, se oculta al bajar para liberar pantalla. */}
       <motion.nav
         className={styles.mobileNav}
@@ -139,7 +192,7 @@ export default function Layout() {
         animate={{ y: hidden ? "100%" : "0%" }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
       >
-        {NAV.map(({ to, label, Icon }) => (
+        {PRIMARY_NAV.map(({ to, label, Icon }) => (
           <NavLink
             key={to}
             to={to}
@@ -150,6 +203,13 @@ export default function Layout() {
             <span className={styles.mobileLabel}>{label}</span>
           </NavLink>
         ))}
+        <button
+          className={`${styles.mobileItem} ${moreActive ? styles.active : ""}`}
+          onClick={() => setMoreOpen((v) => !v)}
+        >
+          <IconMore size={20} aria-hidden="true" />
+          <span className={styles.mobileLabel}>Más</span>
+        </button>
       </motion.nav>
     </div>
   );
