@@ -13,9 +13,6 @@
     "recompute": "tsx src/scripts/recompute.ts",
     "db:studio": "prisma studio"
   },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
-  },
   "dependencies": {
     "@prisma/client": "^6.19.0",
     "bcryptjs": "^3.0.2",
@@ -29,6 +26,7 @@
     "@types/express": "^4.17.21",
     "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "^22.10.0",
+    "dotenv": "^17.4.2",
     "prisma": "^6.19.0",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
