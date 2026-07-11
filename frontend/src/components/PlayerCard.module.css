@@ -85,15 +85,40 @@ button.card:focus-visible {
   filter: drop-shadow(0 0 0 3px var(--oro)) drop-shadow(0 0 16px rgba(240, 194, 75, 0.55));
 }
 
-/* Panel: capa interior oscura, inset uniforme sobre el foil = borde metálico */
+/* Panel: capa interior con degradado de color (según rareza), inset uniforme sobre el foil = borde metálico */
 .panel {
   composes: shield;
   position: absolute;
   inset: 3px;
   overflow: hidden;
   background:
-    radial-gradient(120% 70% at 50% 0%, rgba(var(--metal-rgb), 0.16), transparent 60%),
-    var(--tribuna);
+    radial-gradient(140% 90% at 18% -8%, rgba(var(--metal-rgb), 0.45), transparent 55%),
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--metal-light) 22%, var(--tribuna)) 0%,
+      var(--tribuna) 42%,
+      var(--tribuna-alta) 100%
+    );
+}
+
+.panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    135deg,
+    transparent 0 14px,
+    rgba(255, 255, 255, 0.035) 14px 15px
+  );
+  pointer-events: none;
+}
+
+.panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(11, 18, 32, 0.62) 0%, transparent 34%);
+  pointer-events: none;
 }
 
 .sm .panel {

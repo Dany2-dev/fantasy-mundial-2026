@@ -1,8 +1,9 @@
 import { motion } from "motion/react";
-import { useEffect, useState } from "react";
+import { CSSProperties, useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import { useScrollHidden } from "../hooks/useScrollHidden";
+import { competitionTheme } from "../lib/competitionTheme";
 import { logout } from "../store/authSlice";
 import { clearLeagues, setActiveLeague } from "../store/leagueSlice";
 import { useAppDispatch, useAppSelector } from "../store/store";
@@ -54,6 +55,8 @@ export default function Layout() {
   const [moreOpen, setMoreOpen] = useState(false);
   const hidden = useScrollHidden();
   const moreActive = MORE_NAV.some((item) => location.pathname === item.to);
+  const activeLeague = leagues.find((l) => l.id === activeLeagueId);
+  const theme = competitionTheme(activeLeague?.competition?.name);
 
   function handleLogout() {
     dispatch(logout());
@@ -79,7 +82,10 @@ export default function Layout() {
   }, [activeLeagueId, user]);
 
   return (
-    <div className={styles.shell}>
+    <div
+      className={styles.shell}
+      style={{ "--league-c1": theme.c1, "--league-c2": theme.c2 } as CSSProperties}
+    >
       {/* Escritorio: riel fijo a la izquierda que se expande al pasar el cursor. */}
       <aside className={styles.sidebar} aria-label="Navegación principal">
         <nav className={styles.sidebarNav}>
@@ -161,6 +167,18 @@ export default function Layout() {
         <main className={styles.main}>
           <Outlet />
         </main>
+
+        <footer className={styles.footer}>
+          <div className={styles.footerInner}>
+            <span className={styles.footerLogo}>
+              FM<span className={styles.logoYear}>26</span>
+            </span>
+            <p className={styles.footerText}>
+              Proyecto Integrador · Diseño de Interfaces · Datos en vivo cortesía de FotMob.
+            </p>
+            <p className={styles.footerCredit}>Fantasy Mundial 2026 — hecho por estudiantes, no afiliado a la FIFA.</p>
+          </div>
+        </footer>
       </div>
 
       {/* Móvil: hoja con el resto de páginas, se abre desde "Más". */}
