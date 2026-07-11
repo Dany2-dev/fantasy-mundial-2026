@@ -2,29 +2,48 @@
    Mundial 2026), aislado del resto de la app: solo variables locales,
    no toca las variables.css globales que usan el resto de páginas. */
 .page {
-  --hbg: #ffffff;
+  --hbg: #f7f8fa;
   --hcard: #ffffff;
-  --hcard-hi: #f1f4f8;
-  --hborder: #e3e8ef;
-  --hink: #0d1117;
-  --hmuted: #5b6675;
-  --hred: #e61d25;
-  --hblue: #2a398d;
-  --hblue2: #2f43c4;
-  --hgreen: #2fa84f;
-  --hgold: #f3c14a;
-  --hgold2: #d49a17;
+  --hcard-hi: #f0f2f5;
+  --hborder: #dfe3e8;
+  --hink: #101318;
+  --hmuted: #68717d;
+  --hred: #ef233c;
+  --hblue: #2539a8;
+  --hblue2: #3155e7;
+  --hgreen: #12a150;
+  --hgold: #ffc83d;
+  --hgold2: #b87a00;
+  --sport-shadow: 0 18px 45px -32px rgba(9, 15, 28, 0.5);
+  --sport-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
 
-  background: var(--hbg);
+  position: relative;
+  isolation: isolate;
   color: var(--hink);
   font-family: var(--font-body);
   display: flex;
   flex-direction: column;
   gap: var(--sp-6);
+  background:
+    radial-gradient(circle at 8% 4%, rgba(49, 85, 231, 0.07), transparent 24rem),
+    radial-gradient(circle at 92% 28%, rgba(18, 161, 80, 0.055), transparent 22rem),
+    var(--hbg);
 
   /* Bleed a blanco sólido hasta el borde del layout, cancelando el padding de .main */
   margin: calc(-1 * var(--sp-5)) calc(-1 * var(--sp-4)) -96px;
   padding: var(--sp-5) var(--sp-4) 96px;
+}
+
+.page::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.22;
+  background-image: linear-gradient(rgba(16, 19, 24, 0.035) 1px, transparent 1px);
+  background-size: 100% 48px;
+  mask-image: linear-gradient(to bottom, #000, transparent 72%);
 }
 
 @media (min-width: 720px) {
@@ -67,27 +86,65 @@
 /* ---------- Botones propios (CTA roja del sistema 60-30-10) ---------- */
 .ctaPrimary,
 .ctaGhost {
+  position: relative;
+  overflow: hidden;
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  min-height: 46px;
   padding: 13px 22px;
-  border-radius: 12px;
+  border-radius: 10px;
   font-weight: 800;
   font-size: 15px;
+  letter-spacing: 0.01em;
   border: 1px solid transparent;
-  transition: transform 0.12s ease, filter 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 220ms var(--sport-ease), box-shadow 220ms var(--sport-ease), background-color 180ms ease,
+    border-color 180ms ease;
 }
 
 .ctaPrimary:hover,
 .ctaGhost:hover {
-  filter: brightness(1.05);
-  transform: translateY(-1px);
+  filter: none;
+  transform: translateY(-2px);
+}
+
+.ctaPrimary:active,
+.ctaGhost:active,
+.menuTile:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.ctaPrimary:focus-visible,
+.ctaGhost:focus-visible,
+.sectionLink:focus-visible,
+.menuTile:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--hblue2) 35%, transparent);
+  outline-offset: 3px;
 }
 
 .ctaPrimary {
-  background: linear-gradient(135deg, #ff2d36 0%, var(--hred) 55%, #b3141b 100%);
+  background: linear-gradient(135deg, #ff3049, var(--hred));
   color: #fff;
-  box-shadow: 0 8px 22px -10px var(--hred);
+  box-shadow: 0 10px 24px -12px rgba(239, 35, 60, 0.8);
+}
+
+.ctaPrimary:hover {
+  box-shadow: 0 14px 28px -12px rgba(239, 35, 60, 0.85);
+}
+
+.ctaPrimary::after {
+  content: "";
+  position: absolute;
+  inset: -80% auto -80% -45%;
+  width: 30%;
+  transform: rotate(18deg);
+  background: rgba(255, 255, 255, 0.35);
+  transition: translate 500ms var(--sport-ease);
+}
+
+.ctaPrimary:hover::after {
+  translate: 500% 0;
 }
 
 .ctaGhost {
@@ -108,6 +165,14 @@
   background: var(--hcard-hi);
   border: 1px solid var(--hborder);
   color: var(--hink);
+  font-variant-numeric: tabular-nums;
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.65);
+  transition: transform 200ms var(--sport-ease), box-shadow 200ms ease;
+}
+
+.chip:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px -14px currentColor;
 }
 
 .chip[data-accent="red"] {
@@ -138,11 +203,24 @@
 .hero {
   position: relative;
   overflow: hidden;
-  border-radius: 22px;
-  border: 1px solid var(--hborder);
-  min-height: 300px;
   display: flex;
   align-items: center;
+  min-height: clamp(320px, 42vw, 430px);
+  border: 0;
+  border-radius: 24px;
+  background: #e9edf2;
+  box-shadow: 0 25px 65px -38px rgba(9, 15, 28, 0.7);
+}
+
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 4px;
+  z-index: 2;
+  background: linear-gradient(90deg, var(--hred) 0 33%, var(--hblue2) 33% 66%, var(--hgreen) 66%);
+  transform-origin: left;
+  animation: sport-line-in 900ms 180ms var(--sport-ease) both;
 }
 
 .heroArt {
@@ -151,13 +229,22 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  opacity: 0.85;
+  opacity: 0.92;
+  transform: scale(1.025);
+  transition: transform 900ms var(--sport-ease), filter 500ms ease;
+}
+
+.hero:hover .heroArt {
+  transform: scale(1.065);
+  filter: saturate(1.08) contrast(1.03);
 }
 
 .heroWash {
   position: absolute;
   inset: 0;
-  background: linear-gradient(100deg, #fff 0%, rgba(255, 255, 255, 0.94) 38%, rgba(255, 255, 255, 0.55) 68%, rgba(255, 255, 255, 0.18) 100%);
+  background:
+    linear-gradient(100deg, rgba(255, 255, 255, 0.99) 0%, rgba(255, 255, 255, 0.94) 43%, rgba(255, 255, 255, 0.54) 72%, rgba(255, 255, 255, 0.08) 100%),
+    linear-gradient(135deg, transparent 60%, rgba(49, 85, 231, 0.16));
 }
 
 .heroGrid {
@@ -167,21 +254,38 @@
   grid-template-columns: 1.5fr 0.5fr;
   gap: var(--sp-5);
   align-items: center;
-  padding: var(--sp-6) var(--sp-6);
+  padding: clamp(24px, 5vw, 56px);
   width: 100%;
 }
 
 .heroTitle {
-  font-size: clamp(28px, 5vw, 42px);
+  max-width: 14ch;
+  font-size: clamp(34px, 5.5vw, 58px);
   font-weight: 900;
-  line-height: 1.05;
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+  text-wrap: balance;
   margin: var(--sp-3) 0 var(--sp-2);
   color: var(--hink);
-  letter-spacing: -0.5px;
 }
 
 .heroName {
+  position: relative;
+  display: inline-block;
   color: var(--hred);
+}
+
+.heroName::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -5px;
+  height: 3px;
+  border-radius: 999px;
+  background: currentColor;
+  transform-origin: left;
+  animation: sport-line-in 700ms 500ms var(--sport-ease) both;
 }
 
 .heroSub {
@@ -212,17 +316,29 @@
 }
 
 .hEyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font-size: 12px;
   font-weight: 800;
   color: var(--hmuted);
-  letter-spacing: 1px;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
+}
+
+.hEyebrow::before {
+  content: "";
+  width: 20px;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--hred);
 }
 
 .showcaseCardWrap {
   width: 100%;
   max-width: 178px;
   position: relative;
+  animation: sport-float 5s ease-in-out infinite;
 }
 
 .showcaseCardWrap::before {
@@ -233,6 +349,10 @@
   filter: blur(30px);
   opacity: 0.5;
   z-index: -1;
+}
+
+.glow-legendario::before {
+  background: radial-gradient(circle, rgba(190, 110, 255, 0.6), transparent 70%);
 }
 
 .glow-oro::before {
@@ -248,6 +368,15 @@
 }
 
 @media (max-width: 860px) {
+  .hero {
+    min-height: 460px;
+    align-items: flex-end;
+  }
+
+  .heroWash {
+    background: linear-gradient(0deg, #fff 0%, rgba(255, 255, 255, 0.96) 48%, rgba(255, 255, 255, 0.18) 100%);
+  }
+
   .heroGrid {
     grid-template-columns: 1fr;
     padding: var(--sp-5);
@@ -255,6 +384,11 @@
 
   .heroAside {
     order: -1;
+    align-items: flex-start;
+  }
+
+  .showcaseCardWrap {
+    max-width: 130px;
   }
 }
 
@@ -269,14 +403,36 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
 }
 
 .sectionHead h2,
 .sectionTitle {
+  position: relative;
   font-size: 21px;
   font-weight: 900;
+  letter-spacing: -0.025em;
   margin: 0;
   color: var(--hink);
+}
+
+.sectionHead h2::after,
+.sectionTitle::after {
+  content: "";
+  display: block;
+  width: 54px;
+  height: 3px;
+  margin-top: 7px;
+  border-radius: 999px;
+  background: var(--hred);
+  transform: scaleX(0.556); /* 30px en reposo, 54px al hover */
+  transform-origin: left;
+  transition: transform 250ms var(--sport-ease);
+}
+
+.section:hover .sectionHead h2::after,
+.section:hover .sectionTitle::after {
+  transform: scaleX(1);
 }
 
 .sectionLink {
@@ -287,10 +443,12 @@
   font-size: 14px;
   font-weight: 700;
   text-decoration: none;
+  transition: color 180ms ease, transform 200ms var(--sport-ease);
 }
 
 .sectionLink:hover {
-  color: var(--hink);
+  color: var(--hblue2);
+  transform: translateX(3px);
 }
 
 .showcaseRow {
@@ -298,11 +456,15 @@
   gap: var(--sp-3);
   overflow-x: auto;
   padding: 4px 4px 14px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--hborder) transparent;
+  scroll-snap-type: x proximity;
 }
 
 .showcaseMini {
   width: 138px;
   flex: 0 0 auto;
+  scroll-snap-align: start;
 }
 
 /* ---------- Tarjetas blancas ---------- */
@@ -310,10 +472,17 @@
   position: relative;
   overflow: hidden;
   background: var(--hcard);
-  border: 1px solid var(--hborder);
-  border-radius: 18px;
+  border: 1px solid color-mix(in srgb, var(--hborder) 88%, transparent);
+  border-radius: 16px;
   padding: var(--sp-5);
-  box-shadow: 0 8px 24px -18px rgba(13, 17, 23, 0.5);
+  box-shadow: var(--sport-shadow);
+  transition: transform 250ms var(--sport-ease), box-shadow 250ms ease, border-color 200ms ease;
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--hblue2) 18%, var(--hborder));
+  box-shadow: 0 24px 48px -34px rgba(9, 15, 28, 0.65);
 }
 
 .cardWatermark {
@@ -339,6 +508,9 @@
 }
 
 .liveBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 3px 10px;
   border-radius: 999px;
   background: var(--hred);
@@ -346,6 +518,16 @@
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.4px;
+  box-shadow: 0 6px 14px -8px rgba(239, 35, 60, 0.9);
+}
+
+.liveBadge::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #fff;
+  animation: sport-pulse 1.6s ease-out infinite;
 }
 
 .matchCard {
@@ -388,6 +570,8 @@
   font-family: var(--font-display);
   font-weight: 900;
   font-size: 26px;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
   color: var(--hink);
 }
 
@@ -413,17 +597,30 @@
 }
 
 .standingsList li {
+  position: relative;
   display: grid;
   grid-template-columns: 22px 1fr auto;
   align-items: center;
   gap: var(--sp-2);
-  padding: 7px 0;
+  padding: 7px 8px;
+  border-radius: 8px;
   font-size: 14.5px;
   border-bottom: 1px solid var(--hborder);
+  transition: background-color 180ms ease, transform 200ms var(--sport-ease);
 }
 
 .standingsList li:last-child {
   border-bottom: none;
+}
+
+.standingsList li:hover {
+  background: var(--hcard-hi);
+  transform: translateX(3px);
+}
+
+.standingsList li.me {
+  background: color-mix(in srgb, var(--hred) 7%, transparent);
+  box-shadow: inset 3px 0 var(--hred);
 }
 
 .standingsRank {
@@ -461,7 +658,7 @@
 .menuGrid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: var(--sp-3);
+  gap: clamp(10px, 2vw, 16px);
 }
 
 @media (min-width: 640px) {
@@ -477,23 +674,42 @@
 
 .menuTile {
   position: relative;
+  isolation: isolate;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  min-height: 148px;
+  min-height: 162px;
   padding: var(--sp-4);
   border-radius: 16px;
-  border: 1px solid var(--hborder);
+  border: 1px solid color-mix(in srgb, var(--hborder) 88%, transparent);
   background: var(--hcard);
   color: var(--hink);
   text-decoration: none;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: var(--sport-shadow);
+  transition: transform 260ms var(--sport-ease), box-shadow 260ms ease, border-color 200ms ease;
 }
 
 .menuTile:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 16px 32px -18px rgba(13, 17, 23, 0.35);
+  transform: translateY(-5px);
+  border-color: color-mix(in srgb, var(--tile-accent, var(--hink)) 28%, var(--hborder));
+  box-shadow: 0 24px 44px -30px rgba(9, 15, 28, 0.7);
+}
+
+.menuTile::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 3px;
+  z-index: 2;
+  background: var(--tile-accent, var(--hink));
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 300ms var(--sport-ease);
+}
+
+.menuTile:hover::after {
+  transform: scaleX(1);
 }
 
 .menuPhoto {
@@ -502,12 +718,18 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 650ms var(--sport-ease), filter 400ms ease;
+}
+
+.menuTile:hover .menuPhoto {
+  transform: scale(1.07);
+  filter: saturate(1.1) contrast(1.04);
 }
 
 .menuPhotoWash {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(13, 17, 23, 0.15) 0%, rgba(13, 17, 23, 0.78) 100%);
+  background: linear-gradient(180deg, rgba(9, 15, 28, 0.04) 0%, rgba(9, 15, 28, 0.88) 100%);
 }
 
 .menuTile[data-accent] .menuPhoto,
@@ -529,10 +751,15 @@
   justify-content: center;
   width: 44px;
   height: 44px;
-  border-radius: 12px;
+  border-radius: 10px;
   background: var(--hcard-hi);
   color: var(--hink);
   margin-bottom: 4px;
+  transition: transform 260ms var(--sport-ease), background-color 200ms ease;
+}
+
+.menuTile:hover .menuIcon {
+  transform: rotate(-5deg) scale(1.08);
 }
 
 .menuTitle {
@@ -550,6 +777,25 @@
 .menuArrow {
   align-self: flex-end;
   color: var(--hmuted);
+  transition: transform 250ms var(--sport-ease), color 180ms ease;
+}
+
+.menuTile:hover .menuArrow {
+  color: var(--tile-accent, var(--hink));
+  transform: translateX(4px);
+}
+
+.menuTile[data-accent="red"] {
+  --tile-accent: var(--hred);
+}
+.menuTile[data-accent="blue"] {
+  --tile-accent: var(--hblue2);
+}
+.menuTile[data-accent="green"] {
+  --tile-accent: var(--hgreen);
+}
+.menuTile[data-accent="gold"] {
+  --tile-accent: var(--hgold2);
 }
 
 .menuTile[data-accent="red"] .menuIcon {
@@ -586,4 +832,53 @@
 
 .menuTile:has(.menuPhoto) .menuArrow {
   color: #fff;
+}
+
+.ctaPrimary,
+.ctaGhost,
+.menuTile,
+.card,
+.chip,
+.emptyBadge {
+  -webkit-tap-highlight-color: transparent;
+}
+
+@keyframes sport-line-in {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes sport-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-0.5deg);
+  }
+  50% {
+    transform: translateY(-7px) rotate(0.5deg);
+  }
+}
+
+@keyframes sport-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.8);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 7px rgba(255, 255, 255, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page *,
+  .page *::before,
+  .page *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
