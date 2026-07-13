@@ -10,7 +10,6 @@ import matchesRouter from "./routes/matches";
 import packsRouter from "./routes/packs";
 import playersRouter from "./routes/players";
 import squadRouter from "./routes/squad";
-import statsRouter from "./routes/stats";
 import tradesRouter from "./routes/trades";
 
 const app = express();
@@ -30,7 +29,6 @@ app.use("/api/trades", tradesRouter);
 app.use("/api/matches", matchesRouter);
 app.use("/api/clause", clauseRouter);
 app.use("/api/listings", listingsRouter);
-app.use("/api", statsRouter); // /api/standings, /api/scorers
 
 // Manejador de errores: nunca filtrar detalles internos al cliente
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
