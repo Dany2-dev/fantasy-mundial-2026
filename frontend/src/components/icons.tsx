@@ -123,3 +123,53 @@ export function IconArrowRight(props: IconProps) {
     </svg>
   );
 }
+
+export function IconCalendar(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <rect x="4" y="5.5" width="16" height="15" rx="2" />
+      <path d="M4 10h16M8 3.5v3.5M16 3.5v3.5" />
+    </svg>
+  );
+}
+
+export function IconUsers(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <circle cx="9" cy="8.5" r="3" />
+      <path d="M3.5 20c0-3.3 2.5-5.5 5.5-5.5s5.5 2.2 5.5 5.5" />
+      <path d="M15.5 6.2A3 3 0 1 1 16.8 12" />
+      <path d="M17.5 14.7c2.4.5 3.9 2.4 4 5.3" />
+    </svg>
+  );
+}
+
+export function IconClock(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7.5V12l3.2 2" />
+    </svg>
+  );
+}
+
+export function IconGamepad(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M7 8.5h10a4.5 4.5 0 0 1 4.5 4.5v2a3 3 0 0 1-3 3c-1 0-1.6-.5-2.3-1.3l-1-1.2a2 2 0 0 0-1.5-.7h-3.4a2 2 0 0 0-1.5.7l-1 1.2C7.1 17.5 6.5 18 5.5 18a3 3 0 0 1-3-3v-2A4.5 4.5 0 0 1 7 8.5Z" />
+      <path d="M9 12h-3M7.5 10.5v3" />
+      <circle cx="16" cy="11" r="0.9" fill="currentColor" stroke="none" />
+      <circle cx="18" cy="13" r="0.9" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+export function IconMore(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <circle cx="5" cy="12" r="1.4" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none" />
+      <circle cx="19" cy="12" r="1.4" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}

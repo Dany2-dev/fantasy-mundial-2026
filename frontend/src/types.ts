@@ -72,6 +72,13 @@ export interface MarketCard extends Player {
   owner: { id: string; name: string };
 }
 
+export interface GameweekScore {
+  gameweek: number;
+  gameweekLabel: string;
+  status: "upcoming" | "finished";
+  points: number;
+}
+
 export interface Trade {
   id: string;
   leagueId: string;
@@ -153,9 +160,10 @@ export interface Listing {
   seller: { id: string; name: string };
 }
 
-export type Rarity = "oro" | "plata" | "bronce";
+export type Rarity = "legendario" | "oro" | "plata" | "bronce";
 
 export function rarityOf(rating: number): Rarity {
+  if (rating >= 90) return "legendario";
   if (rating >= 85) return "oro";
   if (rating >= 78) return "plata";
   return "bronce";

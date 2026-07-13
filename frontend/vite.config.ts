@@ -9,4 +9,16 @@ export default defineConfig({
       "/api": "http://localhost:4000",
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ["react", "react-dom", "react-router-dom"],
+          redux: ["@reduxjs/toolkit", "react-redux"],
+          motion: ["motion"],
+          ogl: ["ogl"],
+        },
+      },
+    },
+  },
 });
