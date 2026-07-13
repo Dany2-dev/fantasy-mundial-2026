@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { getLeague } from "../lib/fotmob";
 import { prisma } from "../lib/prisma";
 import { gwLabel } from "../lib/rounds";
 import { requireAuth } from "../middleware/auth";
@@ -6,19 +7,22 @@ import { syncResults } from "../services/sync";
 
 const router = Router();
 
-function shape(m: {
-  id: number;
-  homeName: string;
-  awayName: string;
-  group: string | null;
-  round: number | null;
-  utcTime: Date | null;
-  status: string;
-  homeScore: number | null;
-  awayScore: number | null;
-  homeTeam: { flag: string | null; logoUrl: string | null } | null;
-  awayTeam: { flag: string | null; logoUrl: string | null } | null;
-}) {
+function shape(
+  m: {
+    id: number;
+    homeName: string;
+    awayName: string;
+    group: string | null;
+    round: number | null;
+    utcTime: Date | null;
+    status: string;
+    homeScore: number | null;
+    awayScore: number | null;
+    homeTeam: { flag: string | null; logoUrl: string | null } | null;
+    awayTeam: { flag: string | null; logoUrl: string | null } | null;
+  },
+  liveMinute: string | null = null
+) {
   return {
     id: m.id,
     home: { name: m.homeName, flag: m.homeTeam?.flag ?? null, logoUrl: m.homeTeam?.logoUrl ?? null },
@@ -30,6 +34,7 @@ function shape(m: {
     status: m.status,
     homeScore: m.homeScore,
     awayScore: m.awayScore,
+    liveMinute,
   };
 }
 
@@ -37,6 +42,35 @@ const withTeams = {
   homeTeam: { select: { flag: true, logoUrl: true } },
   awayTeam: { select: { flag: true, logoUrl: true } },
 } as const;
+
+// Consulta a FotMob el minuto en vivo ("45'", "90+2'") de los partidos "live" y lo
+// indexa por fotmobId. Si FotMob falla, devolvemos mapa vacío: nunca tumbamos la ruta.
+async function liveMinutesByFotmobId(
+  liveMatches: { fotmobId: number; competitionId: number }[]
+): Promise<Map<number, string | null>> {
+  const map = new Map<number, string | null>();
+  if (liveMatches.length === 0) return map;
+
+  const competitionIds = [...new Set(liveMatches.map((m) => m.competitionId))];
+  const competitions = await prisma.competition.findMany({
+    where: { id: { in: competitionIds } },
+    select: { fotmobId: true },
+  });
+
+  await Promise.all(
+    competitions.map(async (c) => {
+      try {
+        const { matches } = await getLeague(c.fotmobId);
+        for (const m of matches) {
+          if (m.liveMinute != null) map.set(m.fotmobId, m.liveMinute);
+        }
+      } catch (e) {
+        console.warn(`   ⚠️  liveMinute falló para competencia fotmob ${c.fotmobId}: ${(e as Error).message}`);
+      }
+    })
+  );
+  return map;
+}
 
 // Calendario real (opcional ?competitionId= ?status= ?round=).
 router.get("/", requireAuth, async (req, res) => {
@@ -50,7 +84,10 @@ router.get("/", requireAuth, async (req, res) => {
     include: withTeams,
     orderBy: { utcTime: "asc" },
   });
-  res.json({ matches: matches.map(shape) });
+  const liveMap = await liveMinutesByFotmobId(
+    matches.filter((m) => m.status === "live").map((m) => ({ fotmobId: m.fotmobId, competitionId: m.competitionId }))
+  );
+  res.json({ matches: matches.map((m) => shape(m, liveMap.get(m.fotmobId) ?? null)) });
 });
 
 // Partidos en vivo ahora mismo (opcional ?competitionId=).
@@ -64,7 +101,10 @@ router.get("/live", requireAuth, async (req, res) => {
     include: withTeams,
     orderBy: { utcTime: "asc" },
   });
-  res.json({ matches: matches.map(shape) });
+  const liveMap = await liveMinutesByFotmobId(
+    matches.map((m) => ({ fotmobId: m.fotmobId, competitionId: m.competitionId }))
+  );
+  res.json({ matches: matches.map((m) => shape(m, liveMap.get(m.fotmobId) ?? null)) });
 });
 
 // Disparo de sincronización de puntos (protegido con token para pipeline/cron).
