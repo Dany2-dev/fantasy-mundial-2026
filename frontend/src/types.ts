@@ -112,6 +112,42 @@ export interface Match {
   status: "scheduled" | "live" | "finished";
   homeScore: number | null;
   awayScore: number | null;
+  // Minuto en vivo ("45'", "90+2'") — FotMob ya lo provee; el endpoint lo
+  // expondrá después. Mientras tanto llega undefined y la UI muestra solo "EN VIVO".
+  liveMinute?: string | null;
+}
+
+export interface StandingRow {
+  teamId: number;
+  name: string;
+  flag: string | null;
+  logoUrl: string | null;
+  played: number;
+  won: number;
+  drawn: number;
+  lost: number;
+  goalsFor: number;
+  goalsAgainst: number;
+  goalDiff: number;
+  points: number;
+}
+
+export interface StandingsGroup {
+  group: string;
+  rows: StandingRow[];
+}
+
+export interface ScorerRow {
+  playerId: number;
+  name: string;
+  photoUrl: string | null;
+  position: string;
+  teamId: number;
+  teamName: string;
+  teamFlag: string | null;
+  teamLogo: string | null;
+  goals: number;
+  assists: number;
 }
 
 export interface PlayerStatMatch {
