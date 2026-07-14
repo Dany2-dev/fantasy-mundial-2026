@@ -101,8 +101,8 @@
   border-radius: var(--r-chip);
   background: var(--foil);
   color: #1a130a;
-  font-family: var(--font-display);
-  font-weight: 800;
+  font-family: var(--font-sport);
+  font-weight: 400;
   font-size: 12px;
   letter-spacing: 1.5px;
   text-transform: uppercase;

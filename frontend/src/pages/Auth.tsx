@@ -96,25 +96,25 @@ const PRODUCT_CARDS = [
   {
     Icon: IconExchange,
     title: "Mercado en vivo",
-    description: "Pon precio a tus cartas o ficha las de otros mánagers de tu liga en tiempo real.",
+    description: "Pon una carta a la venta, manda ofertas y busca el fichaje que puede cambiar tu liga.",
   },
   {
     Icon: IconClock,
-    title: "Partidos reales",
-    description: "Calendario, resultados y tabla general de la competencia que elegiste, cortesía de FotMob.",
+    title: "El fútbol real manda",
+    description: "Sigue el calendario, los resultados y la tabla de tu competencia con datos de FotMob.",
   },
   {
     Icon: IconCards,
-    title: "Historial completo",
-    description: "Cada cláusula, cada venta, cada jornada — todo tu recorrido queda registrado.",
+    title: "Tu historia, jugada a jugada",
+    description: "Jornadas y tratos: cada movimiento que cambió el rumbo de tu club queda registrado.",
   },
 ];
 
 type Mode = "login" | "register" | "forgot";
 
 const COPY: Record<Mode, { title: string; description: string }> = {
-  login: { title: "Inicia sesión", description: "Entra a tu club y sigue compitiendo con tus amigos." },
-  register: { title: "Crea tu cuenta", description: "Únete y arranca con tu primer sobre gratis." },
+  login: { title: "Vuelve al juego", description: "Tu club te espera. Sigue fichando, negociando y compitiendo." },
+  register: { title: "Crea tu club", description: "Regístrate, entra a una liga y recibe tus primeras 11 cartas." },
   forgot: { title: "Recuperar acceso", description: "Te mandamos instrucciones para poner una contraseña nueva." },
 };
 
@@ -200,7 +200,7 @@ export default function Auth() {
             FM<span className={styles.logoYear}>26</span>
           </span>
         }
-        cta={{ label: "Entrar", href: "#acceso" }}
+        cta={{ label: "Entrar a mi club", href: "#acceso" }}
       />
 
       {/* ===== Hero ===== */}
@@ -216,7 +216,7 @@ export default function Auth() {
           </div>
           <h1 className={styles.title}>
             <TrueFocus
-              sentence="Colecciona Intercambia Gana"
+              sentence="Ficha Negocia Domina"
               borderColor="#e61d25"
               glowColor="rgba(230, 29, 37, 0.6)"
               animationDuration={0.5}
@@ -224,18 +224,18 @@ export default function Auth() {
             />
           </h1>
           <p className={styles.subtitle}>
-            El fantasy del Mundial 2026 donde cada carta tiene UN solo dueño por liga. Si tu
-            amigo ya tiene a Mbappé… te toca negociar.
+            Aquí los cracks no se repiten: cada carta tiene un solo dueño por liga. ¿Quieres a
+            Mbappé? Toca negociar… o pagar su cláusula.
           </p>
           <div className={styles.heroActions}>
             <a href="#acceso" className={styles.ctaPrimary}>
-              Crear cuenta gratis
+              Crear mi club gratis
               <span className={styles.arrow} aria-hidden="true">
                 ↘
               </span>
             </a>
             <a href="#como-funciona" className={styles.ctaGhost}>
-              Cómo funciona
+              Ver cómo se juega
             </a>
           </div>
           <div className={styles.heroLeagues} aria-label="Competencias reales disponibles">
@@ -254,9 +254,9 @@ export default function Auth() {
 
       {/* ===== Dome de competencias ===== */}
       <section className={styles.domeSection}>
-        <span className={styles.eyebrow}>Explora</span>
-        <h2 className={styles.domeHeading}>12 competencias reales</h2>
-        <p className={styles.domeSubtitle}>Arrastra para rotar. Toca un escudo para verlo más grande.</p>
+        <span className={styles.eyebrow}>Elige tu reto</span>
+        <h2 className={styles.domeHeading}>12 competencias para hacer historia</h2>
+        <p className={styles.domeSubtitle}>Arrastra para explorar y toca un escudo para verlo de cerca.</p>
         <div className={styles.domeWrap}>
           <DomeGallery
             images={LEAGUES.map((l) => ({ src: leagueLogo(l.id), alt: l.name }))}
@@ -277,7 +277,7 @@ export default function Auth() {
           FM<span className={styles.logoYear}>26</span>
         </span>
         <p className={styles.quote}>
-          Un club de verdad no se construye solo — <span className={styles.gold}>se disputa.</span>
+          Los cracks no se regalan. <span className={styles.gold}>Se fichan.</span>
         </p>
       </FadeUp>
 
@@ -285,8 +285,8 @@ export default function Auth() {
       <div id="sobres">
         <FeatureBlock
           eyebrow="Sobres"
-          title="Abre sobres, arma tu plantilla"
-          description="Bronce, Plata u Oro: cada sobre trae cartas al azar con jugadores reales de la competencia que elegiste. Tú decides cuándo arriesgar tus monedas."
+          title="Tu próximo fichaje puede estar aquí"
+          description="Abre un sobre Bronce, Plata u Oro y descubre qué jugadores se suman a tu club. Cada moneda puede cambiar tu once."
           visual={
             <div className={styles.packVisual}>
               <img src="/packs/oro.png" alt="" />
@@ -298,8 +298,8 @@ export default function Auth() {
       <div id="ligas">
         <FeatureBlock
           eyebrow="Ligas privadas"
-          title="Un solo dueño por carta, por liga"
-          description="Crea una liga con tus amigos y elige la competencia real que van a jugar. Si alguien ya tiene a tu jugador favorito, te toca negociar o esperar tu turno en el mercado."
+          title="En tu liga, cada crack tiene un solo dueño"
+          description="Crea una liga con tus amigos y elige la competencia. Si alguien ya fichó a tu favorito, negocia… o prepara el clausulazo."
           reverse
           visual={
             <div className={styles.singleCard}>
@@ -312,8 +312,8 @@ export default function Auth() {
       <div id="mercado">
         <FeatureBlock
           eyebrow="Mercado"
-          title="Compra, vende, negocia"
-          description="Pon una carta en venta o dispara un clausulazo directo. Cada movimiento pasa por tus monedas — nada se regala."
+          title="El mercado no espera"
+          description="Pon precio, escucha ofertas o ve directo al clausulazo. Cada movimiento pone tus monedas —y tu estrategia— en juego."
           visual={
             <div className={styles.tradeVisual}>
               <PlayerCard player={DEMO_SQUAD[1]} size="sm" />
@@ -326,8 +326,8 @@ export default function Auth() {
 
       <FeatureBlock
         eyebrow="Cláusulas"
-        title="Protege a tus cracks"
-        description="Cuando fichas o clausulas a un jugador, tiene una semana de protección antes de que alguien más pueda clausularlo. Súbele la cláusula si sabes que te lo quieren quitar."
+        title="Blinda a tus cracks"
+        description="Después de fichar o clausular a un jugador, queda protegido 7 días. Sube su cláusula antes de que un rival venga por él."
         reverse
         visual={
           <div className={styles.clauseVisual}>
@@ -341,8 +341,8 @@ export default function Auth() {
 
       <FeatureBlock
         eyebrow="Mi Once"
-        title="Tu formación, tu estrategia"
-        description="Acomoda tu once titular, elige a tu capitán (puntos x2) y súmale puntos reales según cómo rindan tus jugadores en la vida real."
+        title="Tu once. Tu estrategia. Tus puntos."
+        description="Elige titulares y nombra a tu capitán para puntuar x2. Lo que hagan en los partidos reales suma para ti."
         visual={
           <div className={styles.squadCollage}>
             {DEMO_SQUAD.map((p, i) => (
@@ -378,20 +378,20 @@ export default function Auth() {
       <section id="acceso" className={styles.finalSection}>
         <div className={styles.finalInner}>
           <div className={styles.finalPitch}>
-            <span className={styles.eyebrow}>Empieza hoy</span>
+            <span className={styles.eyebrow}>Tu turno</span>
             <h2 className={styles.finalTitle}>
-              Tu club te está esperando <span className={styles.gold}>↘</span>
+              Arma tu club antes que tus amigos <span className={styles.gold}>↘</span>
             </h2>
             <p className={styles.finalSubtitle}>
-              15,000 monedas de bienvenida, datos reales de 12 competencias, y un primer sobre
-              gratis en cuanto te unas a tu primera liga.
+              Recibe 15,000 monedas y 11 cartas gratis al unirte a tu primera liga. Elige entre 12
+              competencias y ficha antes que el resto.
             </p>
             <div className={styles.finalStats}>
               <span className={styles.chip}>
                 <IconCoin size={16} /> 15,000 monedas
               </span>
               <span className={styles.chip}>
-                <IconPack size={16} /> Sobre gratis
+                <IconPack size={16} /> 11 cartas gratis
               </span>
             </div>
           </div>
@@ -477,11 +477,9 @@ export default function Auth() {
                     {status === "loading" ? (
                       "Un momento…"
                     ) : mode === "login" ? (
-                      "Entrar"
+                      "Entrar a mi club"
                     ) : (
-                      <span className={styles.submitLabel}>
-                        Crear cuenta y recibir 15,000 <IconCoin size={16} />
-                      </span>
+                      "Crear mi club"
                     )}
                     <span className={styles.btnGlow} aria-hidden="true" />
                   </button>
@@ -527,7 +525,7 @@ export default function Auth() {
             <span className={styles.logo}>
               FM<span className={styles.logoYear}>26</span>
             </span>
-            <p className={styles.footerTagline}>El fantasy del Mundial 2026, con datos reales.</p>
+            <p className={styles.footerTagline}>El fantasy donde cada crack tiene un solo dueño.</p>
           </div>
           <div className={styles.footerCol}>
             <h4>Producto</h4>

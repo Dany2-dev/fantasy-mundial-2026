@@ -40,7 +40,7 @@
 .heading {
   text-align: center;
   font-size: clamp(28px, 4.5vw, 44px);
-  font-weight: 900;
+  font-weight: 800;
   color: #fff;
   margin: 0 0 var(--sp-6);
 }
@@ -65,9 +65,9 @@
 }
 
 .num {
-  font-family: var(--font-display);
+  font-family: var(--font-sport);
   font-size: clamp(30px, 4vw, 42px);
-  font-weight: 900;
+  font-weight: 400;
   color: var(--oro-claro);
   font-variant-numeric: tabular-nums;
   line-height: 1;

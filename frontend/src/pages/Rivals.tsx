@@ -46,7 +46,7 @@ export default function Rivals() {
     return (
       <div className={styles.empty}>
         <h1>Rivales</h1>
-        <p className="muted">Los rivales viven dentro de una liga.</p>
+        <p className="muted">Primero entra a una liga. Ahí encontrarás a los mánagers que tendrás que vencer.</p>
         <Link to="/ligas">
           <button className="primary">Ir a Ligas</button>
         </Link>
@@ -66,11 +66,11 @@ export default function Rivals() {
   return (
     <div>
       <h1>Rivales</h1>
-      <p className="muted">Los mánagers de tu liga. Toca una carta para ver sus estadísticas o clausularla.</p>
+      <p className="muted">Conoce sus plantillas, estudia sus figuras y prepara el próximo clausulazo.</p>
 
       {loading && <p className="muted">Cargando…</p>}
       {!loading && rivals.length === 0 && (
-        <p className="muted">Nadie más tiene cartas todavía. Invita a tus amigos con el código de la liga.</p>
+        <p className="muted">Aún juegas solo. Comparte el código de la liga y trae al grupo.</p>
       )}
 
       <div className={styles.rivalsList}>
@@ -91,7 +91,11 @@ export default function Rivals() {
                     {r.cards.length} cartas · valor {r.value}
                   </span>
                 </div>
-                {pending.length > 0 && <span className={styles.pendingBadge}>{pending.length} oferta(s) pendiente(s)</span>}
+                {pending.length > 0 && (
+                  <span className={styles.pendingBadge}>
+                    {pending.length === 1 ? "1 oferta pendiente" : `${pending.length} ofertas pendientes`}
+                  </span>
+                )}
               </div>
               <div className={styles.cardsRow}>
                 {top.map((c) => (

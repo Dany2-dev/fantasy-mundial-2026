@@ -17,6 +17,14 @@ const FILTERS: { key: Filter; label: string }[] = [
   { key: "resultados", label: "Resultados" },
 ];
 
+const EMPTY_BY_FILTER: Record<Filter, string> = {
+  todos: "Todavía no hay partidos disponibles en esta competencia.",
+  vivo: "No hay nada en vivo ahora. Revisa los próximos partidos.",
+  hoy: "Hoy no rueda el balón en esta competencia.",
+  proximos: "El calendario no tiene próximos partidos por ahora.",
+  resultados: "Aún no hay resultados para mostrar.",
+};
+
 function groupOf(m: Match): string {
   return m.group && /^[A-L]$/.test(m.group) ? m.group : "Eliminatorias";
 }
@@ -125,7 +133,7 @@ export default function Matches() {
     return (
       <div className={styles.empty}>
         <h1>Partidos</h1>
-        <p className="muted">Los partidos se ven dentro de una liga (dependen de su competencia).</p>
+        <p className="muted">Primero entra a una liga. Ahí podrás seguir cada partido de su competencia.</p>
         <Link to="/ligas">
           <button className="primary">Ir a Ligas</button>
         </Link>
@@ -204,7 +212,7 @@ export default function Matches() {
 
       {/* ---- Lista agrupada ---- */}
       {!loading && groups.order.length === 0 && (
-        <p className={`muted ${styles.emptyFiltered}`}>No hay partidos en esta vista.</p>
+        <p className={`muted ${styles.emptyFiltered}`}>{EMPTY_BY_FILTER[filter]}</p>
       )}
 
       {groups.order.map((g) => (

@@ -6,20 +6,20 @@ const STEPS = [
   {
     Icon: IconCoin,
     step: "01",
-    title: "Crea tu cuenta",
-    description: "Regístrate y recibe 15,000 monedas para empezar tu club desde cero.",
+    title: "Funda tu club",
+    description: "Crea tu cuenta y recibe 15,000 monedas para empezar a fichar.",
   },
   {
     Icon: IconPack,
     step: "02",
-    title: "Abre sobres",
-    description: "Bronce, Plata u Oro: consigue tus primeras cartas y arma tu plantilla.",
+    title: "Descubre tus cartas",
+    description: "Entra a una liga, recibe 11 cartas gratis y abre sobres para reforzar tu once.",
   },
   {
     Icon: IconTrophy,
     step: "03",
-    title: "Compite en tu liga",
-    description: "Crea o únete a una liga privada con tus amigos y domina la tabla.",
+    title: "Reta a tus amigos",
+    description: "Comparte el código con el grupo, arma tu once y pelea por la cima.",
   },
 ];
 
@@ -38,8 +38,8 @@ export default function HowItWorks() {
 
   return (
     <section className={styles.section}>
-      <span className={styles.eyebrow}>Así funciona</span>
-      <h2 className={styles.heading}>Tres pasos para tener tu club</h2>
+      <span className={styles.eyebrow}>Del sobre a la cancha</span>
+      <h2 className={styles.heading}>Tu liga arranca en tres jugadas</h2>
 
       <div className={styles.desktopGrid}>
         {STEPS.map(({ Icon, step, title, description }) => (

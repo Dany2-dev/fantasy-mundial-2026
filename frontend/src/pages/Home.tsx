@@ -47,15 +47,15 @@ interface MenuItem {
 }
 
 const MENU: MenuItem[] = [
-  { to: "/sobres", title: "Tienda de sobres", desc: "Abre Bronce, Plata y Oro. Consigue a las estrellas.", Icon: IconPack, accent: "red", photo: "/brand/wc26-red.jpg", big: true },
-  { to: "/ligas", title: "Ligas privadas", desc: "Compite con tus amigos.", Icon: IconTrophy, accent: "blue", photo: "/brand/wc26-blue.jpg" },
-  { to: "/once", title: "Mi once", desc: "Coloca tus cartas en el césped.", Icon: IconBall, accent: "green", },
-  { to: "/coleccion", title: "Mi colección", desc: "Todas tus cartas.", Icon: IconCards, accent: "gold" },
-  { to: "/mercado", title: "Mercado", desc: "Compra, vende, negocia.", Icon: IconExchange, accent: "blue" },
-  { to: "/partidos", title: "Partidos", desc: "Calendario en vivo de tu competencia.", Icon: IconCalendar, accent: "red" },
-  { to: "/rivales", title: "Rivales", desc: "Los mánagers de tu liga.", Icon: IconUsers, accent: "green" },
-  { to: "/historial", title: "Historial", desc: "Tus jornadas y tus movimientos.", Icon: IconClock, accent: "gold" },
-  { to: "/jugar", title: "Jugar", desc: "Minijuegos para ganar monedas.", Icon: IconGamepad, accent: "blue" },
+  { to: "/sobres", title: "Tienda de sobres", desc: "Abre un sobre y encuentra a tu próximo titular.", Icon: IconPack, accent: "red", photo: "/brand/wc26-red.jpg", big: true },
+  { to: "/ligas", title: "Ligas privadas", desc: "Invita al grupo y pelea por la cima.", Icon: IconTrophy, accent: "blue", photo: "/brand/wc26-blue.jpg" },
+  { to: "/once", title: "Mi once", desc: "Alinea a tus figuras y elige capitán.", Icon: IconBall, accent: "green", },
+  { to: "/coleccion", title: "Mi colección", desc: "Revisa tus fichajes y encuentra figuras.", Icon: IconCards, accent: "gold" },
+  { to: "/mercado", title: "Mercado", desc: "Ficha, vende y negocia antes que nadie.", Icon: IconExchange, accent: "blue" },
+  { to: "/partidos", title: "Partidos", desc: "Sigue horarios, resultados y lo que viene.", Icon: IconCalendar, accent: "red" },
+  { to: "/rivales", title: "Rivales", desc: "Estudia sus figuras y prepara el golpe.", Icon: IconUsers, accent: "green" },
+  { to: "/historial", title: "Historial", desc: "Revive tus puntos y los tratos cerrados.", Icon: IconClock, accent: "gold" },
+  { to: "/jugar", title: "Jugar", desc: "Supera retos y gana monedas para fichar.", Icon: IconGamepad, accent: "blue" },
 ];
 
 export default function Home() {
@@ -102,9 +102,9 @@ export default function Home() {
           <IconTrophy size={30} />
         </span>
         <h1>Hola, {user?.name}</h1>
-        <p className={styles.hMuted}>Aún no estás en ninguna liga. El juego empieza cuando compites con alguien.</p>
+        <p className={styles.hMuted}>Tu club necesita una liga para entrar a la cancha. Crea una o únete al grupo.</p>
         <Link to="/ligas">
-          <button className={styles.ctaPrimary}>Crear o unirme a una liga</button>
+          <button className={styles.ctaPrimary}>Entrar a una liga</button>
         </Link>
       </div>
     );
@@ -126,7 +126,7 @@ export default function Home() {
               Hola, <span className={styles.heroName}>{user?.name}</span>
             </h1>
             <p className={styles.heroSub}>
-              Bienvenido a tu club. Abre sobres, ficha estrellas y domina la liga con tus amigos.
+              Este es tu club: abre sobres, ficha figuras y demuestra quién manda entre tus amigos.
             </p>
 
             <div className={styles.heroStats}>
@@ -154,7 +154,7 @@ export default function Home() {
               </Link>
               <Link to="/once">
                 <button className={styles.ctaGhost}>
-                  <IconBall size={18} /> Editar mi 11
+                  <IconBall size={18} /> Armar mi once
                 </button>
               </Link>
             </div>
@@ -162,7 +162,7 @@ export default function Home() {
 
           {bestCard && (
             <div className={styles.heroAside}>
-              <span className={styles.hEyebrow}>Tu mejor carta</span>
+              <span className={styles.hEyebrow}>Tu figura</span>
               <div className={`${styles.showcaseCardWrap} ${styles[`glow-${rarityOf(bestCard.rating)}`]}`}>
                 <PlayerCard player={bestCard} onClick={() => setOpenPlayerId(bestCard.id)} />
               </div>
@@ -175,7 +175,7 @@ export default function Home() {
       {collection.length > 0 && (
         <section className={styles.section}>
           <div className={styles.sectionHead}>
-            <h2>Tu plantilla destacada</h2>
+            <h2>Las figuras de tu club</h2>
             <Link to="/coleccion" className={styles.sectionLink}>
               Ver colección <IconArrowRight size={15} />
             </Link>
@@ -195,7 +195,7 @@ export default function Home() {
         <section className={`${styles.card} ${styles.matchCard}`}>
           <img src="/brand/confetti.jpg" alt="" className={styles.cardWatermark} aria-hidden="true" />
           <div className={styles.sectionHead}>
-            <h2>Partidos del Mundial</h2>
+            <h2>Partido destacado</h2>
             {match?.status === "live" && <span className={styles.liveBadge}>EN VIVO</span>}
           </div>
           {match ? (
@@ -221,7 +221,7 @@ export default function Home() {
               </div>
             </div>
           ) : (
-            <p className={styles.hMuted}>Sin partidos programados todavía.</p>
+            <p className={styles.hMuted}>Todavía no hay partido en cartelera. Cuando haya fecha, aparecerá aquí.</p>
           )}
         </section>
 
@@ -240,7 +240,7 @@ export default function Home() {
                 <span className={styles.standingsPoints}>{s.points.toLocaleString("es-MX")} pts</span>
               </li>
             ))}
-            {standings.length === 0 && <li className={styles.hMuted}>Sin datos todavía.</li>}
+            {standings.length === 0 && <li className={styles.hMuted}>La tabla todavía no se mueve.</li>}
           </ol>
           {myRank > 0 && (
             <p className={styles.standingsFoot}>

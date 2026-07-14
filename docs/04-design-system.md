@@ -34,12 +34,17 @@ Rareza de carta: **Oro** rating ≥ 85 · **Plata** 78–84 · **Bronce** < 78.
 
 | Rol | Fuente | Peso | Tamaño/interlínea |
 |---|---|---|---|
-| Display / H1 | Bricolage Grotesque | 800 | 32/38 |
-| H2 | Bricolage Grotesque | 700 | 24/30 |
-| H3 / rating de carta | Bricolage Grotesque | 700 | 18/24 |
-| Body | Hanken Grotesk | 400 | 16/24 |
-| Body strong / botones | Hanken Grotesk | 600 | 16/24 |
-| Caption / labels | Hanken Grotesk | 500 | 13/18, tracking +0.4 |
+| Marca / logotipo | Alfa Slab One | 400 | Según aplicación |
+| Display / H1 | Geomini | 800 | 32/38 |
+| H2 / H3 | Geomini | 700–800 | 24/30 · 18/24 |
+| Rating / marcador / acento deportivo | Changa One | 400 | Según aplicación |
+| Body | Nunito Sans | 400 | 16/24 |
+| Body strong / botones | Nunito Sans | 600–900 | 16/24 |
+| Caption / labels | Nunito Sans | 500–700 | 13/18, tracking +0.4 |
+
+En código, las familias se consumen mediante `--font-brand`, `--font-display`,
+`--font-sport` y `--font-body`. Alfa Slab One y Changa One se usan siempre en
+peso 400; Geomini no supera 800 para evitar negritas sintetizadas por el navegador.
 
 Números tabulares (`font-variant-numeric: tabular-nums`) en monedas, puntos y tablas.
 

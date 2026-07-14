@@ -1,5 +1,15 @@
 .scene {
+  display: block;
   perspective: 1400px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+}
+
+.scene:focus-visible {
+  outline: 2px solid var(--oro);
+  outline-offset: 4px;
 }
 
 .md {

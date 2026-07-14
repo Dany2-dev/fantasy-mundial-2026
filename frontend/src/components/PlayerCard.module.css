@@ -221,8 +221,8 @@ button.card:hover .foil::before {
 }
 
 .rating {
-  font-family: var(--font-display);
-  font-weight: 900;
+  font-family: var(--font-sport);
+  font-weight: 400;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.5px;
   line-height: 0.9;
@@ -304,8 +304,8 @@ button.card:hover .photo {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--font-display);
-  font-weight: 900;
+  font-family: var(--font-sport);
+  font-weight: 400;
   color: rgba(255, 255, 255, 0.45);
   text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
 }
@@ -436,9 +436,9 @@ button.card:hover .sheen {
   display: flex;
   justify-content: center;
   align-items: center;
-  font-family: var(--font-display);
+  font-family: var(--font-sport);
   font-size: 14px;
-  font-weight: 900;
+  font-weight: 400;
   color: #2a1b00;
   background: radial-gradient(circle at 30% 30%, #fff7b5, #ffd343 60%, #b57900);
   box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.6), 0 0 10px rgba(255, 215, 90, 0.65), 0 4px 10px rgba(0, 0, 0, 0.45);
