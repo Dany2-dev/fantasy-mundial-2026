@@ -6,12 +6,18 @@ interface AuthState {
   user: User | null;
   status: "idle" | "loading" | "ready";
   error: string | null;
+  // Solo cubre el chequeo inicial de sesión (fetchMe con el token guardado).
+  // Separado de `status` para que un login/registro fallido no dispare la
+  // pantalla de carga de App.tsx y desmonte toda la página de Auth (perdía
+  // el scroll y los campos del formulario en cada intento fallido).
+  checkingSession: boolean;
 }
 
 const initialState: AuthState = {
   user: null,
-  status: getToken() ? "loading" : "idle",
+  status: "idle",
   error: null,
+  checkingSession: !!getToken(),
 };
 
 type AuthResponse = { token: string; user: User };
@@ -60,11 +66,15 @@ const authSlice = createSlice({
         .addCase(thunk.fulfilled, (state, action) => {
           state.status = "ready";
           state.user = action.payload;
+          if (thunk === fetchMe) state.checkingSession = false;
         })
         .addCase(thunk.rejected, (state, action) => {
           state.status = "idle";
           state.error = action.error.message ?? "Error de autenticación";
-          if (thunk === fetchMe) setToken(null);
+          if (thunk === fetchMe) {
+            setToken(null);
+            state.checkingSession = false;
+          }
         });
     }
   },

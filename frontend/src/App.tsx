@@ -20,7 +20,7 @@ import Squad from "./pages/Squad";
 
 export default function App() {
   const dispatch = useAppDispatch();
-  const { user, status } = useAppSelector((s) => s.auth);
+  const { user, checkingSession } = useAppSelector((s) => s.auth);
 
   useEffect(() => {
     if (getToken() && !user) dispatch(fetchMe());
@@ -30,7 +30,7 @@ export default function App() {
     if (user) dispatch(fetchLeagues());
   }, [dispatch, user]);
 
-  if (status === "loading" && !user) {
+  if (checkingSession && !user) {
     return <p style={{ textAlign: "center", padding: 48 }}>Cargando…</p>;
   }
 
