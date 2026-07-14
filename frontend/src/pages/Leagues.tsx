@@ -1,3 +1,4 @@
+import { AnimatePresence, motion } from "motion/react";
 import { FormEvent, useEffect, useState } from "react";
 import { api } from "../api/client";
 import FlipReveal from "../components/FlipReveal";
@@ -102,7 +103,7 @@ export default function Leagues() {
     <div className={styles.page}>
       {/* ===== Cabecera ===== */}
       <section className={styles.hero}>
-        <img src="/brand/wc26-red.jpg" alt="" className={styles.heroArt} aria-hidden="true" />
+        <img src="/stadium/stadium-akron.jpg" alt="" className={styles.heroArt} aria-hidden="true" />
         <span className={styles.heroWash} aria-hidden="true" />
         <div className={styles.heroInner}>
           <span className={styles.eyebrow}>Compite con tus amigos</span>
@@ -221,13 +222,31 @@ export default function Leagues() {
               </div>
             </div>
             <button className={`ghost ${styles.copyBtn}`} onClick={copyCode}>
-              {copied ? (
-                <>
-                  <IconCheck size={15} /> Copiado
-                </>
-              ) : (
-                `Código: ${activeLeague.inviteCode}`
-              )}
+              <AnimatePresence mode="wait" initial={false}>
+                {copied ? (
+                  <motion.span
+                    key="copied"
+                    className={styles.copyBtnInner}
+                    initial={{ y: -10, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: 10, opacity: 0 }}
+                    transition={{ duration: 0.18 }}
+                  >
+                    <IconCheck size={15} /> Copiado
+                  </motion.span>
+                ) : (
+                  <motion.span
+                    key="code"
+                    className={styles.copyBtnInner}
+                    initial={{ y: -10, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: 10, opacity: 0 }}
+                    transition={{ duration: 0.18 }}
+                  >
+                    Código: {activeLeague.inviteCode}
+                  </motion.span>
+                )}
+              </AnimatePresence>
             </button>
           </div>
 

@@ -131,6 +131,9 @@
 }
 
 .ctaPrimary {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -141,21 +144,48 @@
   font-weight: 800;
   font-size: 15px;
   text-decoration: none;
-  transition: transform 0.15s ease, filter 0.15s ease;
+  transition: transform 0.15s ease, color 0.35s ease;
+}
+
+/* Círculo oscuro que arranca detrás de la flecha y se expande hasta llenar
+   toda la píldora al pasar el cursor. */
+.ctaPrimary::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  width: 34px;
+  height: 34px;
+  z-index: -1;
+  border-radius: 50%;
+  background: var(--noche);
+  transform: translateY(-50%);
+  transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1), right 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .ctaPrimary:hover {
   transform: translateY(-2px);
-  filter: brightness(1.05);
+  color: var(--oro);
+}
+
+.ctaPrimary:hover::before {
+  width: calc(100% + 4px);
+  right: -2px;
 }
 
 .arrow {
   display: inline-block;
-  transition: transform 0.2s ease;
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .ctaPrimary:hover .arrow {
-  transform: translate(2px, 2px);
+  transform: translate(3px, 3px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ctaPrimary::before {
+    transition: none;
+  }
 }
 
 .ctaGhost {
@@ -396,10 +426,12 @@
   line-height: 1.5;
 }
 
-/* ---------- CTA final + card de acceso ---------- */
+/* ---------- CTA final + card de acceso ----------
+   Fondo casi negro a propósito: es el único lugar de la página que rompe
+   con el 60-30-10 claro — el momento de mayor drama antes del formulario. */
 .finalSection {
   padding: var(--sp-7) var(--sp-4);
-  background: var(--superficie-alta);
+  background: var(--noche);
 }
 
 .finalInner {
@@ -413,22 +445,31 @@
 .finalPitch {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-3);
+  gap: var(--sp-4);
   text-align: center;
 }
 
 .finalTitle {
   margin: 0;
   font-family: var(--font-display);
-  font-size: clamp(28px, 4vw, 42px);
+  font-size: clamp(34px, 6.5vw, 60px);
   font-weight: 800;
-  color: var(--tinta);
+  font-style: italic;
+  text-transform: uppercase;
+  line-height: 0.96;
+  letter-spacing: -0.5px;
+  color: #fff;
+}
+
+.finalHighlight {
+  color: #dcff5c;
+  text-shadow: 0 0 20px rgba(220, 255, 92, 0.55), 0 0 2px rgba(220, 255, 92, 0.9);
 }
 
 .finalSubtitle {
   margin: 0 auto;
   max-width: 460px;
-  color: var(--tinta-media);
+  color: rgba(255, 255, 255, 0.6);
   font-size: 15.5px;
   line-height: 1.5;
 }
@@ -446,11 +487,11 @@
   gap: 6px;
   padding: 7px 14px;
   border-radius: var(--r-chip);
-  background: var(--superficie);
-  border: 1px solid var(--borde);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   font-size: 13px;
   font-weight: 700;
-  color: var(--tinta);
+  color: #fff;
 }
 
 @media (min-width: 900px) {

@@ -49,7 +49,7 @@ export default function Collection() {
     <div className={styles.page}>
       {/* ===== Cabecera con estadísticas ===== */}
       <section className={styles.hero}>
-        <img src="/brand/wc26-blue.jpg" alt="" className={styles.heroArt} aria-hidden="true" />
+        <img src="/stadium/stadium-seats.jpg" alt="" className={styles.heroArt} aria-hidden="true" />
         <span className={styles.heroWash} aria-hidden="true" />
         <div className={styles.heroInner}>
           <div>

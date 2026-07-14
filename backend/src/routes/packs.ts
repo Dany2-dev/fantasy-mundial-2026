@@ -11,14 +11,21 @@ export const PACKS = {
   bronce: { cost: 2500, count: 3, label: "Sobre Bronce" },
   plata: { cost: 5000, count: 3, label: "Sobre Plata" },
   oro: { cost: 9000, count: 3, label: "Sobre Oro" },
+  legendario: { cost: 16000, count: 3, label: "Sobre Legendario" },
 } as const;
 
 type Tier = keyof typeof PACKS;
 
+// Fracción "élite" garantizada por sobre — oro sortea del top ~4% de la
+// competencia, legendario aprieta el corte al top ~1.5% (más caro, más raro).
+const ELITE_FRACTION: Partial<Record<Tier, number>> = { oro: 0.04, legendario: 0.015 };
+
 function weightFor(tier: Tier, rating: number) {
-  // Bronce favorece ratings bajos, plata es uniforme, oro favorece altos.
+  // Bronce favorece ratings bajos, plata es uniforme, oro favorece altos,
+  // legendario favorece los altos con más fuerza todavía.
   if (tier === "bronce") return Math.pow(95 - rating, 2);
   if (tier === "oro") return Math.pow(rating - 65, 2);
+  if (tier === "legendario") return Math.pow(rating - 60, 3);
   return 1;
 }
 
@@ -71,11 +78,13 @@ router.post("/open", async (req, res) => {
     return res.status(409).json({ error: "Ya casi no quedan cartas libres en esta liga" });
   }
 
-  // El sobre Oro garantiza al menos un crack (top ~4% de la competencia) si existe alguna libre.
+  // Oro y Legendario garantizan al menos un crack (élite de la competencia,
+  // legendario con un corte más estricto) si existe alguna carta libre.
   const picked: typeof pool = [];
   const available = [...pool];
-  if (tier === "oro") {
-    const threshold = await eliteThreshold(membership.league.competitionId);
+  const eliteFraction = ELITE_FRACTION[tier as Tier];
+  if (eliteFraction) {
+    const threshold = await eliteThreshold(membership.league.competitionId, eliteFraction);
     const elite = available.filter((p) => p.rating >= threshold);
     if (elite.length > 0) {
       const idx = Math.floor(Math.random() * elite.length);

@@ -74,7 +74,10 @@
   display: flex;
   gap: 12px;
   overflow-x: auto;
-  padding: 4px 2px 6px;
+  /* overflow-x distinto de visible hace que overflow-y también recorte
+     (regla de CSS), así que el padding-top tiene que alcanzar para el
+     translateY(-8px) + scale(1.03) del hover de PlayerCard o se corta. */
+  padding: 20px 2px 6px;
   scrollbar-width: thin;
   scrollbar-color: #dee2e6 transparent;
 }

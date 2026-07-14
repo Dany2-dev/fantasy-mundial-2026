@@ -74,9 +74,36 @@ button:disabled {
 }
 
 button.primary {
+  position: relative;
+  overflow: hidden;
   background: linear-gradient(135deg, #ff2d36 0%, var(--wc-rojo) 55%, #b3141b 100%);
   color: #fff;
   box-shadow: 0 8px 22px -10px var(--wc-rojo);
+}
+
+/* Barrido de brillo diagonal al pasar el cursor — mismo botón .primary de
+   toda la app (submit, abrir sobre, crear liga, guardar once...). */
+button.primary::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -60%;
+  width: 40%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.28);
+  transform: skewX(-20deg);
+  transition: left 0.55s ease;
+  pointer-events: none;
+}
+
+button.primary:hover:not(:disabled)::before {
+  left: 130%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button.primary::before {
+    display: none;
+  }
 }
 
 button.danger {

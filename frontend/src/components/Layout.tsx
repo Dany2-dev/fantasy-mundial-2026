@@ -5,9 +5,10 @@ import { api } from "../api/client";
 import { useScrollHidden } from "../hooks/useScrollHidden";
 import { competitionTheme } from "../lib/competitionTheme";
 import { logout } from "../store/authSlice";
+import { fetchCollection } from "../store/collectionSlice";
 import { clearLeagues, setActiveLeague } from "../store/leagueSlice";
 import { useAppDispatch, useAppSelector } from "../store/store";
-import { Trade } from "../types";
+import { GameweekInfo, Trade } from "../types";
 import {
   IconBall,
   IconCalendar,
@@ -51,12 +52,18 @@ export default function Layout() {
   const location = useLocation();
   const user = useAppSelector((s) => s.auth.user);
   const { leagues, activeLeagueId } = useAppSelector((s) => s.leagues);
+  const collection = useAppSelector((s) => s.collection.items);
   const [offer, setOffer] = useState<Trade | null>(null);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [gameweek, setGameweek] = useState<GameweekInfo | null>(null);
   const hidden = useScrollHidden();
   const moreActive = MORE_NAV.some((item) => location.pathname === item.to);
   const activeLeague = leagues.find((l) => l.id === activeLeagueId);
   const theme = competitionTheme(activeLeague?.competition?.name);
+  const avgRating = collection.length
+    ? Math.round(collection.reduce((s, p) => s + p.rating, 0) / collection.length)
+    : 0;
+  const avatarInitial = user?.name?.trim()?.[0]?.toUpperCase() ?? "?";
 
   function handleLogout() {
     dispatch(logout());
@@ -80,6 +87,19 @@ export default function Layout() {
       })
       .catch(() => setOffer(null));
   }, [activeLeagueId, user]);
+
+  // Media del club y jornada actual: viven en el header en vez de en Home,
+  // así se ven en cualquier página, no solo al entrar.
+  useEffect(() => {
+    if (!activeLeagueId) {
+      setGameweek(null);
+      return;
+    }
+    dispatch(fetchCollection(activeLeagueId));
+    api<{ league: { currentGameweek: GameweekInfo | null } }>(`/leagues/${activeLeagueId}`)
+      .then((d) => setGameweek(d.league.currentGameweek))
+      .catch(() => setGameweek(null));
+  }, [dispatch, activeLeagueId]);
 
   return (
     <div
@@ -152,6 +172,19 @@ export default function Layout() {
             )}
 
             <div className={styles.right}>
+              {gameweek && (
+                <span className={styles.headerStat} title="Jornada actual">
+                  <IconTrophy size={16} />
+                  <span className={styles.headerStatLabel}>{gameweek.label}</span>
+                </span>
+              )}
+              <span className={styles.headerStat} title="Media de tu club">
+                <IconCards size={16} />
+                <span className={styles.headerStatLabel}>Media {avgRating || "—"}</span>
+              </span>
+              <span className={styles.avatar} title={user?.name} aria-hidden="true">
+                {avatarInitial}
+              </span>
               <span className={`${styles.coins} tabular`} title="Tus monedas">
                 <IconCoin size={17} />
                 {user?.coins.toLocaleString("es-MX")}
