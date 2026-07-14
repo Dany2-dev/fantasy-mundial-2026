@@ -1,12 +1,14 @@
 import { FormEvent, useEffect, useState } from "react";
 import { api } from "../api/client";
 import FlipReveal from "../components/FlipReveal";
-import { IconCheck, IconTrophy } from "../components/icons";
+import { IconCheck, IconShield, IconTrophy, IconUsers } from "../components/icons";
 import { fetchCollection } from "../store/collectionSlice";
 import { createLeague, joinLeague, setActiveLeague } from "../store/leagueSlice";
 import { useAppDispatch, useAppSelector } from "../store/store";
 import { Competition, League, Player, Standing } from "../types";
 import styles from "./Leagues.module.css";
+
+const MEDALS = ["🥇", "🥈", "🥉"];
 
 export default function Leagues() {
   const dispatch = useAppDispatch();
@@ -94,13 +96,32 @@ export default function Leagues() {
     });
   }
 
-  return (
-    <div>
-      <h1>Ligas</h1>
+  const podium = standings.slice(0, 3);
 
+  return (
+    <div className={styles.page}>
+      {/* ===== Cabecera ===== */}
+      <section className={styles.hero}>
+        <img src="/brand/wc26-red.jpg" alt="" className={styles.heroArt} aria-hidden="true" />
+        <span className={styles.heroWash} aria-hidden="true" />
+        <div className={styles.heroInner}>
+          <span className={styles.eyebrow}>Compite con tus amigos</span>
+          <h1 className={styles.title}>Ligas</h1>
+          <p className={styles.heroSub}>
+            Crea tu liga privada o únete con un código. Cada mánager arranca con un once inicial gratis.
+          </p>
+        </div>
+      </section>
+
+      {/* ===== Formularios ===== */}
       <div className={styles.forms}>
         <form onSubmit={handleCreate} className={styles.formCard}>
-          <h3>Crear liga</h3>
+          <div className={styles.formHead}>
+            <span className={styles.formIcon} data-accent="red" aria-hidden="true">
+              <IconTrophy size={22} />
+            </span>
+            <h3>Crear liga</h3>
+          </div>
           <input
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
@@ -136,7 +157,13 @@ export default function Leagues() {
         </form>
 
         <form onSubmit={handleJoin} className={styles.formCard}>
-          <h3>Unirme con código</h3>
+          <div className={styles.formHead}>
+            <span className={styles.formIcon} data-accent="blue" aria-hidden="true">
+              <IconUsers size={22} />
+            </span>
+            <h3>Unirme con código</h3>
+          </div>
+          <p className={styles.formHint}>Pídele el código de 6 letras al mánager que creó la liga.</p>
           <input
             value={code}
             onChange={(e) => setCode(e.target.value.toUpperCase())}
@@ -155,7 +182,7 @@ export default function Leagues() {
 
       {leagues.length > 0 && (
         <section className={styles.section}>
-          <h2>Mis ligas</h2>
+          <h2 className={styles.sectionTitle}>Mis ligas</h2>
           <div className={styles.leagueList}>
             {leagues.map((l) => (
               <button
@@ -163,7 +190,12 @@ export default function Leagues() {
                 className={`${styles.leagueItem} ${l.id === activeLeagueId ? styles.leagueActive : ""}`}
                 onClick={() => dispatch(setActiveLeague(l.id))}
               >
-                <strong>{l.name}</strong>
+                <span className={styles.leagueItemTop}>
+                  <span className={styles.leagueBadge} aria-hidden="true">
+                    <IconShield size={18} />
+                  </span>
+                  <strong>{l.name}</strong>
+                </span>
                 <span className="caption">{l.competition?.name ?? "Sin competencia"}</span>
               </button>
             ))}
@@ -175,7 +207,9 @@ export default function Leagues() {
         <section className={styles.section}>
           <div className={styles.standingsHeader}>
             <div>
-              <h2>Clasificación — {activeLeague.name}</h2>
+              <h2 className={styles.sectionTitle} style={{ marginBottom: 0 }}>
+                Clasificación — {activeLeague.name}
+              </h2>
               <div className={styles.leagueMeta}>
                 {leagueDetail?.competition && <span className={styles.metaChip}>{leagueDetail.competition.name}</span>}
                 {leagueDetail?.currentGameweek && (
@@ -197,34 +231,53 @@ export default function Leagues() {
             </button>
           </div>
 
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Mánager</th>
-                <th className={styles.num}>Puntos</th>
-                <th className={styles.num}>Cartas</th>
-                <th className={styles.num}>Valor</th>
-              </tr>
-            </thead>
-            <tbody>
-              {standings.map((s, i) => (
-                <tr key={s.userId} className={s.userId === user?.id ? styles.me : ""}>
-                  <td className="tabular">
-                    {i === 0 ? <IconTrophy size={17} className={styles.trophyIcon} /> : `${i + 1}`}
-                  </td>
-                  <td>
+          {podium.length > 0 && (
+            <div className={styles.podium}>
+              {podium.map((s, i) => (
+                <div key={s.userId} className={styles.podiumCard} data-rank={i + 1}>
+                  <span className={styles.podiumMedal} aria-hidden="true">
+                    {MEDALS[i]}
+                  </span>
+                  <span className={`${styles.podiumName} ${s.userId === user?.id ? styles.podiumMe : ""}`}>
                     {s.name}
-                    {s.userId === user?.id && <span className={styles.youTag}> (tú)</span>}
-                  </td>
-                  <td className={`${styles.num} tabular`}>{s.points.toLocaleString("es-MX")}</td>
-                  <td className={`${styles.num} tabular`}>{s.cardCount}</td>
-                  <td className={`${styles.num} tabular`}>{s.teamValue.toLocaleString("es-MX")}</td>
-                </tr>
+                    {s.userId === user?.id ? " (tú)" : ""}
+                  </span>
+                  <span className={styles.podiumPts}>{s.points.toLocaleString("es-MX")} pts</span>
+                </div>
               ))}
-            </tbody>
-          </table>
-          <p className="caption">
+            </div>
+          )}
+
+          <div className={styles.tableWrap}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Mánager</th>
+                  <th className={styles.num}>Puntos</th>
+                  <th className={styles.num}>Cartas</th>
+                  <th className={styles.num}>Valor</th>
+                </tr>
+              </thead>
+              <tbody>
+                {standings.map((s, i) => (
+                  <tr key={s.userId} className={s.userId === user?.id ? styles.me : ""}>
+                    <td className={`${styles.rankCell} tabular`}>
+                      {i === 0 ? <IconTrophy size={17} className={styles.trophyIcon} /> : `${i + 1}`}
+                    </td>
+                    <td>
+                      {s.name}
+                      {s.userId === user?.id && <span className={styles.youTag}> (tú)</span>}
+                    </td>
+                    <td className={`${styles.num} tabular`}>{s.points.toLocaleString("es-MX")}</td>
+                    <td className={`${styles.num} tabular`}>{s.cardCount}</td>
+                    <td className={`${styles.num} tabular`}>{s.teamValue.toLocaleString("es-MX")}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className={`caption ${styles.foot}`}>
             Valor = suma de medias de tus cartas. Los puntos llegarán con las jornadas del torneo.
           </p>
         </section>

@@ -57,7 +57,7 @@ export default function Packs() {
   return (
     <div>
       <h1>Sobres</h1>
-      <p className="muted">
+      <p className={`muted ${styles.intro}`}>
         Cada carta tiene un solo dueño por liga: lo que abras aquí es tuyo y de nadie más.
       </p>
 
@@ -65,11 +65,12 @@ export default function Packs() {
         {PACKS.map((p) => (
           <div key={p.tier} className={`${styles.pack} ${styles[p.tier]}`}>
             <span className={styles.packShine} aria-hidden="true" />
+            <span className={styles.tierBadge}>{p.tier}</span>
             <img className={styles.packArt} src={`/packs/${p.tier}.png`} alt="" aria-hidden="true" />
             <h2>{p.label}</h2>
             <p className={styles.packDesc}>{p.desc}</p>
             <button
-              className="primary"
+              className={`primary ${styles.openBtn}`}
               disabled={opening !== null || (user?.coins ?? 0) < p.cost}
               onClick={() => openPack(p.tier)}
             >
@@ -94,7 +95,8 @@ export default function Packs() {
 
       {result && (
         <div className={styles.overlay} role="dialog" aria-label="Cartas obtenidas">
-          <h2>Nuevas cartas</h2>
+          <h2 className={styles.overlayTitle}>¡Nuevas cartas!</h2>
+          <p className={styles.overlaySub}>Toca para revelar cada carta.</p>
           <div className={styles.reveal}>
             {result.map((p, i) => (
               <FlipReveal key={p.id} player={p} delay={500 + i * 650} />
