@@ -55,7 +55,7 @@
 
 .title {
   font-size: clamp(28px, 5vw, 40px);
-  font-weight: 900;
+  font-weight: 800;
   line-height: 1.05;
   margin: 4px 0 2px;
   color: var(--tinta);
@@ -148,7 +148,7 @@
 
 .sectionTitle {
   font-size: 21px;
-  font-weight: 900;
+  font-weight: 800;
   margin: 0 0 var(--sp-3);
 }
 
@@ -241,10 +241,15 @@
 }
 
 .copyBtn {
+  position: relative;
+  overflow: hidden;
+  font-variant-numeric: tabular-nums;
+}
+
+.copyBtnInner {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-variant-numeric: tabular-nums;
 }
 
 /* Podio: top 3 en tarjetas */
@@ -296,8 +301,8 @@
 }
 
 .podiumPts {
-  font-family: var(--font-display);
-  font-weight: 900;
+  font-family: var(--font-sport);
+  font-weight: 400;
   font-size: 18px;
   color: var(--wc-oro-oscuro);
 }

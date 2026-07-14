@@ -46,6 +46,9 @@
 .pack:nth-child(3) {
   animation-delay: 0.16s;
 }
+.pack:nth-child(4) {
+  animation-delay: 0.24s;
+}
 
 .pack:hover {
   transform: translateY(-6px);
@@ -94,6 +97,12 @@
   --glow: rgba(240, 194, 75, 0.5);
 }
 
+.legendario {
+  --foil: var(--foil-legendario);
+  --edge: rgba(190, 110, 255, 0.55);
+  --glow: rgba(190, 110, 255, 0.5);
+}
+
 /* Chip de tier con material foil */
 .tierBadge {
   display: inline-block;
@@ -101,8 +110,8 @@
   border-radius: var(--r-chip);
   background: var(--foil);
   color: #1a130a;
-  font-family: var(--font-display);
-  font-weight: 800;
+  font-family: var(--font-sport);
+  font-weight: 400;
   font-size: 12px;
   letter-spacing: 1.5px;
   text-transform: uppercase;
@@ -111,6 +120,11 @@
 
 .plata .tierBadge {
   color: #1b2028;
+}
+
+.legendario .tierBadge {
+  color: #f6ecff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
 }
 
 /* Brillo diagonal que barre al pasar el cursor */
@@ -231,8 +245,14 @@
   margin: var(--sp-3) 0;
 }
 
-@media (min-width: 720px) {
+@media (min-width: 560px) {
   .packs {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 960px) {
+  .packs {
+    grid-template-columns: repeat(4, 1fr);
   }
 }

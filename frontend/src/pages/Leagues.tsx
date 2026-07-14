@@ -1,3 +1,4 @@
+import { AnimatePresence, motion } from "motion/react";
 import { FormEvent, useEffect, useState } from "react";
 import { api } from "../api/client";
 import FlipReveal from "../components/FlipReveal";
@@ -62,7 +63,7 @@ export default function Leagues() {
     const result = await dispatch(createLeague({ name: newName, competitionId }));
     if (createLeague.fulfilled.match(result)) {
       setNewName("");
-      setMsg({ kind: "ok", text: `Liga creada. Comparte el código ${result.payload.league.inviteCode}` });
+      setMsg({ kind: "ok", text: `¡Liga creada! Comparte el código ${result.payload.league.inviteCode} y que empiece la competencia.` });
       if (result.payload.starterPack) {
         setStarterPack(result.payload.starterPack);
         dispatch(fetchCollection(result.payload.league.id));
@@ -78,7 +79,7 @@ export default function Leagues() {
     const result = await dispatch(joinLeague(code));
     if (joinLeague.fulfilled.match(result)) {
       setCode("");
-      setMsg({ kind: "ok", text: `Ya estás en ${result.payload.league.name}` });
+      setMsg({ kind: "ok", text: `¡Ya estás dentro de ${result.payload.league.name}! Es hora de armar tu club.` });
       if (result.payload.starterPack) {
         setStarterPack(result.payload.starterPack);
         dispatch(fetchCollection(result.payload.league.id));
@@ -102,13 +103,13 @@ export default function Leagues() {
     <div className={styles.page}>
       {/* ===== Cabecera ===== */}
       <section className={styles.hero}>
-        <img src="/brand/wc26-red.jpg" alt="" className={styles.heroArt} aria-hidden="true" />
+        <img src="/stadium/stadium-akron.jpg" alt="" className={styles.heroArt} aria-hidden="true" />
         <span className={styles.heroWash} aria-hidden="true" />
         <div className={styles.heroInner}>
           <span className={styles.eyebrow}>Compite con tus amigos</span>
           <h1 className={styles.title}>Ligas</h1>
           <p className={styles.heroSub}>
-            Crea tu liga privada o únete con un código. Cada mánager arranca con un once inicial gratis.
+            Arma tu liga, invita al grupo y demuestra quién manda. Todos empiezan con 11 cartas gratis.
           </p>
         </div>
       </section>
@@ -152,7 +153,7 @@ export default function Leagues() {
             </p>
           )}
           <button className="primary" type="submit">
-            Crear liga
+            Crear mi liga
           </button>
         </form>
 
@@ -173,7 +174,7 @@ export default function Leagues() {
             required
           />
           <button className="primary" type="submit">
-            Unirme
+            Entrar a la liga
           </button>
         </form>
       </div>
@@ -221,13 +222,31 @@ export default function Leagues() {
               </div>
             </div>
             <button className={`ghost ${styles.copyBtn}`} onClick={copyCode}>
-              {copied ? (
-                <>
-                  <IconCheck size={15} /> Copiado
-                </>
-              ) : (
-                `Código: ${activeLeague.inviteCode}`
-              )}
+              <AnimatePresence mode="wait" initial={false}>
+                {copied ? (
+                  <motion.span
+                    key="copied"
+                    className={styles.copyBtnInner}
+                    initial={{ y: -10, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: 10, opacity: 0 }}
+                    transition={{ duration: 0.18 }}
+                  >
+                    <IconCheck size={15} /> Copiado
+                  </motion.span>
+                ) : (
+                  <motion.span
+                    key="code"
+                    className={styles.copyBtnInner}
+                    initial={{ y: -10, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: 10, opacity: 0 }}
+                    transition={{ duration: 0.18 }}
+                  >
+                    Código: {activeLeague.inviteCode}
+                  </motion.span>
+                )}
+              </AnimatePresence>
             </button>
           </div>
 
@@ -286,14 +305,14 @@ export default function Leagues() {
       {starterPack && (
         <div className={styles.overlay} role="dialog" aria-label="Tu once inicial">
           <h2>Tu once inicial</h2>
-          <p className="caption">11 cartas gratis para arrancar — la mejor la elegimos capitán.</p>
+          <p className="caption">Tus 11 primeras cartas ya están aquí, listas para armar tu club.</p>
           <div className={styles.reveal}>
             {starterPack.map((p, i) => (
               <FlipReveal key={p.id} player={p} delay={300 + i * 220} size="sm" />
             ))}
           </div>
           <button className="primary" onClick={() => setStarterPack(null)}>
-            ¡Vamos!
+            ¡A jugar!
           </button>
         </div>
       )}

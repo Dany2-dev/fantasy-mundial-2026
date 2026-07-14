@@ -64,23 +64,23 @@ export default function PlayerDetailModal({ playerId, leagueId, onClose, onChang
   const raise = () =>
     run(
       () => api("/clause/raise", { method: "POST", body: JSON.stringify({ leagueId, playerId, amount: raiseAmount }) }),
-      `Cláusula subida +${raiseAmount.toLocaleString("es-MX")}`
+      `¡Crack blindado! Sumaste ${raiseAmount.toLocaleString("es-MX")} a su cláusula.`
     );
 
   const clausulazo = () =>
     run(
       () => api("/clause/pay", { method: "POST", body: JSON.stringify({ leagueId, playerId }) }),
-      "¡Clausulazo hecho! El jugador ya es tuyo."
+      "¡Clausulazo! Ya es jugador de tu club."
     );
 
   const sell = () =>
     run(
       () => api("/listings", { method: "POST", body: JSON.stringify({ leagueId, playerId, price: sellPrice }) }),
-      "Publicado en el mercado"
+      "¡Carta publicada! Ya está en el mercado."
     );
 
   const cancelSale = () =>
-    run(() => api(`/listings/${detail?.listing?.id}`, { method: "DELETE" }), "Venta cancelada");
+    run(() => api(`/listings/${detail?.listing?.id}`, { method: "DELETE" }), "Venta cancelada. Ya no está en el mercado.");
 
   return (
     <div className={styles.backdrop} onClick={onClose}>
@@ -126,7 +126,7 @@ export default function PlayerDetailModal({ playerId, leagueId, onClose, onChang
                     )}
                   </div>
                 ) : (
-                  <p className="caption">Nadie lo tiene todavía en esta liga.</p>
+                  <p className="caption">Todavía está libre en esta liga.</p>
                 )}
               </div>
             </div>
@@ -199,7 +199,7 @@ export default function PlayerDetailModal({ playerId, leagueId, onClose, onChang
             )}
 
             <h4 className={styles.statsTitle}>Estadísticas por jornada</h4>
-            {detail.stats.length === 0 && <p className="muted">Aún no hay partidos jugados registrados.</p>}
+            {detail.stats.length === 0 && <p className="muted">Este jugador todavía no tiene estadísticas en el torneo.</p>}
             <div className={styles.statsList}>
               {detail.stats.map((s) => (
                 <div key={s.gameweek} className={styles.statRow}>

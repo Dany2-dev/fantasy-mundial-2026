@@ -10,9 +10,10 @@ import { Player } from "../types";
 import styles from "./Packs.module.css";
 
 const PACKS = [
-  { tier: "bronce", label: "Sobre Bronce", cost: 2500, desc: "3 cartas. Para arrancar tu colección." },
-  { tier: "plata", label: "Sobre Plata", cost: 5000, desc: "3 cartas con mejores probabilidades." },
-  { tier: "oro", label: "Sobre Oro", cost: 9000, desc: "3 cartas. Una 85+ garantizada." },
+  { tier: "bronce", label: "Sobre Bronce", cost: 2500, desc: "3 cartas para empezar a armar tu club." },
+  { tier: "plata", label: "Sobre Plata", cost: 5000, desc: "3 cartas con mejores opciones de encontrar una figura." },
+  { tier: "oro", label: "Sobre Oro", cost: 9000, desc: "3 cartas; incluye una figura de élite si aún queda disponible." },
+  { tier: "legendario", label: "Sobre Legendario", cost: 16000, desc: "3 cartas; la mejor probabilidad de encontrar una leyenda del pool." },
 ] as const;
 
 export default function Packs() {
@@ -46,7 +47,7 @@ export default function Packs() {
     return (
       <div className={styles.empty}>
         <h1>Sobres</h1>
-        <p className="muted">Los sobres se abren dentro de una liga: las cartas que te salgan serán tuyas ahí.</p>
+        <p className="muted">Primero entra a una liga. Ahí cada carta tendrá un solo dueño.</p>
         <Link to="/ligas">
           <button className="primary">Ir a Ligas</button>
         </Link>
@@ -58,7 +59,7 @@ export default function Packs() {
     <div>
       <h1>Sobres</h1>
       <p className={`muted ${styles.intro}`}>
-        Cada carta tiene un solo dueño por liga: lo que abras aquí es tuyo y de nadie más.
+        Cada carta es única dentro de tu liga: si te sale una figura, ningún rival podrá tenerla sin negociar contigo o pagar su cláusula.
       </p>
 
       <div className={styles.packs}>
@@ -95,15 +96,15 @@ export default function Packs() {
 
       {result && (
         <div className={styles.overlay} role="dialog" aria-label="Cartas obtenidas">
-          <h2 className={styles.overlayTitle}>¡Nuevas cartas!</h2>
-          <p className={styles.overlaySub}>Toca para revelar cada carta.</p>
+          <h2 className={styles.overlayTitle}>¡Llegaron refuerzos!</h2>
+          <p className={styles.overlaySub}>Toca cada carta y descubre quién se suma al club.</p>
           <div className={styles.reveal}>
             {result.map((p, i) => (
               <FlipReveal key={p.id} player={p} delay={500 + i * 650} />
             ))}
           </div>
           <button className="primary" onClick={() => setResult(null)}>
-            Guardar en mi colección
+            Seguir con mi club
           </button>
         </div>
       )}

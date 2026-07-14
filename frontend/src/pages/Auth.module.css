@@ -1,21 +1,50 @@
 .page {
   position: relative;
-  min-height: 100vh;
-  display: grid;
-  place-items: center;
-  gap: var(--sp-6);
-  padding: var(--sp-6) var(--sp-4);
-  max-width: 960px;
-  margin: 0 auto;
-  overflow: hidden;
+  color: var(--tinta);
+  background: var(--bg);
 }
 
-/* position:fixed a propósito: escapa del max-width de .page para cubrir
-   todo el viewport, no solo la columna central de contenido. */
+.gold {
+  color: var(--wc-rojo);
+}
+
+.eyebrow {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--wc-rojo);
+}
+
+.logo {
+  font-family: var(--font-brand);
+  font-weight: 400;
+  font-size: 20px;
+  letter-spacing: 0.5px;
+  color: #fff;
+}
+
+.logoYear {
+  color: var(--wc-rojo);
+}
+
+/* ---------- Hero ----------
+   El StaggeredMenu es `isFixed` (flota sobre el contenido), así que el hero
+   ya no recibe espacio empujado por un header en flujo normal: se le suma
+   la altura de la barra fija al padding-top. */
+.hero {
+  position: relative;
+  overflow: hidden;
+  padding: calc(var(--sp-7) + 72px) var(--sp-4) var(--sp-7);
+  background: var(--noche);
+}
+
 .veil {
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: 0;
+  overflow: hidden;
   background: var(--noche);
 }
 
@@ -23,12 +52,23 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, transparent 60%, rgba(11, 18, 32, 0.75) 88%, var(--noche) 100%);
+  background: linear-gradient(180deg, rgba(11, 18, 32, 0.35) 0%, transparent 45%, rgba(11, 18, 32, 0.85) 90%, var(--noche) 100%);
 }
 
-.veil :global(canvas) {
-  opacity: 0.95;
-  filter: contrast(1.15);
+.heroVideo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.85;
+  filter: saturate(0.85) contrast(1.05);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .heroVideo {
+    display: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -37,12 +77,12 @@
   }
 }
 
-.hero {
+.heroInner {
   position: relative;
   z-index: 1;
+  max-width: 720px;
+  margin: 0 auto;
   text-align: center;
-  max-width: 420px;
-  /* El hero se sienta sobre el veil oscuro (a propósito): texto claro. */
   color: var(--crema);
 }
 
@@ -63,28 +103,462 @@
   }
 }
 
-.title {
-  font-size: 36px;
+@media (prefers-reduced-motion: reduce) {
+  .heroCard {
+    animation: none;
+  }
 }
 
-.gold {
-  color: var(--wc-rojo);
+.title {
+  font-size: clamp(34px, 6vw, 58px);
+  line-height: 1.05;
+  margin: 0 0 var(--sp-3);
 }
 
 .subtitle {
   color: var(--gris);
+  font-size: 17px;
+  max-width: 520px;
+  margin: 0 auto var(--sp-5);
 }
 
+.heroActions {
+  display: flex;
+  justify-content: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--sp-6);
+}
+
+.ctaPrimary {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 26px;
+  border-radius: var(--r-chip);
+  background: var(--oro);
+  color: var(--noche);
+  font-weight: 800;
+  font-size: 15px;
+  text-decoration: none;
+  transition: transform 0.15s ease, color 0.35s ease;
+}
+
+/* Círculo oscuro que arranca detrás de la flecha y se expande hasta llenar
+   toda la píldora al pasar el cursor. */
+.ctaPrimary::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  width: 34px;
+  height: 34px;
+  z-index: -1;
+  border-radius: 50%;
+  background: var(--noche);
+  transform: translateY(-50%);
+  transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1), right 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ctaPrimary:hover {
+  transform: translateY(-2px);
+  color: var(--oro);
+}
+
+.ctaPrimary:hover::before {
+  width: calc(100% + 4px);
+  right: -2px;
+}
+
+.arrow {
+  display: inline-block;
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ctaPrimary:hover .arrow {
+  transform: translate(3px, 3px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ctaPrimary::before {
+    transition: none;
+  }
+}
+
+.ctaGhost {
+  display: inline-flex;
+  align-items: center;
+  padding: 14px 24px;
+  border-radius: var(--r-chip);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #fff;
+  font-weight: 700;
+  font-size: 15px;
+  text-decoration: none;
+}
+
+.ctaGhost:hover {
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.heroLeagues {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: var(--sp-4);
+}
+
+.heroLeagues img {
+  height: 30px;
+  width: auto;
+  object-fit: contain;
+  filter: grayscale(1) brightness(2) opacity(0.55);
+  transition: filter 0.2s ease;
+}
+
+.heroLeagues img:hover {
+  filter: none;
+}
+
+/* ---------- Dome de competencias ---------- */
+.domeSection {
+  padding: var(--sp-7) var(--sp-4);
+  text-align: center;
+  background: var(--noche);
+  color: #fff;
+}
+
+.domeHeading {
+  margin: 4px 0 6px;
+  font-family: var(--font-display);
+  font-size: clamp(26px, 4vw, 38px);
+  font-weight: 800;
+}
+
+.domeSubtitle {
+  margin: 0 0 var(--sp-5);
+  color: rgba(244, 246, 251, 0.6);
+  font-size: 14.5px;
+}
+
+.domeWrap {
+  position: relative;
+  width: 100%;
+  max-width: 900px;
+  height: 460px;
+  margin: 0 auto;
+  border-radius: var(--r-card);
+  overflow: hidden;
+}
+
+@media (max-width: 640px) {
+  .domeWrap {
+    height: 340px;
+  }
+}
+
+/* ---------- Frase destacada ---------- */
+.quoteSection {
+  padding: var(--sp-7) var(--sp-4);
+  text-align: center;
+  background: var(--superficie-alta);
+}
+
+.logoWatermark {
+  display: block;
+  font-family: var(--font-brand);
+  font-weight: 400;
+  font-size: 15px;
+  letter-spacing: 1px;
+  color: var(--tinta-media);
+  margin-bottom: var(--sp-4);
+}
+
+.quote {
+  max-width: 760px;
+  margin: 0 auto;
+  font-family: var(--font-display);
+  font-size: clamp(26px, 4.5vw, 42px);
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--tinta);
+}
+
+/* ---------- Visuales de las FeatureBlock ---------- */
+.packVisual {
+  position: relative;
+  display: flex;
+}
+
+.packVisual img {
+  width: 220px;
+  filter: drop-shadow(0 20px 40px rgba(240, 194, 75, 0.35));
+}
+
+.singleCard {
+  width: 190px;
+}
+
+.tradeVisual {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.tradeVisual > div {
+  width: 150px;
+}
+
+.tradeIcon {
+  color: var(--gris);
+  flex-shrink: 0;
+}
+
+.clauseVisual {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.clauseVisual > div {
+  width: 170px;
+}
+
+.clauseChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--r-chip);
+  background: color-mix(in srgb, var(--pasto) 14%, #fff);
+  border: 1px solid var(--pasto);
+  color: color-mix(in srgb, var(--pasto) 60%, black);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.squadCollage {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  padding: var(--sp-5) 0;
+}
+
+.squadCard {
+  width: 110px;
+  margin-left: -28px;
+  transform: rotate(calc((var(--i) - 1.5) * 6deg)) translateY(calc(var(--i) * -6px));
+  transition: transform 0.25s ease;
+}
+
+.squadCard:first-child {
+  margin-left: 0;
+}
+
+.squadCard:hover {
+  transform: translateY(-14px);
+  z-index: 1;
+}
+
+@media (max-width: 480px) {
+  .tradeVisual {
+    gap: var(--sp-2);
+  }
+
+  .tradeVisual > div {
+    width: min(130px, 34vw);
+  }
+
+  .squadCard {
+    width: 80px;
+    margin-left: -18px;
+  }
+}
+
+/* ---------- Tarjetas de producto ---------- */
+.productSection {
+  padding: var(--sp-7) var(--sp-4);
+  background: linear-gradient(165deg, var(--noche) 0%, var(--tribuna) 100%);
+}
+
+.productInner {
+  max-width: 1050px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--sp-4);
+}
+
+.productCard {
+  padding: var(--sp-5);
+  border-radius: var(--r-card);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.productIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: rgba(240, 194, 75, 0.14);
+  color: var(--oro-claro);
+  margin-bottom: var(--sp-3);
+}
+
+.productCard h3 {
+  margin: 0 0 6px;
+  color: #fff;
+  font-size: 18px;
+}
+
+.productCard p {
+  margin: 0;
+  color: rgba(244, 246, 251, 0.65);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ---------- CTA final + card de acceso ----------
+   Fondo casi negro a propósito: es el único lugar de la página que rompe
+   con el 60-30-10 claro — el momento de mayor drama antes del formulario. */
+.finalSection {
+  padding: var(--sp-7) var(--sp-4);
+  background: var(--noche);
+}
+
+.finalInner {
+  max-width: 1000px;
+  margin: 0 auto;
+  display: grid;
+  gap: var(--sp-6);
+  align-items: center;
+}
+
+.finalPitch {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  text-align: center;
+}
+
+.finalTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(34px, 6.5vw, 60px);
+  font-weight: 800;
+  font-style: italic;
+  text-transform: uppercase;
+  line-height: 0.96;
+  letter-spacing: -0.5px;
+  color: #fff;
+}
+
+.finalHighlight {
+  color: #dcff5c;
+  text-shadow: 0 0 20px rgba(220, 255, 92, 0.55), 0 0 2px rgba(220, 255, 92, 0.9);
+}
+
+.finalSubtitle {
+  margin: 0 auto;
+  max-width: 460px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 15.5px;
+  line-height: 1.5;
+}
+
+.finalStats {
+  display: flex;
+  justify-content: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: var(--r-chip);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+}
+
+@media (min-width: 900px) {
+  .finalInner {
+    grid-template-columns: 1fr 400px;
+  }
+
+  .finalPitch {
+    text-align: left;
+  }
+
+  .finalSubtitle {
+    margin: 0;
+  }
+
+  .finalStats {
+    justify-content: flex-start;
+  }
+}
+
+/* ---------- Card de acceso (login/register/forgot) ---------- */
 .panel {
+  --card-spacing: var(--sp-5);
   position: relative;
   z-index: 1;
   width: 100%;
   max-width: 400px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--card-spacing);
   background: var(--superficie);
   border: 1px solid var(--borde);
   border-radius: var(--r-card);
-  padding: var(--sp-5);
-  box-shadow: 0 20px 48px -20px rgba(0, 0, 0, 0.5);
+  padding: var(--card-spacing) 0;
+  box-shadow: 0 20px 48px -20px rgba(0, 0, 0, 0.35);
+}
+
+.cardHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 var(--card-spacing);
+}
+
+.cardTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--tinta);
+}
+
+.cardDescription {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.4;
+  color: var(--tinta-media);
+}
+
+.cardContent {
+  padding: 0 var(--card-spacing);
+}
+
+.cardFooter {
+  padding: var(--card-spacing) var(--card-spacing) 0;
+  border-top: 1px solid var(--borde);
 }
 
 .form {
@@ -94,7 +568,7 @@
 }
 
 .switch {
-  margin: var(--sp-4) 0 0;
+  margin: 0;
   text-align: center;
   color: var(--tinta-media);
   font-size: 14px;
@@ -107,6 +581,33 @@
   color: var(--wc-rojo);
   font-size: 14px;
   text-decoration: underline;
+}
+
+.forgotLink {
+  align-self: flex-end;
+  margin-top: -8px;
+  color: var(--tinta-media);
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.forgotLink:hover {
+  color: var(--wc-rojo);
+  text-decoration: underline;
+}
+
+.forgotSent {
+  padding: var(--sp-4);
+  border-radius: var(--r-input);
+  background: var(--superficie-alta);
+  border: 1px solid var(--borde);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--tinta-media);
+}
+
+.forgotSent strong {
+  color: var(--tinta);
 }
 
 .submitLabel {
@@ -135,16 +636,64 @@
   opacity: 1;
 }
 
-@media (min-width: 860px) {
-  .page {
-    grid-template-columns: 1fr 1fr;
-  }
+/* ---------- Footer ---------- */
+.footer {
+  background: var(--noche);
+  color: rgba(244, 246, 251, 0.7);
+  padding: var(--sp-7) var(--sp-4) var(--sp-5);
+}
 
-  .hero {
-    text-align: left;
-  }
+.footerInner {
+  max-width: 1050px;
+  margin: 0 auto;
+  display: grid;
+  gap: var(--sp-6);
+  grid-template-columns: 1.4fr 1fr 1fr;
+}
 
-  .heroCard {
-    margin-left: 0;
+.footerCol {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.footerCol h4 {
+  margin: 0 0 4px;
+  color: #fff;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.footerCol a,
+.footerCol span {
+  font-size: 14px;
+  color: rgba(244, 246, 251, 0.65);
+  text-decoration: none;
+}
+
+.footerCol a:hover {
+  color: #fff;
+}
+
+.footerTagline {
+  margin: 0;
+  font-size: 13.5px;
+  color: rgba(244, 246, 251, 0.55);
+  max-width: 220px;
+}
+
+.footerBottom {
+  max-width: 1050px;
+  margin: var(--sp-6) auto 0;
+  padding-top: var(--sp-4);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 12.5px;
+  color: rgba(244, 246, 251, 0.45);
+}
+
+@media (max-width: 720px) {
+  .footerInner {
+    grid-template-columns: 1fr;
   }
 }

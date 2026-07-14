@@ -261,7 +261,7 @@
 .heroTitle {
   max-width: 14ch;
   font-size: clamp(34px, 5.5vw, 58px);
-  font-weight: 900;
+  font-weight: 800;
   line-height: 1.02;
   letter-spacing: 0.01em;
   text-wrap: balance;
@@ -293,13 +293,6 @@
   font-size: 16px;
   max-width: 480px;
   margin: 0 0 var(--sp-4);
-}
-
-.heroStats {
-  display: flex;
-  gap: var(--sp-2);
-  flex-wrap: wrap;
-  margin-bottom: var(--sp-5);
 }
 
 .heroActions {
@@ -411,7 +404,7 @@
 .sectionTitle {
   position: relative;
   font-size: 21px;
-  font-weight: 900;
+  font-weight: 800;
   letter-spacing: 0.01em;
   margin: 0;
   color: var(--hink);
@@ -456,7 +449,10 @@
   display: flex;
   gap: var(--sp-3);
   overflow-x: auto;
-  padding: 4px 4px 14px;
+  /* overflow-x distinto de visible hace que overflow-y también recorte
+     (regla de CSS), así que el padding-top tiene que alcanzar para el
+     translateY(-8px) + scale(1.03) del hover de PlayerCard o se corta. */
+  padding: 20px 4px 14px;
   scrollbar-width: thin;
   scrollbar-color: var(--hborder) transparent;
   scroll-snap-type: x proximity;
@@ -572,8 +568,8 @@
 }
 
 .matchScoreNums {
-  font-family: var(--font-display);
-  font-weight: 900;
+  font-family: var(--font-sport);
+  font-weight: 400;
   font-size: 26px;
   letter-spacing: 0.04em;
   font-variant-numeric: tabular-nums;

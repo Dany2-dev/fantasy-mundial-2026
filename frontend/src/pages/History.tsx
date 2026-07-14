@@ -42,7 +42,7 @@ export default function History() {
     return (
       <div className={styles.empty}>
         <h1>Historial</h1>
-        <p className="muted">Tu historial vive dentro de una liga.</p>
+        <p className="muted">Tu historia empieza dentro de una liga. Entra a una y empieza a competir.</p>
         <Link to="/ligas">
           <button className="primary">Ir a Ligas</button>
         </Link>
@@ -63,7 +63,7 @@ export default function History() {
       <div className={styles.headerRow}>
         <div>
           <h1>Historial</h1>
-          <p className="muted">Tus jornadas y tus movimientos en esta liga.</p>
+          <p className="muted">Tus puntos, tus tratos y cada capítulo de esta liga.</p>
         </div>
         <div className={styles.totalBadge}>
           <span className={styles.totalNum}>{totalPoints}</span>
@@ -73,7 +73,7 @@ export default function History() {
 
       {loading && <p className="muted">Cargando…</p>}
       {!loading && events.length === 0 && (
-        <p className="muted">Aún no hay jornadas jugadas ni movimientos en esta liga.</p>
+        <p className="muted">Tu historia aún está por escribirse. La primera jornada o el primer trato aparecerán aquí.</p>
       )}
 
       <div className={styles.feed}>
@@ -116,7 +116,7 @@ export default function History() {
         )}
       </div>
 
-      <p className={`caption ${styles.comingSoon}`}>Cláusulas y ventas llegan pronto a este historial.</p>
+      <p className={`caption ${styles.comingSoon}`}>Pronto también verás aquí tus cláusulas y ventas.</p>
     </div>
   );
 }
