@@ -1,3 +1,75 @@
+/* Ligas — mejora visual sobre los tokens globales del design system.
+   Solo estilos de esta página (CSS module): no toca variables.css ni
+   componentes compartidos. */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+}
+
+/* ---------- Cabecera ---------- */
+.hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--r-card);
+  border: 1px solid var(--borde);
+  background: var(--superficie);
+  box-shadow: 0 8px 24px -18px rgba(13, 17, 23, 0.5);
+}
+
+.heroArt {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.85;
+}
+
+.heroWash {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    #fff 0%,
+    rgba(255, 255, 255, 0.94) 42%,
+    rgba(255, 255, 255, 0.6) 72%,
+    rgba(255, 255, 255, 0.25) 100%
+  );
+}
+
+.heroInner {
+  position: relative;
+  z-index: 1;
+  padding: var(--sp-5) var(--sp-5);
+}
+
+.eyebrow {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--tinta-media);
+}
+
+.title {
+  font-size: clamp(28px, 5vw, 40px);
+  font-weight: 900;
+  line-height: 1.05;
+  margin: 4px 0 2px;
+  color: var(--tinta);
+  letter-spacing: -0.5px;
+}
+
+.heroSub {
+  color: var(--tinta-media);
+  font-size: 15px;
+  margin: 0;
+  max-width: 480px;
+}
+
+/* ---------- Formularios ---------- */
 .forms {
   display: grid;
   gap: var(--sp-4);
@@ -7,17 +79,56 @@
   background: var(--superficie);
   border: 1px solid var(--borde);
   border-radius: var(--r-card);
-  padding: var(--sp-4);
+  padding: var(--sp-5);
   display: flex;
   flex-direction: column;
   gap: var(--sp-3);
+  box-shadow: 0 8px 24px -18px rgba(13, 17, 23, 0.5);
+}
+
+.formHead {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-bottom: 2px;
+}
+
+.formIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.formIcon[data-accent="red"] {
+  background: color-mix(in srgb, var(--wc-rojo) 12%, #fff);
+  color: var(--wc-rojo);
+}
+
+.formIcon[data-accent="blue"] {
+  background: color-mix(in srgb, var(--wc-azul-vivo) 12%, #fff);
+  color: var(--wc-azul);
+}
+
+.formHead h3 {
+  margin: 0;
+}
+
+.formHint {
+  font-size: 13px;
+  color: var(--tinta-media);
+  margin: -2px 0 0;
 }
 
 .codeInput {
   text-transform: uppercase;
-  letter-spacing: 4px;
+  letter-spacing: 6px;
   font-weight: 700;
   text-align: center;
+  font-size: 20px;
 }
 
 .notStarted {
@@ -30,32 +141,18 @@
   padding: var(--sp-2) var(--sp-3);
 }
 
-.leagueMeta {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-top: 4px;
-}
-
-.metaChip {
-  font-size: 12px;
-  font-weight: 700;
-  padding: 3px 10px;
-  border-radius: var(--r-chip);
-  background: var(--superficie-alta);
-  border: 1px solid var(--borde);
-  color: var(--tinta-media);
-}
-
-.metaChip[data-accent="red"] {
-  color: var(--wc-rojo);
-  border-color: var(--wc-rojo);
-}
-
+/* ---------- Secciones ---------- */
 .section {
-  margin-top: var(--sp-6);
+  margin-top: var(--sp-2);
 }
 
+.sectionTitle {
+  font-size: 21px;
+  font-weight: 900;
+  margin: 0 0 var(--sp-3);
+}
+
+/* ---------- Lista de ligas ---------- */
 .leagueList {
   display: flex;
   gap: var(--sp-3);
@@ -66,35 +163,151 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 2px;
+  gap: 4px;
   background: var(--superficie);
   border: 1px solid var(--borde);
-  min-width: 180px;
+  border-radius: var(--r-card);
+  padding: var(--sp-4);
+  min-width: 190px;
   text-align: left;
+  transition: transform 0.14s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.leagueItem:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px -20px rgba(13, 17, 23, 0.5);
+}
+
+.leagueItemTop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.leagueBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: var(--superficie-alta);
+  color: var(--tinta-media);
+  flex-shrink: 0;
 }
 
 .leagueActive {
   border-color: var(--wc-rojo);
-  box-shadow: 0 0 0 1px var(--wc-rojo);
+  box-shadow: 0 0 0 1px var(--wc-rojo), 0 14px 30px -20px var(--wc-rojo);
 }
 
+.leagueActive .leagueBadge {
+  background: color-mix(in srgb, var(--wc-rojo) 14%, #fff);
+  color: var(--wc-rojo);
+}
+
+/* ---------- Clasificación ---------- */
 .standingsHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--sp-3);
   flex-wrap: wrap;
+  margin-bottom: var(--sp-3);
+}
+
+.leagueMeta {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.metaChip {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 11px;
+  border-radius: var(--r-chip);
+  background: var(--superficie-alta);
+  border: 1px solid var(--borde);
+  color: var(--tinta-media);
+}
+
+.metaChip[data-accent="red"] {
+  color: var(--wc-rojo);
+  border-color: var(--wc-rojo);
+  background: color-mix(in srgb, var(--wc-rojo) 8%, #fff);
 }
 
 .copyBtn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  font-variant-numeric: tabular-nums;
 }
 
-.trophyIcon {
+/* Podio: top 3 en tarjetas */
+.podium {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+
+.podiumCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: var(--sp-4) var(--sp-2) var(--sp-3);
+  border-radius: var(--r-card);
+  border: 1px solid var(--borde);
+  background: var(--superficie);
+  text-align: center;
+  overflow: hidden;
+}
+
+.podiumCard[data-rank="1"] {
+  border-color: var(--wc-oro);
+  background: color-mix(in srgb, var(--wc-oro) 10%, #fff);
+}
+.podiumCard[data-rank="2"] {
+  border-color: #c7cdd6;
+}
+.podiumCard[data-rank="3"] {
+  border-color: #d9a877;
+}
+
+.podiumMedal {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.podiumName {
+  font-weight: 800;
+  font-size: 14px;
+  color: var(--tinta);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.podiumPts {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 18px;
   color: var(--wc-oro-oscuro);
-  vertical-align: -4px;
+}
+
+.podiumMe {
+  color: var(--wc-rojo);
+}
+
+.tableWrap {
+  overflow-x: auto;
 }
 
 .table {
@@ -115,9 +328,18 @@
 
 .table th {
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.4px;
   color: var(--tinta-media);
+  background: var(--superficie-alta);
+}
+
+.table tbody tr {
+  transition: background 0.12s ease;
+}
+
+.table tbody tr:hover {
+  background: var(--superficie-alta);
 }
 
 .table tbody tr:last-child td {
@@ -126,15 +348,35 @@
 
 .num {
   text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.rankCell {
+  font-weight: 800;
+  color: var(--tinta-media);
 }
 
 .me {
   background: color-mix(in srgb, var(--wc-rojo) 6%, transparent);
 }
 
+.me:hover {
+  background: color-mix(in srgb, var(--wc-rojo) 10%, transparent) !important;
+}
+
+.trophyIcon {
+  color: var(--wc-oro-oscuro);
+  vertical-align: -4px;
+}
+
 .youTag {
   color: var(--wc-rojo);
+  font-weight: 700;
   font-size: 13px;
+}
+
+.foot {
+  margin-top: var(--sp-2);
 }
 
 @media (min-width: 720px) {
@@ -143,6 +385,7 @@
   }
 }
 
+/* ---------- Overlay del once inicial ---------- */
 .overlay {
   position: fixed;
   inset: 0;
@@ -165,4 +408,3 @@
   justify-content: center;
   max-width: 720px;
 }
-

@@ -6,4 +6,8 @@ RUN npm install
 COPY . .
 RUN npx prisma generate && npm run build
 EXPOSE 4000
-CMD ["sh", "-c", "npx prisma db push --skip-generate && npx tsx prisma/seed.ts && node dist/index.js"]
+
+# Solo sincroniza el esquema al arrancar. El seed con datos reales de FotMob
+# (npm run db:seed:fotmob) es una operación manual y deliberada, no algo que
+# deba correr solo cada vez que se reinicia el contenedor.
+CMD ["sh", "-c", "npx prisma db push --skip-generate && node dist/index.js"]

@@ -1,38 +1,220 @@
-.headerRow {
+/* Colección — mejora visual sobre los tokens globales del design system.
+   Solo estilos de esta página (CSS module con clases locales): no toca
+   variables.css ni componentes compartidos. Acentos por posición espejan
+   los colores de PlayerCard (--pos-*). */
+
+.page {
   display: flex;
-  align-items: baseline;
-  gap: var(--sp-3);
+  flex-direction: column;
+  gap: var(--sp-5);
 }
 
+/* ---------- Banner / cabecera ---------- */
+.hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--r-card);
+  border: 1px solid var(--borde);
+  background: var(--superficie);
+  box-shadow: 0 8px 24px -18px rgba(13, 17, 23, 0.5);
+}
+
+.heroArt {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.85;
+}
+
+.heroWash {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    #fff 0%,
+    rgba(255, 255, 255, 0.94) 42%,
+    rgba(255, 255, 255, 0.6) 72%,
+    rgba(255, 255, 255, 0.25) 100%
+  );
+}
+
+.heroInner {
+  position: relative;
+  z-index: 1;
+  padding: var(--sp-5) var(--sp-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.eyebrow {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--tinta-media);
+}
+
+.title {
+  font-size: clamp(28px, 5vw, 40px);
+  font-weight: 900;
+  line-height: 1.05;
+  margin: 4px 0 2px;
+  color: var(--tinta);
+  letter-spacing: -0.5px;
+}
+
+.sub {
+  color: var(--tinta-media);
+  font-size: 15px;
+  margin: 0;
+  max-width: 460px;
+}
+
+/* ---------- Tira de estadísticas ---------- */
+.stats {
+  display: flex;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+}
+
+.statCard {
+  flex: 1 1 120px;
+  min-width: 120px;
+  background: color-mix(in srgb, var(--superficie-alta) 70%, #fff);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-card);
+  padding: var(--sp-3) var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.statValue {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--tinta);
+  line-height: 1.1;
+}
+
+.statValue[data-accent="gold"] {
+  color: var(--wc-oro-oscuro);
+}
+
+.statValue[data-accent="green"] {
+  color: var(--wc-verde);
+}
+
+.statLabel {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--tinta-media);
+}
+
+/* ---------- Filtros por posición ---------- */
 .filters {
   display: flex;
   gap: var(--sp-2);
-  margin-bottom: var(--sp-4);
   flex-wrap: wrap;
 }
 
 .filterChip {
-  padding: 6px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 15px;
   border-radius: var(--r-chip);
   font-size: 14px;
+  font-weight: 700;
   background: var(--superficie);
   border: 1px solid var(--borde);
   color: var(--tinta-media);
+  transition: transform 0.12s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
+.filterChip:hover:not(:disabled) {
+  transform: translateY(-1px);
+  color: var(--tinta);
+}
+
+.filterCount {
+  font-size: 12px;
+  font-weight: 800;
+  padding: 1px 8px;
+  border-radius: var(--r-chip);
+  background: var(--superficie-alta);
+  color: var(--tinta-media);
+  min-width: 22px;
+  text-align: center;
+}
+
+/* Chip activo: color según la posición (espejo de PlayerCard) */
 .filterActive {
-  background: var(--wc-rojo);
-  border-color: var(--wc-rojo);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 6px 16px -8px currentColor;
+}
+
+.filterActive .filterCount {
+  background: rgba(255, 255, 255, 0.25);
   color: #fff;
 }
 
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: var(--sp-3);
+.filterActive[data-pos="Todos"] {
+  background: linear-gradient(135deg, #ff2d36 0%, var(--wc-rojo) 55%, #b3141b 100%);
+}
+.filterActive[data-pos="POR"] {
+  background: var(--pos-por);
+}
+.filterActive[data-pos="DEF"] {
+  background: var(--pos-def);
+}
+.filterActive[data-pos="MED"] {
+  background: var(--pos-med);
+}
+.filterActive[data-pos="DEL"] {
+  background: var(--pos-del);
 }
 
+/* ---------- Rejilla de cartas ---------- */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--sp-4);
+}
+
+/* ---------- Estados vacíos ---------- */
 .empty {
   text-align: center;
   padding: var(--sp-7) var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.emptyBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--superficie-alta);
+  border: 1px solid var(--borde);
+  color: var(--wc-oro-oscuro);
+  margin-bottom: var(--sp-2);
+}
+
+.empty h1 {
+  margin: 0;
+}
+
+.empty p {
+  margin: 0;
 }

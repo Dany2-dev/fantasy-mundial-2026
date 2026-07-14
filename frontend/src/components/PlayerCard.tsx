@@ -54,6 +54,7 @@ export default function PlayerCard({ player, size = "md", ownerName, captain, se
       <span className={styles.foil} aria-hidden="true" />
 
       <div className={styles.panel}>
+        {rarity === "legendario" && <span className={styles.particles} aria-hidden="true" />}
         <div className={styles.stats}>
           <span className={styles.rating}>{player.rating}</span>
           <span className={`${styles.pos} ${styles[`pos${player.position}`]}`}>{player.position}</span>
