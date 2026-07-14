@@ -295,13 +295,6 @@
   margin: 0 0 var(--sp-4);
 }
 
-.heroStats {
-  display: flex;
-  gap: var(--sp-2);
-  flex-wrap: wrap;
-  margin-bottom: var(--sp-5);
-}
-
 .heroActions {
   display: flex;
   gap: var(--sp-2);
@@ -456,7 +449,10 @@
   display: flex;
   gap: var(--sp-3);
   overflow-x: auto;
-  padding: 4px 4px 14px;
+  /* overflow-x distinto de visible hace que overflow-y también recorte
+     (regla de CSS), así que el padding-top tiene que alcanzar para el
+     translateY(-8px) + scale(1.03) del hover de PlayerCard o se corta. */
+  padding: 20px 4px 14px;
   scrollbar-width: thin;
   scrollbar-color: var(--hborder) transparent;
   scroll-snap-type: x proximity;

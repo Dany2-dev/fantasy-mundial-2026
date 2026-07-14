@@ -177,6 +177,43 @@
   white-space: nowrap;
 }
 
+/* Jornada actual + media del club: a diferencia de .coins/.logoutBtn, estos
+   sí se quedan visibles en escritorio — el riel lateral no los duplica. */
+.headerStat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--tinta-media);
+  white-space: nowrap;
+}
+
+.headerStatLabel {
+  display: none;
+}
+
+@media (min-width: 480px) {
+  .headerStatLabel {
+    display: inline;
+  }
+}
+
+.avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--wc-azul), var(--wc-azul-vivo));
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 13px;
+}
+
 .logoutBtn {
   display: flex;
   align-items: center;

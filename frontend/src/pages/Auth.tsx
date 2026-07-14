@@ -380,7 +380,7 @@ export default function Auth() {
           <div className={styles.finalPitch}>
             <span className={styles.eyebrow}>Tu turno</span>
             <h2 className={styles.finalTitle}>
-              Arma tu club antes que tus amigos <span className={styles.gold}>↘</span>
+              Arma tu club <span className={styles.finalHighlight}>antes</span> que tus amigos
             </h2>
             <p className={styles.finalSubtitle}>
               Recibe 15,000 monedas y 11 cartas gratis al unirte a tu primera liga. Elige entre 12

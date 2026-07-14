@@ -241,10 +241,15 @@
 }
 
 .copyBtn {
+  position: relative;
+  overflow: hidden;
+  font-variant-numeric: tabular-nums;
+}
+
+.copyBtnInner {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-variant-numeric: tabular-nums;
 }
 
 /* Podio: top 3 en tarjetas */

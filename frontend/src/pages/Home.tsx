@@ -8,7 +8,6 @@ import {
   IconCalendar,
   IconCards,
   IconClock,
-  IconCoin,
   IconExchange,
   IconGamepad,
   IconPack,
@@ -19,7 +18,7 @@ import PlayerCard from "../components/PlayerCard";
 import PlayerDetailModal from "../components/PlayerDetailModal";
 import { fetchCollection } from "../store/collectionSlice";
 import { useAppDispatch, useAppSelector } from "../store/store";
-import { GameweekInfo, Match, rarityOf, Standing } from "../types";
+import { Match, rarityOf, Standing } from "../types";
 import styles from "./Home.module.css";
 
 function pickFeaturedMatch(matches: Match[]): Match | null {
@@ -47,15 +46,15 @@ interface MenuItem {
 }
 
 const MENU: MenuItem[] = [
-  { to: "/sobres", title: "Tienda de sobres", desc: "Abre un sobre y encuentra a tu próximo titular.", Icon: IconPack, accent: "red", photo: "/brand/wc26-red.jpg", big: true },
-  { to: "/ligas", title: "Ligas privadas", desc: "Invita al grupo y pelea por la cima.", Icon: IconTrophy, accent: "blue", photo: "/brand/wc26-blue.jpg" },
-  { to: "/once", title: "Mi once", desc: "Alinea a tus figuras y elige capitán.", Icon: IconBall, accent: "green", },
-  { to: "/coleccion", title: "Mi colección", desc: "Revisa tus fichajes y encuentra figuras.", Icon: IconCards, accent: "gold" },
-  { to: "/mercado", title: "Mercado", desc: "Ficha, vende y negocia antes que nadie.", Icon: IconExchange, accent: "blue" },
-  { to: "/partidos", title: "Partidos", desc: "Sigue horarios, resultados y lo que viene.", Icon: IconCalendar, accent: "red" },
-  { to: "/rivales", title: "Rivales", desc: "Estudia sus figuras y prepara el golpe.", Icon: IconUsers, accent: "green" },
-  { to: "/historial", title: "Historial", desc: "Revive tus puntos y los tratos cerrados.", Icon: IconClock, accent: "gold" },
-  { to: "/jugar", title: "Jugar", desc: "Supera retos y gana monedas para fichar.", Icon: IconGamepad, accent: "blue" },
+  { to: "/sobres", title: "Tienda de sobres", desc: "Abre un sobre y encuentra a tu próximo titular.", Icon: IconPack, accent: "red", photo: "/stadium/dribble.jpg", big: true },
+  { to: "/ligas", title: "Ligas privadas", desc: "Invita al grupo y pelea por la cima.", Icon: IconTrophy, accent: "blue", photo: "/stadium/stadium-benfica.jpg" },
+  { to: "/once", title: "Mi once", desc: "Alinea a tus figuras y elige capitán.", Icon: IconBall, accent: "green", photo: "/stadium/match-amateur2.jpg" },
+  { to: "/coleccion", title: "Mi colección", desc: "Revisa tus fichajes y encuentra figuras.", Icon: IconCards, accent: "gold", photo: "/stadium/stadium-seats.jpg" },
+  { to: "/mercado", title: "Mercado", desc: "Ficha, vende y negocia antes que nadie.", Icon: IconExchange, accent: "blue", photo: "/stadium/match-amateur1.jpg" },
+  { to: "/partidos", title: "Partidos", desc: "Sigue horarios, resultados y lo que viene.", Icon: IconCalendar, accent: "red", photo: "/stadium/stadium-sansiro.jpg" },
+  { to: "/rivales", title: "Rivales", desc: "Estudia sus figuras y prepara el golpe.", Icon: IconUsers, accent: "green", photo: "/stadium/stadium-akron.jpg" },
+  { to: "/historial", title: "Historial", desc: "Revive tus puntos y los tratos cerrados.", Icon: IconClock, accent: "gold", photo: "/stadium/stadium-night.jpg" },
+  { to: "/jugar", title: "Jugar", desc: "Supera retos y gana monedas para fichar.", Icon: IconGamepad, accent: "blue", photo: "/stadium/dribble.jpg" },
 ];
 
 export default function Home() {
@@ -65,27 +64,19 @@ export default function Home() {
   const collection = useAppSelector((s) => s.collection.items);
   const [standings, setStandings] = useState<Standing[]>([]);
   const [match, setMatch] = useState<Match | null>(null);
-  const [gameweek, setGameweek] = useState<GameweekInfo | null>(null);
   const [openPlayerId, setOpenPlayerId] = useState<number | null>(null);
 
   const activeLeague = leagues.find((l) => l.id === activeLeagueId);
   const sorted = [...collection].sort((a, b) => b.rating - a.rating);
   const bestCard = sorted[0] ?? null;
-  const avgRating = sorted.length ? Math.round(sorted.reduce((s, p) => s + p.rating, 0) / sorted.length) : 0;
   const myRank = standings.findIndex((s) => s.userId === user?.id) + 1;
 
   useEffect(() => {
     if (!activeLeagueId) return;
     dispatch(fetchCollection(activeLeagueId));
-    api<{ standings: Standing[]; league: { currentGameweek: GameweekInfo | null } }>(`/leagues/${activeLeagueId}`)
-      .then((d) => {
-        setStandings(d.standings);
-        setGameweek(d.league.currentGameweek);
-      })
-      .catch(() => {
-        setStandings([]);
-        setGameweek(null);
-      });
+    api<{ standings: Standing[] }>(`/leagues/${activeLeagueId}`)
+      .then((d) => setStandings(d.standings))
+      .catch(() => setStandings([]));
   }, [dispatch, activeLeagueId]);
 
   useEffect(() => {
@@ -114,7 +105,7 @@ export default function Home() {
     <div className={styles.page}>
       {/* ===== Hero ===== */}
       <section className={styles.hero}>
-        <img src="/brand/wc26-red.jpg" alt="" className={styles.heroArt} aria-hidden="true" />
+        <img src="/stadium/stadium-night.jpg" alt="" className={styles.heroArt} aria-hidden="true" />
         <span className={styles.heroWash} aria-hidden="true" />
 
         <div className={styles.heroGrid}>
@@ -128,23 +119,6 @@ export default function Home() {
             <p className={styles.heroSub}>
               Este es tu club: abre sobres, ficha figuras y demuestra quién manda entre tus amigos.
             </p>
-
-            <div className={styles.heroStats}>
-              <span className={styles.chip} data-accent="gold">
-                <IconCoin size={16} /> {(user?.coins ?? 0).toLocaleString("es-MX")}
-              </span>
-              <span className={styles.chip} data-accent="blue">
-                <IconCards size={16} /> Media {avgRating || "—"}
-              </span>
-              <span className={styles.chip} data-accent="green">
-                <IconCards size={16} /> {collection.length} cartas
-              </span>
-              {gameweek && (
-                <span className={styles.chip} data-accent="red">
-                  <IconTrophy size={16} /> {gameweek.label}
-                </span>
-              )}
-            </div>
 
             <div className={styles.heroActions}>
               <Link to="/sobres">

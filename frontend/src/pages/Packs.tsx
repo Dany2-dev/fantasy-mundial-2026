@@ -13,6 +13,7 @@ const PACKS = [
   { tier: "bronce", label: "Sobre Bronce", cost: 2500, desc: "3 cartas para empezar a armar tu club." },
   { tier: "plata", label: "Sobre Plata", cost: 5000, desc: "3 cartas con mejores opciones de encontrar una figura." },
   { tier: "oro", label: "Sobre Oro", cost: 9000, desc: "3 cartas; incluye una figura de élite si aún queda disponible." },
+  { tier: "legendario", label: "Sobre Legendario", cost: 16000, desc: "3 cartas; la mejor probabilidad de encontrar una leyenda del pool." },
 ] as const;
 
 export default function Packs() {
