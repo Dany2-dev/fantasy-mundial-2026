@@ -37,7 +37,7 @@ export default function Collection() {
           <IconCards size={30} />
         </span>
         <h1>Colección</h1>
-        <p className="muted">Tu colección vive dentro de una liga.</p>
+        <p className="muted">Primero entra a una liga. Ahí vas a reunir todos tus fichajes.</p>
         <Link to="/ligas">
           <button className="primary">Ir a Ligas</button>
         </Link>
@@ -55,7 +55,7 @@ export default function Collection() {
           <div>
             <span className={styles.eyebrow}>Mi club</span>
             <h1 className={styles.title}>Colección</h1>
-            <p className={styles.sub}>Todas tus cartas de esta liga, en un solo lugar.</p>
+            <p className={styles.sub}>Aquí están todos tus fichajes. Filtra por posición y encuentra tu próximo titular.</p>
           </div>
 
           <div className={styles.stats}>
@@ -103,10 +103,16 @@ export default function Collection() {
           <span className={styles.emptyBadge} aria-hidden="true">
             <IconCards size={30} />
           </span>
-          <p className="muted">Todavía no tienes cartas en esta liga.</p>
+          <p className="muted">Tu álbum sigue en blanco… Abre un sobre y empieza a armar tu club.</p>
           <Link to="/sobres">
             <button className="primary">Abrir mi primer sobre</button>
           </Link>
+        </div>
+      )}
+
+      {status === "ready" && items.length > 0 && visible.length === 0 && (
+        <div className={styles.empty}>
+          <p className="muted">No tienes cartas en esta posición. Prueba otro filtro o sal a fichar.</p>
         </div>
       )}
 

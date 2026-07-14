@@ -105,7 +105,7 @@ export default function Squad() {
         method: "PUT",
         body: JSON.stringify({ leagueId: activeLeagueId, formation, playerIds, captainId }),
       });
-      setMsg({ kind: "ok", text: "Once guardado" });
+      setMsg({ kind: "ok", text: "¡Once guardado! Ya estás listo para la jornada." });
     } catch (e) {
       setMsg({ kind: "error", text: e instanceof Error ? e.message : "No se pudo guardar" });
     }
@@ -115,7 +115,7 @@ export default function Squad() {
     return (
       <div className={styles.empty}>
         <h1>Mi Once</h1>
-        <p className="muted">Primero necesitas una liga (y cartas).</p>
+        <p className="muted">Tu once necesita un club… Entra a una liga, recibe tus cartas y empieza a armarlo.</p>
         <Link to="/ligas">
           <button className="primary">Ir a Ligas</button>
         </Link>
@@ -218,8 +218,8 @@ export default function Squad() {
           {collection.filter((p) => p.position === slots[pickingSlot].position && !usedIds.has(p.id)).length ===
             0 && (
             <p className="muted">
-              No tienes más {slots[pickingSlot].position} disponibles.{" "}
-              <Link to="/sobres">Abre un sobre</Link> o <Link to="/mercado">negocia en el mercado</Link>.
+              No tienes más {slots[pickingSlot].position} disponibles. Busca refuerzos en {" "}
+              <Link to="/sobres">sobres</Link> o en el <Link to="/mercado">mercado</Link>.
             </p>
           )}
         </div>

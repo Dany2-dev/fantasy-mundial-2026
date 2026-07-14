@@ -39,17 +39,23 @@ async function refreshFixtures(competitionFotmobIds: number[]): Promise<number> 
   return updated;
 }
 
+// Solo marcador/estado (1 request por competencia, sin detalle de partido) —
+// pensado para correr seguido y mantener el marcador al día sin pagar el
+// costo del sync completo (que sí pega un request por partido a sincronizar).
+export async function refreshScoreboards(competitionId?: number): Promise<number> {
+  const comps = await prisma.competition.findMany({
+    where: competitionId ? { id: competitionId } : undefined,
+    select: { fotmobId: true },
+  });
+  return refreshFixtures(comps.map((c) => c.fotmobId));
+}
+
 export async function syncResults(
   opts: { limit?: number; force?: boolean; competitionId?: number } = {}
 ): Promise<SyncResult> {
   const { limit = 60, force = false, competitionId } = opts;
 
-  // Solo refrescamos/sincronizamos competencias que existen en BD (o solo la pedida).
-  const comps = await prisma.competition.findMany({
-    where: competitionId ? { id: competitionId } : undefined,
-    select: { id: true, fotmobId: true },
-  });
-  const matchesUpdated = await refreshFixtures(comps.map((c) => c.fotmobId));
+  const matchesUpdated = await refreshScoreboards(competitionId);
 
   const pending = await prisma.match.findMany({
     where: {

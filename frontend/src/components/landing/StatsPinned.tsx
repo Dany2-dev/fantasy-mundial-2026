@@ -142,8 +142,8 @@ export default function StatsPinned() {
   return (
     <section ref={sectionRef} className={styles.section}>
       <div className={styles.inner}>
-        <span className={styles.eyebrow}>Con datos reales</span>
-        <h2 className={styles.heading}>No son cartas inventadas.</h2>
+        <span className={styles.eyebrow}>Fútbol real. Decisiones tuyas.</span>
+        <h2 className={styles.heading}>Cada jugador y cada partido cuentan.</h2>
         <div className={styles.grid}>
           {STATS.map((stat, i) => (
             <div

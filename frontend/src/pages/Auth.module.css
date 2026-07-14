@@ -18,8 +18,8 @@
 }
 
 .logo {
-  font-family: var(--font-display);
-  font-weight: 800;
+  font-family: var(--font-brand);
+  font-weight: 400;
   font-size: 20px;
   letter-spacing: 0.5px;
   color: #fff;
@@ -240,8 +240,8 @@
 
 .logoWatermark {
   display: block;
-  font-family: var(--font-display);
-  font-weight: 800;
+  font-family: var(--font-brand);
+  font-weight: 400;
   font-size: 15px;
   letter-spacing: 1px;
   color: var(--tinta-media);
@@ -333,6 +333,21 @@
 .squadCard:hover {
   transform: translateY(-14px);
   z-index: 1;
+}
+
+@media (max-width: 480px) {
+  .tradeVisual {
+    gap: var(--sp-2);
+  }
+
+  .tradeVisual > div {
+    width: min(130px, 34vw);
+  }
+
+  .squadCard {
+    width: 80px;
+    margin-left: -18px;
+  }
 }
 
 /* ---------- Tarjetas de producto ---------- */

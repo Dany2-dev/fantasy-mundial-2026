@@ -261,7 +261,7 @@
 .heroTitle {
   max-width: 14ch;
   font-size: clamp(34px, 5.5vw, 58px);
-  font-weight: 900;
+  font-weight: 800;
   line-height: 1.02;
   letter-spacing: 0.01em;
   text-wrap: balance;
@@ -411,7 +411,7 @@
 .sectionTitle {
   position: relative;
   font-size: 21px;
-  font-weight: 900;
+  font-weight: 800;
   letter-spacing: 0.01em;
   margin: 0;
   color: var(--hink);
@@ -572,8 +572,8 @@
 }
 
 .matchScoreNums {
-  font-family: var(--font-display);
-  font-weight: 900;
+  font-family: var(--font-sport);
+  font-weight: 400;
   font-size: 26px;
   letter-spacing: 0.04em;
   font-variant-numeric: tabular-nums;

@@ -36,9 +36,9 @@
 }
 
 .stepNum {
-  font-family: var(--font-display);
+  font-family: var(--font-sport);
   font-size: 14px;
-  font-weight: 900;
+  font-weight: 400;
   color: var(--gris);
   letter-spacing: 1px;
 }

@@ -143,8 +143,8 @@
 }
 
 .logo {
-  font-family: var(--font-display);
-  font-weight: 800;
+  font-family: var(--font-brand);
+  font-weight: 400;
   font-size: 22px;
   letter-spacing: 0.5px;
   color: var(--tinta);
@@ -243,7 +243,8 @@
 }
 
 .footerLogo {
-  font-family: var(--font-display);
+  font-family: var(--font-brand);
+  font-weight: 400;
   font-size: 18px;
   color: var(--tinta);
 }

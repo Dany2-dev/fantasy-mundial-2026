@@ -59,7 +59,7 @@
 
 .title {
   font-size: clamp(28px, 5vw, 40px);
-  font-weight: 900;
+  font-weight: 800;
   line-height: 1.05;
   margin: 4px 0 2px;
   color: var(--tinta);
@@ -93,9 +93,9 @@
 }
 
 .statValue {
-  font-family: var(--font-display);
+  font-family: var(--font-sport);
   font-size: 24px;
-  font-weight: 900;
+  font-weight: 400;
   color: var(--tinta);
   line-height: 1.1;
 }
