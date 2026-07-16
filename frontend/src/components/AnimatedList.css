@@ -1,0 +1,80 @@
+/* AnimatedList (React Bits) — adaptado al TEMA CLARO de la app.
+   Original: fondo #120F17 / items #2F293A / texto blanco.
+   Aquí: fondo blanco, bordes claros, acentos azules del design system. */
+
+.scroll-list-container {
+  position: relative;
+  width: 100%;
+  margin-top: var(--sp-3);
+}
+
+.scroll-list {
+  max-height: 460px;
+  overflow-y: auto;
+  padding: 8px 6px 12px;
+}
+
+.scroll-list::-webkit-scrollbar {
+  width: 8px;
+}
+.scroll-list::-webkit-scrollbar-track {
+  background: #f1f4f8;
+  border-radius: 4px;
+}
+.scroll-list::-webkit-scrollbar-thumb {
+  background: #cbd5e6;
+  border-radius: 4px;
+}
+.scroll-list::-webkit-scrollbar-thumb:hover {
+  background: #b3c1da;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Envoltorio de cada item: transparente para que el contenido (p. ej. la fila
+   del historial con su propio estilo) se muestre tal cual. El anillo azul marca
+   el item seleccionado por teclado/hover. */
+.item {
+  border-radius: 12px;
+  transition: box-shadow 0.15s ease;
+}
+.item.selected {
+  box-shadow: 0 0 0 2px #bac8ff, 0 6px 18px rgba(59, 91, 219, 0.12);
+}
+
+/* Modo texto simple (cuando se pasan strings como items). */
+.item-text {
+  margin: 0;
+  color: #212529;
+  padding: 14px 18px;
+  background: #ffffff;
+  border: 1.5px solid #e8edf5;
+  border-radius: 12px;
+}
+
+.top-gradient {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  background: linear-gradient(to bottom, #ffffff, transparent);
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.bottom-gradient {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: linear-gradient(to top, #ffffff, transparent);
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}

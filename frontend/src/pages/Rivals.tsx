@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
+import AnimatedList from "../components/AnimatedList";
 import PlayerCard from "../components/PlayerCard";
 import PlayerDetailModal from "../components/PlayerDetailModal";
 import { useAppSelector } from "../store/store";
-import { MarketCard, Trade } from "../types";
+import { MarketCard, Standing, Trade } from "../types";
 import styles from "./Rivals.module.css";
 
 interface RivalGroup {
@@ -13,15 +14,39 @@ interface RivalGroup {
   value: number;
 }
 
+// Once titular 4-3-3 (1 POR, 4 DEF, 3 MED, 3 DEL). Toma los mejores por
+// posición; el resto de las cartas van a la banca.
+const FORMATION: Record<"POR" | "DEF" | "MED" | "DEL", number> = { POR: 1, DEF: 4, MED: 3, DEL: 3 };
+
+function pickEleven(cards: MarketCard[]): { starters: MarketCard[]; bench: MarketCard[] } {
+  const sorted = [...cards].sort((a, b) => b.rating - a.rating);
+  const starterIds = new Set<number>();
+  const starters: MarketCard[] = [];
+  (["POR", "DEF", "MED", "DEL"] as const).forEach((pos) => {
+    sorted
+      .filter((c) => c.position === pos)
+      .slice(0, FORMATION[pos])
+      .forEach((c) => {
+        starters.push(c);
+        starterIds.add(c.id);
+      });
+  });
+  const bench = sorted.filter((c) => !starterIds.has(c.id));
+  return { starters, bench };
+}
+
 // Naoki trabaja el diseño de esta página. Los mánagers de tu liga y sus
-// cartas ya son datos reales (GET /collection/market); ver el once completo
-// de un rival se conecta después.
+// cartas ya son datos reales (GET /collection/market); los puntos y el valor
+// de equipo vienen de la tabla de la liga (GET /leagues/:id).
 export default function Rivals() {
   const activeLeagueId = useAppSelector((s) => s.leagues.activeLeagueId);
   const userId = useAppSelector((s) => s.auth.user?.id);
   const [market, setMarket] = useState<MarketCard[]>([]);
   const [trades, setTrades] = useState<Trade[]>([]);
+  const [standings, setStandings] = useState<Standing[]>([]);
   const [openPlayerId, setOpenPlayerId] = useState<number | null>(null);
+  const [selectedOwnerId, setSelectedOwnerId] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -30,14 +55,17 @@ export default function Rivals() {
     Promise.all([
       api<{ market: MarketCard[] }>(`/collection/market?leagueId=${activeLeagueId}`),
       api<{ trades: Trade[] }>(`/trades?leagueId=${activeLeagueId}`),
+      api<{ standings: Standing[] }>(`/leagues/${activeLeagueId}`),
     ])
-      .then(([m, t]) => {
+      .then(([m, t, l]) => {
         setMarket(m.market);
         setTrades(t.trades);
+        setStandings(l.standings);
       })
       .catch(() => {
         setMarket([]);
         setTrades([]);
+        setStandings([]);
       })
       .finally(() => setLoading(false));
   }, [activeLeagueId]);
@@ -46,7 +74,7 @@ export default function Rivals() {
     return (
       <div className={styles.empty}>
         <h1>Rivales</h1>
-        <p className="muted">Los rivales viven dentro de una liga.</p>
+        <p className="muted">Primero entra a una liga. Ahí encontrarás a los mánagers que tendrás que vencer.</p>
         <Link to="/ligas">
           <button className="primary">Ir a Ligas</button>
         </Link>
@@ -62,48 +90,136 @@ export default function Rivals() {
     byOwner.set(card.owner.id, g);
   }
   const rivals = [...byOwner.values()].sort((a, b) => b.value - a.value);
+  const visibleRivals = rivals.filter((r) =>
+    r.owner.name.toLowerCase().includes(query.trim().toLowerCase())
+  );
+
+  const pendingFor = (ownerId: string) =>
+    trades.filter(
+      (t) =>
+        t.status === "pending" &&
+        ((t.fromUserId === ownerId && t.toUserId === userId) ||
+          (t.toUserId === ownerId && t.fromUserId === userId))
+    ).length;
+
+  const pointsFor = (ownerId: string) => standings.find((s) => s.userId === ownerId)?.points ?? 0;
+
+  // Mánager seleccionado (por defecto el primero, para que el panel derecho no
+  // arranque vacío). El clic en la lista actualiza selectedOwnerId.
+  const selectedRival = rivals.find((r) => r.owner.id === selectedOwnerId) ?? rivals[0] ?? null;
+  const eleven = selectedRival ? pickEleven(selectedRival.cards) : { starters: [], bench: [] };
 
   return (
     <div>
       <h1>Rivales</h1>
-      <p className="muted">Los mánagers de tu liga. Toca una carta para ver sus estadísticas o clausularla.</p>
+      <p className="muted">Conoce sus plantillas, estudia sus figuras y prepara el próximo clausulazo.</p>
 
       {loading && <p className="muted">Cargando…</p>}
       {!loading && rivals.length === 0 && (
-        <p className="muted">Nadie más tiene cartas todavía. Invita a tus amigos con el código de la liga.</p>
+        <p className="muted">Aún juegas solo. Comparte el código de la liga y trae al grupo.</p>
       )}
 
-      <div className={styles.rivalsList}>
-        {rivals.map((r) => {
-          const pending = trades.filter(
-            (t) =>
-              t.status === "pending" &&
-              ((t.fromUserId === r.owner.id && t.toUserId === userId) ||
-                (t.toUserId === r.owner.id && t.fromUserId === userId))
-          );
-          const top = [...r.cards].sort((a, b) => b.rating - a.rating).slice(0, 5);
-          return (
-            <section key={r.owner.id} className={styles.rivalCard}>
-              <div className={styles.rivalHead}>
-                <div>
-                  <h2 className={styles.rivalName}>{r.owner.name}</h2>
-                  <span className="caption tabular">
-                    {r.cards.length} cartas · valor {r.value}
-                  </span>
-                </div>
-                {pending.length > 0 && <span className={styles.pendingBadge}>{pending.length} oferta(s) pendiente(s)</span>}
-              </div>
-              <div className={styles.cardsRow}>
-                {top.map((c) => (
-                  <div key={c.id} className={styles.miniCard}>
-                    <PlayerCard player={c} size="sm" onClick={() => setOpenPlayerId(c.id)} />
+      {rivals.length > 0 && (
+        <div className={styles.split}>
+          {/* IZQUIERDA: lista de mánagers (nombre · cartas · puntos · valor) */}
+          <div className={styles.leftCol}>
+            <input
+              className={styles.search}
+              type="search"
+              placeholder="Buscar mánager…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+            {visibleRivals.length === 0 ? (
+              <p className="muted">Ningún mánager coincide con “{query}”.</p>
+            ) : (
+              <AnimatedList
+                displayScrollbar
+                showGradients
+                enableArrowNavigation
+                initialSelectedIndex={0}
+                onItemSelect={(_item, index) => {
+                  const r = visibleRivals[index];
+                  if (r) setSelectedOwnerId(r.owner.id);
+                }}
+                items={visibleRivals.map((r) => {
+                  const pc = pendingFor(r.owner.id);
+                  return (
+                    <div className={styles.managerRow}>
+                      <div>
+                        <h2 className={styles.rivalName}>{r.owner.name}</h2>
+                        <span className="caption tabular">
+                          {r.cards.length} cartas · {pointsFor(r.owner.id)} pts · valor {r.value}
+                        </span>
+                      </div>
+                      {pc > 0 && (
+                        <span className={styles.pendingBadge}>{pc === 1 ? "1 oferta" : `${pc} ofertas`}</span>
+                      )}
+                    </div>
+                  );
+                })}
+              />
+            )}
+          </div>
+
+          {/* DERECHA: once del mánager seleccionado en la cancha + banca */}
+          <div className={styles.rightCol}>
+            {selectedRival ? (
+              <div className={styles.rightPanel}>
+                <div className={styles.rightHead}>
+                  <div>
+                    <h2 className={styles.rivalName}>{selectedRival.owner.name}</h2>
+                    <span className="caption tabular">
+                      {selectedRival.cards.length} cartas · {pointsFor(selectedRival.owner.id)} pts · valor {selectedRival.value}
+                    </span>
                   </div>
-                ))}
+                  {pendingFor(selectedRival.owner.id) > 0 && (
+                    <span className={styles.pendingBadge}>
+                      {pendingFor(selectedRival.owner.id) === 1
+                        ? "1 oferta pendiente"
+                        : `${pendingFor(selectedRival.owner.id)} ofertas pendientes`}
+                    </span>
+                  )}
+                </div>
+                <div className={styles.pitch}>
+                  {(["DEL", "MED", "DEF", "POR"] as const).map((pos) => {
+                    const line = eleven.starters.filter((c) => c.position === pos);
+                    if (line.length === 0) return null;
+                    return (
+                      <div key={pos} className={styles.pitchRow}>
+                        {line.map((c) => (
+                          <div key={c.id} className={styles.pitchSlot}>
+                            <PlayerCard player={c} size="sm" onClick={() => setOpenPlayerId(c.id)} />
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })}
+                  {selectedRival.cards.length === 0 && (
+                    <p className={styles.pitchEmpty}>Este mánager aún no tiene cartas.</p>
+                  )}
+                </div>
+                {eleven.bench.length > 0 && (
+                  <div className={styles.bench}>
+                    <span className={`caption ${styles.benchLabel}`}>Banca</span>
+                    <div className={styles.benchRow}>
+                      {eleven.bench.map((c) => (
+                        <div key={c.id} className={styles.pitchSlot}>
+                          <PlayerCard player={c} size="sm" onClick={() => setOpenPlayerId(c.id)} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-            </section>
-          );
-        })}
-      </div>
+            ) : (
+              <div className={styles.rightEmpty}>
+                <p className="muted">Selecciona un mánager para ver sus cartas.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {openPlayerId != null && (
         <PlayerDetailModal playerId={openPlayerId} leagueId={activeLeagueId} onClose={() => setOpenPlayerId(null)} />
