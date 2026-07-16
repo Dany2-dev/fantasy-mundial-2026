@@ -3,16 +3,11 @@ import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import { IconClose } from "../components/icons";
 import PlayerCard from "../components/PlayerCard";
+import { FORMATIONS } from "../lib/formations";
 import { fetchCollection } from "../store/collectionSlice";
 import { useAppDispatch, useAppSelector } from "../store/store";
 import { Player } from "../types";
 import styles from "./Squad.module.css";
-
-const FORMATIONS: Record<string, ["POR", number, number, number]> = {
-  "4-4-2": ["POR", 4, 4, 2],
-  "4-3-3": ["POR", 4, 3, 3],
-  "3-5-2": ["POR", 3, 5, 2],
-};
 
 type Slot = { position: Player["position"]; playerId: number | null };
 
@@ -31,6 +26,28 @@ function buildSlots(formation: string, playerByPos: Map<string, number[]>): Slot
   }
   return slots;
 }
+
+// Las filas de jugadores se acomodan en un "cono" (más angosto arriba, donde
+// están los delanteros; más ancho abajo, junto al arquero) para que sigan la
+// perspectiva del fondo. El fondo (foto real) se inclina en 3D aparte; las
+// cartas se quedan siempre "de pie" (sin esa inclinación) y solo cambian de
+// tamaño con SCALE_TOP/SCALE_BOTTOM para sugerir cercanía/lejanía.
+const TOP_INSET = 7;
+const BOTTOM_INSET = 1;
+const SCALE_TOP = 0.72;
+const SCALE_BOTTOM = 1.08;
+function insetAtY(y: number) {
+  return TOP_INSET + ((BOTTOM_INSET - TOP_INSET) * y) / 100;
+}
+function rowCenterY(rowIndex: number, totalRows: number) {
+  return ((rowIndex + 0.5) / totalRows) * 100;
+}
+function scaleForRow(rowIndex: number, totalRows: number) {
+  const t = totalRows > 1 ? rowIndex / (totalRows - 1) : 0;
+  return SCALE_TOP + t * (SCALE_BOTTOM - SCALE_TOP);
+}
+
+type Point = { x: number; y: number };
 
 export default function Squad() {
   const dispatch = useAppDispatch();
@@ -132,16 +149,64 @@ export default function Squad() {
       i += n;
     }
   }
+  const displayRows = [...rows].reverse(); // delanteros arriba, arquero abajo
+
   const filled = slots.filter((s) => s.playerId != null).length;
-  const captainOptions = slots
+  const filledPlayers = slots
     .map((s) => (s.playerId != null ? byId.get(s.playerId) : undefined))
     .filter((p): p is Player => Boolean(p));
+  const avgRating = filledPlayers.length
+    ? Math.round(filledPlayers.reduce((sum, p) => sum + p.rating, 0) / filledPlayers.length)
+    : null;
+  const captainOptions = filledPlayers;
+
+  // Coordenadas (0-100) de cada slot dentro del trapecio, más las líneas de
+  // conexión decorativas entre jugadores de filas vecinas.
+  const rowPoints: Point[][] = displayRows.map((row, rowIndex) => {
+    const y = rowCenterY(rowIndex, displayRows.length);
+    const inset = insetAtY(y);
+    const n = row.length;
+    return row.map((_, i) => ({
+      x: inset + ((i + 0.5) / n) * (100 - 2 * inset),
+      y,
+    }));
+  });
+
+  const connections: [Point, Point][] = [];
+  for (const row of rowPoints) {
+    for (let i = 0; i < row.length - 1; i++) connections.push([row[i], row[i + 1]]);
+  }
+  for (let r = 0; r < rowPoints.length - 1; r++) {
+    const from = rowPoints[r];
+    const to = rowPoints[r + 1];
+    for (const a of from) {
+      let best = to[0];
+      let bestDist = Math.abs(a.x - to[0].x);
+      for (const b of to) {
+        const d = Math.abs(a.x - b.x);
+        if (d < bestDist) {
+          best = b;
+          bestDist = d;
+        }
+      }
+      connections.push([a, best]);
+    }
+  }
 
   return (
     <div>
       <div className={styles.headerRow}>
         <h1>Mi Once</h1>
-        <span className="caption tabular">{filled}/11</span>
+        <div className={styles.stats}>
+          <span className={styles.statChip}>
+            <span className={styles.statValue}>{filled}/11</span>
+            <span className={styles.statLabel}>jugadores</span>
+          </span>
+          <span className={styles.statChip}>
+            <span className={styles.statValue}>{avgRating ?? "—"}</span>
+            <span className={styles.statLabel}>media</span>
+          </span>
+        </div>
       </div>
 
       <div className={styles.controls}>
@@ -175,34 +240,53 @@ export default function Squad() {
       {msg && <p className={msg.kind === "ok" ? "ok-text" : "error-text"}>{msg.text}</p>}
 
       <div className={styles.pitch}>
-        {rows.reverse().map((row, ri) => (
-          <div key={ri} className={styles.row}>
-            {row.map((slot) => {
-              const slotIndex = slots.indexOf(slot);
-              const player = slot.playerId != null ? byId.get(slot.playerId) : undefined;
-              return (
-                <div key={slotIndex} className={styles.slotWrap}>
-                  {player ? (
-                    <div className={styles.filledSlot}>
-                      <PlayerCard player={player} size="sm" captain={captainId === player.id} />
-                      <button className={styles.removeBtn} onClick={() => clearSlot(slotIndex)} title="Quitar">
-                        <IconClose size={13} />
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      className={styles.emptySlot}
-                      onClick={() => setPickingSlot(pickingSlot === slotIndex ? null : slotIndex)}
-                      aria-label={`Elegir ${slot.position}`}
-                    >
-                      + {slot.position}
+        {/* Fondo: foto real de cancha, inclinada en 3D para dar profundidad.
+            No lleva jugadores adentro para que ellos no hereden esa inclinación. */}
+        <div className={styles.pitchTilt} aria-hidden="true" />
+
+        {/* Líneas de conexión decorativas, en su propia capa plana (sin inclinar)
+            para que calcen exacto con la posición de las cartas. */}
+        <svg className={styles.connectors} viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          {connections.map(([a, b], i) => (
+            <line key={i} x1={a.x} y1={a.y} x2={b.x} y2={b.y} className={styles.pitchConnector} />
+          ))}
+        </svg>
+
+        {/* Cartas: capa plana, siempre "de pie". Solo cambian de tamaño por fila
+            (más chicas arriba/lejos, más grandes abajo/cerca) para sugerir profundidad
+            sin inclinarlas ni deformarlas. */}
+        {displayRows.map((row, rowIndex) =>
+          row.map((slot, i) => {
+            const slotIndex = slots.indexOf(slot);
+            const player = slot.playerId != null ? byId.get(slot.playerId) : undefined;
+            const { x, y } = rowPoints[rowIndex][i];
+            const scale = scaleForRow(rowIndex, displayRows.length);
+            return (
+              <div
+                key={slotIndex}
+                className={styles.slotWrap}
+                style={{ left: `${x}%`, top: `${y}%`, transform: `translate(-50%, -50%) scale(${scale})` }}
+              >
+                {player ? (
+                  <div className={styles.filledSlot}>
+                    <PlayerCard player={player} size="sm" captain={captainId === player.id} />
+                    <button className={styles.removeBtn} onClick={() => clearSlot(slotIndex)} title="Quitar">
+                      <IconClose size={13} />
                     </button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        ))}
+                  </div>
+                ) : (
+                  <button
+                    className={styles.emptySlot}
+                    onClick={() => setPickingSlot(pickingSlot === slotIndex ? null : slotIndex)}
+                    aria-label={`Elegir ${slot.position}`}
+                  >
+                    + {slot.position}
+                  </button>
+                )}
+              </div>
+            );
+          })
+        )}
       </div>
 
       {pickingSlot != null && (
@@ -218,7 +302,7 @@ export default function Squad() {
           {collection.filter((p) => p.position === slots[pickingSlot].position && !usedIds.has(p.id)).length ===
             0 && (
             <p className="muted">
-              No tienes más {slots[pickingSlot].position} disponibles. Busca refuerzos en {" "}
+              No tienes más {slots[pickingSlot].position} disponibles. Busca refuerzos en{" "}
               <Link to="/sobres">sobres</Link> o en el <Link to="/mercado">mercado</Link>.
             </p>
           )}

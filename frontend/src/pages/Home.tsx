@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { Player as RemotionPlayer } from "@remotion/player";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import Flag from "../components/Flag";
@@ -14,12 +15,109 @@ import {
   IconTrophy,
   IconUsers,
 } from "../components/icons";
-import PlayerCard from "../components/PlayerCard";
+import PlayerCard, { initials } from "../components/PlayerCard";
 import PlayerDetailModal from "../components/PlayerDetailModal";
+import { formationRows } from "../lib/formations";
+import HighlightReel, {
+  HIGHLIGHT_FPS,
+  HIGHLIGHT_HEIGHT,
+  HIGHLIGHT_WIDTH,
+  highlightDuration,
+} from "../remotion/HighlightReel";
 import { fetchCollection } from "../store/collectionSlice";
 import { useAppDispatch, useAppSelector } from "../store/store";
-import { Match, rarityOf, Standing } from "../types";
+import { Match, Player, rarityOf, Standing } from "../types";
 import styles from "./Home.module.css";
+
+interface SquadInfo {
+  formation: string;
+  playerIds: number[];
+  captainId: number | null;
+}
+
+const SHOWCASE_PAGE_SIZE = 4;
+
+const PITCH_MARKINGS = (
+  <span className={styles.pitchMarkings} aria-hidden="true">
+    <span className={styles.pitchCenterLine} />
+    <span className={styles.pitchCenterCircle} />
+    <span className={styles.pitchCenterSpot} />
+    <span className={`${styles.pitchPenaltyArea} ${styles.pitchPenaltyAreaLeft}`} />
+    <span className={`${styles.pitchPenaltyArea} ${styles.pitchPenaltyAreaRight}`} />
+    <span className={`${styles.pitchGoalArea} ${styles.pitchGoalAreaLeft}`} />
+    <span className={`${styles.pitchGoalArea} ${styles.pitchGoalAreaRight}`} />
+    <span className={`${styles.pitchGoal} ${styles.pitchGoalLeft}`} />
+    <span className={`${styles.pitchGoal} ${styles.pitchGoalRight}`} />
+    <span className={`${styles.pitchPenaltySpot} ${styles.pitchPenaltySpotLeft}`} />
+    <span className={`${styles.pitchPenaltySpot} ${styles.pitchPenaltySpotRight}`} />
+  </span>
+);
+
+// Agrupa los ids guardados del once por posición real (según la colección)
+// y los reparte en las filas de la formación — igual que Squad.tsx, pero de
+// solo lectura: aquí no hay que reasignar slots, solo mostrar un preview.
+function buildFormationPreview(
+  formation: string,
+  playerIds: number[],
+  byId: Map<number, Player>
+): (Player | null)[][] {
+  const byPosition = new Map<string, number[]>();
+  for (const id of playerIds) {
+    const p = byId.get(id);
+    if (p) byPosition.set(p.position, [...(byPosition.get(p.position) ?? []), id]);
+  }
+  return formationRows(formation).map(([pos, count]) => {
+    const ids = [...(byPosition.get(pos) ?? [])];
+    return Array.from({ length: count }, () => {
+      const id = ids.shift();
+      return id != null ? byId.get(id) ?? null : null;
+    });
+  });
+}
+
+// Círculo del preview de formación: foto real del jugador con fallback a
+// iniciales (igual que PlayerCard) si no hay foto o si la URL falla al cargar.
+function MiniPitchDot({ player, captain }: { player: Player | null; captain: boolean }) {
+  const [failedPhotoUrl, setFailedPhotoUrl] = useState<string | null>(null);
+  if (!player) {
+    return (
+      <span className={styles.miniPlayer}>
+        <span className={styles.miniDot} title="Slot vacío" />
+        <span className={styles.miniPlayerName}>Vacante</span>
+      </span>
+    );
+  }
+
+  const showPhoto = Boolean(player.photoUrl && failedPhotoUrl !== player.photoUrl);
+  return (
+    <span className={styles.miniPlayer}>
+      <span
+        className={`${styles.miniDot} ${styles.miniDotFilled} ${captain ? styles.miniDotCaptain : ""}`}
+        title={player.name}
+      >
+        {showPhoto ? (
+          <img
+            src={player.photoUrl ?? undefined}
+            alt=""
+            className={styles.miniDotPhoto}
+            loading="lazy"
+            decoding="async"
+            onError={() => player.photoUrl && setFailedPhotoUrl(player.photoUrl)}
+          />
+        ) : (
+          <span className={`${styles.miniDotInitials} ${styles[`miniDotPos${player.position}`]}`}>
+            {initials(player.name)}
+          </span>
+        )}
+        {captain && <span className={styles.miniDotCaptainBadge}>C</span>}
+        <span className={styles.miniDotRating}>{player.rating}</span>
+      </span>
+      <span className={styles.miniPlayerName} title={player.name}>
+        {player.name}
+      </span>
+    </span>
+  );
+}
 
 function pickFeaturedMatch(matches: Match[]): Match | null {
   const timed = matches.filter((m) => m.utcTime);
@@ -65,11 +163,18 @@ export default function Home() {
   const [standings, setStandings] = useState<Standing[]>([]);
   const [match, setMatch] = useState<Match | null>(null);
   const [openPlayerId, setOpenPlayerId] = useState<number | null>(null);
+  const [squad, setSquad] = useState<SquadInfo | null>(null);
 
   const activeLeague = leagues.find((l) => l.id === activeLeagueId);
-  const sorted = [...collection].sort((a, b) => b.rating - a.rating);
+  // Ordena toda la colección (puede ser larga) solo cuando cambia, no en
+  // cada render — por ejemplo, al abrir el modal de detalle de un jugador.
+  const sorted = useMemo(() => [...collection].sort((a, b) => b.rating - a.rating), [collection]);
   const bestCard = sorted[0] ?? null;
   const myRank = standings.findIndex((s) => s.userId === user?.id) + 1;
+  const byId = useMemo(() => new Map(collection.map((p) => [p.id, p])), [collection]);
+
+  // Solo tus mejores cartas: sin segunda página con jugadores de menor rating.
+  const showcasePlayers = sorted.slice(0, SHOWCASE_PAGE_SIZE);
 
   useEffect(() => {
     if (!activeLeagueId) return;
@@ -77,6 +182,9 @@ export default function Home() {
     api<{ standings: Standing[] }>(`/leagues/${activeLeagueId}`)
       .then((d) => setStandings(d.standings))
       .catch(() => setStandings([]));
+    api<{ squad: SquadInfo }>(`/squad?leagueId=${activeLeagueId}`)
+      .then((d) => setSquad(d.squad))
+      .catch(() => setSquad(null));
   }, [dispatch, activeLeagueId]);
 
   useEffect(() => {
@@ -93,7 +201,7 @@ export default function Home() {
           <IconTrophy size={30} />
         </span>
         <h1>Hola, {user?.name}</h1>
-        <p className={styles.hMuted}>Tu club necesita una liga para entrar a la cancha. Crea una o únete al grupo.</p>
+        <p className={styles.hMuted}>Todavía no tienes liga. Crea una o únete a la de tus amigos para empezar a jugar.</p>
         <Link to="/ligas">
           <button className={styles.ctaPrimary}>Entrar a una liga</button>
         </Link>
@@ -145,8 +253,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ===== Plantilla destacada ===== */}
-      {collection.length > 0 && (
+      {/* ===== Plantilla destacada: carrusel con autoplay + video de la colección ===== */}
+      {showcasePlayers.length > 0 && (
         <section className={styles.section}>
           <div className={styles.sectionHead}>
             <h2>Las figuras de tu club</h2>
@@ -154,12 +262,41 @@ export default function Home() {
               Ver colección <IconArrowRight size={15} />
             </Link>
           </div>
-          <div className={styles.showcaseRow}>
-            {sorted.slice(0, 8).map((p) => (
-              <div key={p.id} className={styles.showcaseMini}>
-                <PlayerCard player={p} onClick={() => setOpenPlayerId(p.id)} />
+
+          <div className={styles.showcaseSplit}>
+            <div className={styles.carousel}>
+              <div className={styles.carouselTrack}>
+                {showcasePlayers.map((p) => (
+                  <div key={p.id} className={styles.showcaseMini}>
+                    <PlayerCard player={p} onClick={() => setOpenPlayerId(p.id)} />
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
+
+            {sorted.length > 0 && (
+              <div className={styles.highlightCol}>
+                <div className={styles.highlightWrap}>
+                  <RemotionPlayer
+                    component={HighlightReel}
+                    inputProps={{ players: sorted }}
+                    durationInFrames={highlightDuration(sorted.length)}
+                    fps={HIGHLIGHT_FPS}
+                    compositionWidth={HIGHLIGHT_WIDTH}
+                    compositionHeight={HIGHLIGHT_HEIGHT}
+                    style={{ width: "100%" }}
+                    controls={false}
+                    clickToPlay={false}
+                    initiallyMuted
+                    loop
+                    autoPlay
+                  />
+                </div>
+                <p className={styles.highlightCaption}>
+                  Tu Coleccion.
+                </p>
+              </div>
+            )}
           </div>
         </section>
       )}
@@ -214,7 +351,7 @@ export default function Home() {
                 <span className={styles.standingsPoints}>{s.points.toLocaleString("es-MX")} pts</span>
               </li>
             ))}
-            {standings.length === 0 && <li className={styles.hMuted}>La tabla todavía no se mueve.</li>}
+            {standings.length === 0 && <li className={styles.hMuted}>Todavía no hay resultados en tu liga.</li>}
           </ol>
           {myRank > 0 && (
             <p className={styles.standingsFoot}>
@@ -222,6 +359,31 @@ export default function Home() {
             </p>
           )}
         </section>
+
+        {squad && squad.playerIds.length > 0 && (
+          <section className={`${styles.card} ${styles.formationCard}`}>
+            <div className={styles.sectionHead}>
+              <h2>Tu once</h2>
+              <Link to="/once" className={styles.sectionLink}>
+                Editar once <IconArrowRight size={15} />
+              </Link>
+            </div>
+            <div className={styles.miniPitch}>
+              {PITCH_MARKINGS}
+              {buildFormationPreview(squad.formation, squad.playerIds, byId)
+                .map((row, ri) => (
+                  <div key={ri} className={styles.miniRow}>
+                    {row.map((player, i) => (
+                      <MiniPitchDot key={i} player={player} captain={Boolean(player && squad.captainId === player.id)} />
+                    ))}
+                  </div>
+                ))}
+            </div>
+            <p className={styles.formationCaption}>
+              Formación {squad.formation} · {squad.playerIds.length}/11 confirmados
+            </p>
+          </section>
+        )}
       </div>
 
       {/* ===== Menú del club ===== */}

@@ -11,17 +11,23 @@
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.5.0",
+    "@remotion/cli": "^4.0.489",
+    "@remotion/player": "^4.0.489",
     "@use-gesture/react": "^10.3.1",
     "gsap": "^3.15.0",
     "motion": "^12.42.2",
+    "ogl": "^1.0.11",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-redux": "^9.2.0",
-    "react-router-dom": "^7.1.0"
+    "react-router-dom": "^7.1.0",
+    "remotion": "^4.0.489",
+    "three": "^0.185.1"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@types/three": "^0.185.1",
     "@vitejs/plugin-react": "^4.3.4",
     "typescript": "^5.7.2",
     "vite": "^6.0.0"
