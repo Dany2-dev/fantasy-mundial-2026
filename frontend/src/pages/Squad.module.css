@@ -1,7 +1,42 @@
 .headerRow {
   display: flex;
-  align-items: baseline;
+  align-items: center;
+  justify-content: space-between;
   gap: var(--sp-3);
+  flex-wrap: wrap;
+}
+
+/* ---- Chips de estadísticas del once (11/11, media) ---- */
+.stats {
+  display: flex;
+  gap: var(--sp-2);
+}
+
+.statChip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 64px;
+  padding: 6px var(--sp-3);
+  border-radius: var(--r-card);
+  background: var(--superficie-alta);
+  border: 1px solid var(--borde);
+}
+
+.statValue {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 18px;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.statLabel {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  color: var(--tinta-media);
+  text-transform: uppercase;
 }
 
 .controls {
@@ -9,7 +44,7 @@
   gap: var(--sp-3);
   align-items: flex-end;
   flex-wrap: wrap;
-  margin-bottom: var(--sp-4);
+  margin-bottom: var(--sp-3);
 }
 
 .control {
@@ -23,27 +58,57 @@
   min-width: 140px;
 }
 
-/* Cancha: gradiente de pasto nocturno con líneas */
+/* ---- Cancha en perspectiva ----
+   El alto se fija con vh (no con el ancho de la página) para que toda la
+   sección quepa en pantalla sin obligar a bajar mucho; el ancho se deriva
+   de ese alto. */
 .pitch {
-  background:
-    linear-gradient(rgba(11, 18, 32, 0.55), rgba(11, 18, 32, 0.55)),
-    repeating-linear-gradient(0deg, #14532d 0 48px, #166534 48px 96px);
-  border: 2px solid rgba(255, 255, 255, 0.18);
+  --pitch-h: min(80vh, 800px);
+  position: relative;
+  height: var(--pitch-h);
+  width: min(100%, calc(var(--pitch-h) * 1.05));
+  margin: 0 auto;
+  perspective: 900px;
   border-radius: var(--r-card);
-  padding: var(--sp-5) var(--sp-3);
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-4);
+  /* Sin overflow:hidden aquí: así la insignia de capitán de PlayerCard (que
+     a propósito sobresale un poco arriba de la carta) nunca se corta. Las
+     esquinas redondeadas las da .pitchTilt directamente sobre la foto. */
+  box-shadow: 0 20px 40px -22px rgba(13, 17, 23, 0.6);
 }
 
-.row {
-  display: flex;
-  justify-content: center;
-  gap: var(--sp-3);
+/* Fondo: foto real de cancha (frontend/public/pitch/campo.jpg), inclinada en
+   3D. No contiene jugadores: así ellos no heredan la deformación de la
+   inclinación y se ven "de pie". */
+.pitchTilt {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--r-card);
+  overflow: hidden;
+  background: url("/pitch/campo.jpg") center / cover no-repeat;
+  transform: rotateX(24deg);
+  transform-origin: 50% 100%;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.14);
+}
+
+.connectors {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.pitchConnector {
+  stroke: rgba(255, 255, 255, 0.55);
+  stroke-width: 0.35;
+  vector-effect: non-scaling-stroke;
 }
 
 .slotWrap {
-  width: 96px;
+  position: absolute;
+  width: 95px;
+  z-index: 2;
 }
 
 .filledSlot {
@@ -65,11 +130,12 @@
   border: 1px solid var(--linea);
   color: var(--gris);
   line-height: 1;
+  z-index: 2;
 }
 
 .emptySlot {
   width: 100%;
-  min-height: 108px;
+  min-height: 96px;
   border: 2px dashed rgba(255, 255, 255, 0.35);
   border-radius: var(--r-carta);
   background: rgba(11, 18, 32, 0.35);
@@ -103,12 +169,16 @@
 }
 
 @media (max-width: 480px) {
+  .pitch {
+    --pitch-h: min(66vh, 600px);
+  }
+
   .slotWrap {
-    width: 72px;
+    width: 68px;
   }
 
   .emptySlot {
-    min-height: 88px;
-    font-size: 13px;
+    min-height: 62px;
+    font-size: 11px;
   }
 }

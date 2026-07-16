@@ -1,0 +1,111 @@
+/* Motor visual de TiltCard: inclinación 3D + brillo holográfico que sigue al
+   cursor, adaptado del componente "ProfileCard" de React Bits. A diferencia
+   del original (pensado para una tarjeta oscura), el modo de mezcla del
+   brillo se ajusta a "overlay"/"soft-light" para que se vea bien sobre el
+   fondo claro que ya usan las tarjetas de Sobres — así no hace falta
+   oscurecer nada existente. El color del resplandor lo hereda del elemento
+   padre vía la variable --glow que cada tier ya define en Packs.module.css. */
+.shell {
+  --pointer-x: 50%;
+  --pointer-y: 50%;
+  --rotate-x: 0deg;
+  --rotate-y: 0deg;
+  --background-y: 50%;
+  position: relative;
+  width: 100%;
+  perspective: 900px;
+  touch-action: none;
+}
+
+.card {
+  position: relative;
+  width: 100%;
+  transform: translateZ(0) rotateX(0deg) rotateY(0deg);
+  transition: transform 0.6s ease;
+}
+
+.shell:hover .card,
+.shell.active .card {
+  transition: none;
+  transform: translateZ(0) rotateX(var(--rotate-y)) rotateY(var(--rotate-x));
+}
+
+.inside,
+.shine,
+.glare {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+.shell:hover .inside,
+.shell.active .inside {
+  opacity: 0.55;
+}
+
+.inside {
+  background-image: radial-gradient(
+    120% 100% at var(--pointer-x) var(--pointer-y),
+    var(--glow, rgba(125, 190, 255, 0.5)) 0%,
+    transparent 65%
+  );
+}
+
+/* Los --sunpillar-N no tienen valor por defecto en .shell a propósito: así
+   quien use TiltCard puede "temar" el brillo (ver Packs.module.css, donde
+   cada tier define su propia paleta). Si nadie los define, cae en el
+   arcoíris de respaldo de abajo. */
+.shine {
+  --space: 6%;
+  mix-blend-mode: soft-light;
+  background-image: repeating-linear-gradient(
+    0deg,
+    var(--sunpillar-1, hsl(2, 100%, 73%)) calc(var(--space) * 1),
+    var(--sunpillar-2, hsl(53, 100%, 69%)) calc(var(--space) * 2),
+    var(--sunpillar-3, hsl(93, 100%, 69%)) calc(var(--space) * 3),
+    var(--sunpillar-4, hsl(176, 100%, 76%)) calc(var(--space) * 4),
+    var(--sunpillar-5, hsl(228, 100%, 74%)) calc(var(--space) * 5),
+    var(--sunpillar-6, hsl(283, 100%, 73%)) calc(var(--space) * 6),
+    var(--sunpillar-1, hsl(2, 100%, 73%)) calc(var(--space) * 7)
+  );
+  background-position: 0 var(--background-y);
+  background-size: 400% 400%;
+}
+
+.shell:hover .shine,
+.shell.active .shine {
+  opacity: 0.4;
+}
+
+.glare {
+  background-image: radial-gradient(
+    farthest-corner circle at var(--pointer-x) var(--pointer-y),
+    hsla(0, 0%, 100%, 0.85) 0%,
+    hsla(0, 0%, 100%, 0) 65%
+  );
+  mix-blend-mode: overlay;
+}
+
+.shell:hover .glare,
+.shell.active .glare {
+  opacity: 0.5;
+}
+
+.content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--sp-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    transition: none;
+  }
+}

@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
+import Galaxy from "../components/Galaxy";
 import { IconCoin } from "../components/icons";
 import PackOpeningModal from "../components/PackOpeningModal";
+import TiltCard from "../components/TiltCard";
 import { setCoins } from "../store/authSlice";
 import { fetchCollection } from "../store/collectionSlice";
 import { useAppDispatch, useAppSelector } from "../store/store";
@@ -25,6 +27,10 @@ export default function Packs() {
   const [resultTier, setResultTier] = useState<string | null>(null);
   const [revealIndex, setRevealIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  // El fondo animado usa WebGL: se omite si el usuario prefiere menos
+  // movimiento (accesibilidad), cayendo en el fondo plano de siempre.
+  const prefersReducedMotion =
+    typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   async function openPack(tier: string) {
     if (!activeLeagueId) return;
@@ -55,18 +61,49 @@ export default function Packs() {
 
   if (!activeLeagueId) {
     return (
-      <div className={styles.empty}>
-        <h1>Sobres</h1>
-        <p className="muted">Primero entra a una liga. Ahí cada carta tendrá un solo dueño.</p>
-        <Link to="/ligas">
-          <button className="primary">Ir a Ligas</button>
-        </Link>
+      <div className={styles.page}>
+        {!prefersReducedMotion && (
+          <Galaxy
+            className={styles.galaxyBg}
+            hueShift={220}
+            saturation={0.55}
+            density={1.1}
+            glowIntensity={0.35}
+            twinkleIntensity={0.4}
+            starSpeed={0.4}
+            rotationSpeed={0.04}
+            mouseRepulsion={false}
+            transparent
+          />
+        )}
+        <div className={`${styles.empty} ${styles.pageContent}`}>
+          <h1>Sobres</h1>
+          <p className="muted">Primero entra a una liga. Ahí cada carta tendrá un solo dueño.</p>
+          <Link to="/ligas">
+            <button className="primary">Ir a Ligas</button>
+          </Link>
+        </div>
       </div>
     );
   }
 
   return (
-    <div>
+    <div className={styles.page}>
+      {!prefersReducedMotion && (
+        <Galaxy
+          className={styles.galaxyBg}
+          hueShift={220}
+          saturation={0.55}
+          density={1.1}
+          glowIntensity={0.35}
+          twinkleIntensity={0.4}
+          starSpeed={0.4}
+          rotationSpeed={0.04}
+          mouseRepulsion={false}
+          transparent
+        />
+      )}
+      <div className={styles.pageContent}>
       <h1>Sobres</h1>
       <p className={`muted ${styles.intro}`}>
         Cada carta es única dentro de tu liga: si te sale una figura, ningún rival podrá tenerla sin negociar contigo o pagar su cláusula.
@@ -74,30 +111,37 @@ export default function Packs() {
 
       <div className={styles.packs}>
         {PACKS.map((p) => (
-          <div key={p.tier} className={`${styles.pack} ${styles[p.tier]}`}>
-            <span className={styles.packShine} aria-hidden="true" />
-            <span className={styles.tierBadge}>{p.tier}</span>
-            <img className={styles.packArt} src={`/packs/${p.tier}.png`} alt="" aria-hidden="true" />
-            <h2>{p.label}</h2>
-            <p className={styles.packDesc}>{p.desc}</p>
-            <button
-              className={`primary ${styles.openBtn}`}
-              disabled={opening !== null || (user?.coins ?? 0) < p.cost}
-              onClick={() => openPack(p.tier)}
-            >
-              {opening === p.tier ? (
-                "Abriendo…"
-              ) : (
-                <span className={styles.costLabel}>
-                  Abrir por {p.cost.toLocaleString("es-MX")} <IconCoin size={15} />
+          <div
+            key={p.tier}
+            className={`${styles.pack} ${styles[p.tier]} ${opening === p.tier ? styles.charging : ""}`}
+          >
+            <TiltCard>
+              <span className={styles.tierBadge}>{p.tier}</span>
+              <img className={styles.packArt} src={`/packs/${p.tier}.png`} alt="" aria-hidden="true" />
+              <h2>{p.label}</h2>
+              <p className={styles.packDesc}>{p.desc}</p>
+              <button
+                className={`primary ${styles.openBtn} ${opening === p.tier ? styles.opening : ""}`}
+                disabled={opening !== null || (user?.coins ?? 0) < p.cost}
+                onClick={() => openPack(p.tier)}
+              >
+                {opening === p.tier ? (
+                  <span className={styles.openingLabel}>
+                    <IconCoin size={15} className={styles.spinningCoin} />
+                    Abriendo…
+                  </span>
+                ) : (
+                  <span className={styles.costLabel}>
+                    Abrir por {p.cost.toLocaleString("es-MX")} <IconCoin size={15} />
+                  </span>
+                )}
+              </button>
+              {(user?.coins ?? 0) < p.cost && (
+                <span className={`caption ${styles.missing}`}>
+                  Te faltan {(p.cost - (user?.coins ?? 0)).toLocaleString("es-MX")} <IconCoin size={12} />
                 </span>
               )}
-            </button>
-            {(user?.coins ?? 0) < p.cost && (
-              <span className={`caption ${styles.missing}`}>
-                Te faltan {(p.cost - (user?.coins ?? 0)).toLocaleString("es-MX")} <IconCoin size={12} />
-              </span>
-            )}
+            </TiltCard>
           </div>
         ))}
       </div>
@@ -116,6 +160,7 @@ export default function Packs() {
           onClose={closeReveal}
         />
       )}
+      </div>
     </div>
   );
 }
