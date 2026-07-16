@@ -173,3 +173,32 @@ export function IconMore(props: IconProps) {
     </svg>
   );
 }
+
+export function IconPause(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <rect x="6" y="5" width="4" height="14" rx="1" fill="currentColor" stroke="none" />
+      <rect x="14" y="5" width="4" height="14" rx="1" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+export function IconPlay(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M7 5.5v13l11-6.5-11-6.5Z" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+export function IconStar(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path
+        d="m12 3.5 2.6 5.4 5.9.8-4.3 4.2 1 5.9-5.2-2.8-5.2 2.8 1-5.9-4.3-4.2 5.9-.8 2.6-5.4Z"
+        fill="currentColor"
+        stroke="none"
+      />
+    </svg>
+  );
+}

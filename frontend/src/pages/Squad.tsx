@@ -3,16 +3,11 @@ import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import { IconClose } from "../components/icons";
 import PlayerCard from "../components/PlayerCard";
+import { FORMATIONS } from "../lib/formations";
 import { fetchCollection } from "../store/collectionSlice";
 import { useAppDispatch, useAppSelector } from "../store/store";
 import { Player } from "../types";
 import styles from "./Squad.module.css";
-
-const FORMATIONS: Record<string, ["POR", number, number, number]> = {
-  "4-4-2": ["POR", 4, 4, 2],
-  "4-3-3": ["POR", 4, 3, 3],
-  "3-5-2": ["POR", 3, 5, 2],
-};
 
 type Slot = { position: Player["position"]; playerId: number | null };
 

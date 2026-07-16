@@ -292,11 +292,8 @@
 .packVisual {
   position: relative;
   display: flex;
-}
-
-.packVisual img {
-  width: 220px;
-  filter: drop-shadow(0 20px 40px rgba(240, 194, 75, 0.35));
+  width: 320px;
+  max-width: 100%;
 }
 
 .singleCard {
