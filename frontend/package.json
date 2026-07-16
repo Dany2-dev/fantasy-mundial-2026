@@ -11,13 +11,16 @@
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.5.0",
+    "@remotion/cli": "^4.0.489",
+    "@remotion/player": "^4.0.489",
     "@use-gesture/react": "^10.3.1",
     "gsap": "^3.15.0",
     "motion": "^12.42.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-redux": "^9.2.0",
-    "react-router-dom": "^7.1.0"
+    "react-router-dom": "^7.1.0",
+    "remotion": "^4.0.489"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",

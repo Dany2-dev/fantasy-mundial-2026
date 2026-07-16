@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
-import FlipReveal from "../components/FlipReveal";
 import { IconCoin } from "../components/icons";
+import PackOpeningModal from "../components/PackOpeningModal";
 import { setCoins } from "../store/authSlice";
 import { fetchCollection } from "../store/collectionSlice";
 import { useAppDispatch, useAppSelector } from "../store/store";
@@ -22,6 +22,8 @@ export default function Packs() {
   const activeLeagueId = useAppSelector((s) => s.leagues.activeLeagueId);
   const [opening, setOpening] = useState<string | null>(null);
   const [result, setResult] = useState<Player[] | null>(null);
+  const [resultTier, setResultTier] = useState<string | null>(null);
+  const [revealIndex, setRevealIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   async function openPack(tier: string) {
@@ -36,11 +38,19 @@ export default function Packs() {
       dispatch(setCoins(data.coins));
       dispatch(fetchCollection(activeLeagueId));
       setResult(data.players);
+      setResultTier(tier);
+      setRevealIndex(0);
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo abrir el sobre");
     } finally {
       setOpening(null);
     }
+  }
+
+  function closeReveal() {
+    setResult(null);
+    setResultTier(null);
+    setRevealIndex(0);
   }
 
   if (!activeLeagueId) {
@@ -94,19 +104,17 @@ export default function Packs() {
 
       {error && <p className="error-text">{error}</p>}
 
-      {result && (
-        <div className={styles.overlay} role="dialog" aria-label="Cartas obtenidas">
-          <h2 className={styles.overlayTitle}>¡Llegaron refuerzos!</h2>
-          <p className={styles.overlaySub}>Toca cada carta y descubre quién se suma al club.</p>
-          <div className={styles.reveal}>
-            {result.map((p, i) => (
-              <FlipReveal key={p.id} player={p} delay={500 + i * 650} />
-            ))}
-          </div>
-          <button className="primary" onClick={() => setResult(null)}>
-            Seguir con mi club
-          </button>
-        </div>
+      {result && activeLeagueId && (
+        <PackOpeningModal
+          key={result[revealIndex].id}
+          card={result[revealIndex]}
+          packArt={`/packs/${resultTier}.png`}
+          leagueId={activeLeagueId}
+          index={revealIndex}
+          total={result.length}
+          onNext={() => setRevealIndex((i) => Math.min(i + 1, result.length - 1))}
+          onClose={closeReveal}
+        />
       )}
     </div>
   );

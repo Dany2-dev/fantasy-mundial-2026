@@ -44,7 +44,7 @@ p {
 }
 
 a {
-  color: var(--wc-rojo);
+  color: var(--league-cta, var(--wc-rojo));
 }
 
 button {
@@ -76,9 +76,14 @@ button:disabled {
 button.primary {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, #ff2d36 0%, var(--wc-rojo) 55%, #b3141b 100%);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--league-cta, var(--wc-rojo)) 100%, white 14%) 0%,
+    var(--league-cta, var(--wc-rojo)) 55%,
+    color-mix(in srgb, var(--league-cta, var(--wc-rojo)) 100%, black 22%) 100%
+  );
   color: #fff;
-  box-shadow: 0 8px 22px -10px var(--wc-rojo);
+  box-shadow: 0 8px 22px -10px var(--league-cta, var(--wc-rojo));
 }
 
 /* Barrido de brillo diagonal al pasar el cursor — mismo botón .primary de
