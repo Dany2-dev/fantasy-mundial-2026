@@ -8,10 +8,10 @@ import { prisma } from "../lib/prisma";
 const ELITE_FRACTION = 0.04;
 const ELITE_MIN_COUNT = 3;
 
-export async function eliteThreshold(competitionId: number): Promise<number> {
+export async function eliteThreshold(competitionId: number, fraction: number = ELITE_FRACTION): Promise<number> {
   const total = await prisma.player.count({ where: { competitionId } });
   if (total === 0) return Infinity;
-  const take = Math.max(ELITE_MIN_COUNT, Math.ceil(total * ELITE_FRACTION));
+  const take = Math.max(ELITE_MIN_COUNT, Math.ceil(total * fraction));
   const rows = await prisma.player.findMany({
     where: { competitionId },
     orderBy: { rating: "desc" },

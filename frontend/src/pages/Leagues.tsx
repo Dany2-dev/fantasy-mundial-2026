@@ -1,12 +1,25 @@
-import { FormEvent, useEffect, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import { FormEvent, MouseEvent, useEffect, useState } from "react";
 import { api } from "../api/client";
 import FlipReveal from "../components/FlipReveal";
-import { IconCheck, IconTrophy } from "../components/icons";
+import { IconCheck, IconShield, IconTrophy, IconUsers } from "../components/icons";
 import { fetchCollection } from "../store/collectionSlice";
 import { createLeague, joinLeague, setActiveLeague } from "../store/leagueSlice";
 import { useAppDispatch, useAppSelector } from "../store/store";
 import { Competition, League, Player, Standing } from "../types";
 import styles from "./Leagues.module.css";
+
+const MEDALS = ["🥇", "🥈", "🥉"];
+
+// Foco radial que sigue al cursor sobre la tarjeta del podio (técnica de
+// ChromaGrid). Se escribe la posición en variables CSS y el degradado vive en
+// el CSS, así no re-renderiza React ni hace falta gsap.
+function trackPointer(e: MouseEvent<HTMLDivElement>) {
+  const card = e.currentTarget;
+  const rect = card.getBoundingClientRect();
+  card.style.setProperty("--mouse-x", `${e.clientX - rect.left}px`);
+  card.style.setProperty("--mouse-y", `${e.clientY - rect.top}px`);
+}
 
 export default function Leagues() {
   const dispatch = useAppDispatch();
@@ -60,7 +73,7 @@ export default function Leagues() {
     const result = await dispatch(createLeague({ name: newName, competitionId }));
     if (createLeague.fulfilled.match(result)) {
       setNewName("");
-      setMsg({ kind: "ok", text: `Liga creada. Comparte el código ${result.payload.league.inviteCode}` });
+      setMsg({ kind: "ok", text: `¡Liga creada! Comparte el código ${result.payload.league.inviteCode} y que empiece la competencia.` });
       if (result.payload.starterPack) {
         setStarterPack(result.payload.starterPack);
         dispatch(fetchCollection(result.payload.league.id));
@@ -76,7 +89,7 @@ export default function Leagues() {
     const result = await dispatch(joinLeague(code));
     if (joinLeague.fulfilled.match(result)) {
       setCode("");
-      setMsg({ kind: "ok", text: `Ya estás en ${result.payload.league.name}` });
+      setMsg({ kind: "ok", text: `¡Ya estás dentro de ${result.payload.league.name}! Es hora de armar tu club.` });
       if (result.payload.starterPack) {
         setStarterPack(result.payload.starterPack);
         dispatch(fetchCollection(result.payload.league.id));
@@ -94,13 +107,32 @@ export default function Leagues() {
     });
   }
 
-  return (
-    <div>
-      <h1>Ligas</h1>
+  const podium = standings.slice(0, 3);
 
+  return (
+    <div className={styles.page}>
+      {/* ===== Cabecera ===== */}
+      <section className={styles.hero}>
+        <img src="/stadium/stadium-akron.jpg" alt="" className={styles.heroArt} aria-hidden="true" />
+        <span className={styles.heroWash} aria-hidden="true" />
+        <div className={styles.heroInner}>
+          <span className={styles.eyebrow}>Compite con tus amigos</span>
+          <h1 className={styles.title}>Ligas</h1>
+          <p className={styles.heroSub}>
+            Arma tu liga, invita al grupo y demuestra quién manda. Todos empiezan con 11 cartas gratis.
+          </p>
+        </div>
+      </section>
+
+      {/* ===== Formularios ===== */}
       <div className={styles.forms}>
         <form onSubmit={handleCreate} className={styles.formCard}>
-          <h3>Crear liga</h3>
+          <div className={styles.formHead}>
+            <span className={styles.formIcon} data-accent="red" aria-hidden="true">
+              <IconTrophy size={22} />
+            </span>
+            <h3>Crear liga</h3>
+          </div>
           <input
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
@@ -131,12 +163,18 @@ export default function Leagues() {
             </p>
           )}
           <button className="primary" type="submit">
-            Crear liga
+            Crear mi liga
           </button>
         </form>
 
         <form onSubmit={handleJoin} className={styles.formCard}>
-          <h3>Unirme con código</h3>
+          <div className={styles.formHead}>
+            <span className={styles.formIcon} data-accent="blue" aria-hidden="true">
+              <IconUsers size={22} />
+            </span>
+            <h3>Unirme con código</h3>
+          </div>
+          <p className={styles.formHint}>Pídele el código de 6 letras al mánager que creó la liga.</p>
           <input
             value={code}
             onChange={(e) => setCode(e.target.value.toUpperCase())}
@@ -146,16 +184,31 @@ export default function Leagues() {
             required
           />
           <button className="primary" type="submit">
-            Unirme
+            Entrar a la liga
           </button>
         </form>
       </div>
 
       {msg && <p className={msg.kind === "ok" ? "ok-text" : "error-text"}>{msg.text}</p>}
 
+      {leagues.length === 0 && (
+        <section className={styles.noLeagues}>
+          <span className={styles.noLeaguesBadge} aria-hidden="true">
+            <IconShield size={26} />
+          </span>
+          <div>
+            <strong className={styles.noLeaguesTitle}>Todavía no estás en ninguna liga</strong>
+            <p className={styles.noLeaguesText}>
+              Crea la tuya aquí arriba y comparte el código con tus amigos, o únete a una con el código que te
+              pasen. En cuanto entres te regalamos 11 cartas.
+            </p>
+          </div>
+        </section>
+      )}
+
       {leagues.length > 0 && (
         <section className={styles.section}>
-          <h2>Mis ligas</h2>
+          <h2 className={styles.sectionTitle}>Mis ligas</h2>
           <div className={styles.leagueList}>
             {leagues.map((l) => (
               <button
@@ -163,7 +216,12 @@ export default function Leagues() {
                 className={`${styles.leagueItem} ${l.id === activeLeagueId ? styles.leagueActive : ""}`}
                 onClick={() => dispatch(setActiveLeague(l.id))}
               >
-                <strong>{l.name}</strong>
+                <span className={styles.leagueItemTop}>
+                  <span className={styles.leagueBadge} aria-hidden="true">
+                    <IconShield size={18} />
+                  </span>
+                  <strong>{l.name}</strong>
+                </span>
                 <span className="caption">{l.competition?.name ?? "Sin competencia"}</span>
               </button>
             ))}
@@ -175,7 +233,9 @@ export default function Leagues() {
         <section className={styles.section}>
           <div className={styles.standingsHeader}>
             <div>
-              <h2>Clasificación — {activeLeague.name}</h2>
+              <h2 className={styles.sectionTitle} style={{ marginBottom: 0 }}>
+                Clasificación — {activeLeague.name}
+              </h2>
               <div className={styles.leagueMeta}>
                 {leagueDetail?.competition && <span className={styles.metaChip}>{leagueDetail.competition.name}</span>}
                 {leagueDetail?.currentGameweek && (
@@ -187,44 +247,108 @@ export default function Leagues() {
               </div>
             </div>
             <button className={`ghost ${styles.copyBtn}`} onClick={copyCode}>
-              {copied ? (
-                <>
-                  <IconCheck size={15} /> Copiado
-                </>
-              ) : (
-                `Código: ${activeLeague.inviteCode}`
-              )}
+              <AnimatePresence mode="wait" initial={false}>
+                {copied ? (
+                  <motion.span
+                    key="copied"
+                    className={styles.copyBtnInner}
+                    initial={{ y: -10, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: 10, opacity: 0 }}
+                    transition={{ duration: 0.18 }}
+                  >
+                    <IconCheck size={15} /> Copiado
+                  </motion.span>
+                ) : (
+                  <motion.span
+                    key="code"
+                    className={styles.copyBtnInner}
+                    initial={{ y: -10, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: 10, opacity: 0 }}
+                    transition={{ duration: 0.18 }}
+                  >
+                    Código: {activeLeague.inviteCode}
+                  </motion.span>
+                )}
+              </AnimatePresence>
             </button>
           </div>
 
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Mánager</th>
-                <th className={styles.num}>Puntos</th>
-                <th className={styles.num}>Cartas</th>
-                <th className={styles.num}>Valor</th>
-              </tr>
-            </thead>
-            <tbody>
-              {standings.map((s, i) => (
-                <tr key={s.userId} className={s.userId === user?.id ? styles.me : ""}>
-                  <td className="tabular">
-                    {i === 0 ? <IconTrophy size={17} className={styles.trophyIcon} /> : `${i + 1}`}
-                  </td>
-                  <td>
-                    {s.name}
-                    {s.userId === user?.id && <span className={styles.youTag}> (tú)</span>}
-                  </td>
-                  <td className={`${styles.num} tabular`}>{s.points.toLocaleString("es-MX")}</td>
-                  <td className={`${styles.num} tabular`}>{s.cardCount}</td>
-                  <td className={`${styles.num} tabular`}>{s.teamValue.toLocaleString("es-MX")}</td>
-                </tr>
+          {/* Podio real: 2º a la izquierda, 1º al centro (más alto), 3º a la derecha.
+              Con menos de 3 mánagers no hay podio que enseñar, basta la tabla. */}
+          {podium.length === 3 && (
+            <div className={styles.podium}>
+              {podium.map((s, i) => (
+                <motion.div
+                  key={s.userId}
+                  className={styles.podiumSlot}
+                  data-rank={i + 1}
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.12 * (3 - i) }}
+                >
+                  <div className={styles.podiumCard} onMouseMove={trackPointer}>
+                    <span className={styles.podiumSheen} aria-hidden="true" />
+                    <span className={styles.podiumMedal} aria-hidden="true">
+                      {MEDALS[i]}
+                    </span>
+                    <span className={`${styles.podiumName} ${s.userId === user?.id ? styles.podiumMe : ""}`}>
+                      {s.name}
+                      {s.userId === user?.id ? " (tú)" : ""}
+                    </span>
+                    <span className={styles.podiumPts}>{s.points.toLocaleString("es-MX")} pts</span>
+                  </div>
+                  <div className={styles.podiumStep} aria-hidden="true">
+                    {i + 1}
+                  </div>
+                </motion.div>
               ))}
-            </tbody>
-          </table>
-          <p className="caption">
+            </div>
+          )}
+
+          <div className={styles.tableWrap}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Mánager</th>
+                  <th className={styles.num}>Puntos</th>
+                  <th className={styles.num}>Cartas</th>
+                  <th className={styles.num}>Valor</th>
+                </tr>
+              </thead>
+              <tbody>
+                {standings.map((s, i) => (
+                  <motion.tr
+                    key={s.userId}
+                    className={s.userId === user?.id ? styles.me : ""}
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.22, delay: Math.min(i * 0.04, 0.4) }}
+                  >
+                    <td className={`${styles.rankCell} tabular`} data-label="Puesto">
+                      {i === 0 ? <IconTrophy size={17} className={styles.trophyIcon} /> : `${i + 1}`}
+                    </td>
+                    <td data-label="Mánager">
+                      {s.name}
+                      {s.userId === user?.id && <span className={styles.youTag}> (tú)</span>}
+                    </td>
+                    <td className={`${styles.num} tabular`} data-label="Puntos">
+                      {s.points.toLocaleString("es-MX")}
+                    </td>
+                    <td className={`${styles.num} tabular`} data-label="Cartas">
+                      {s.cardCount}
+                    </td>
+                    <td className={`${styles.num} tabular`} data-label="Valor">
+                      {s.teamValue.toLocaleString("es-MX")}
+                    </td>
+                  </motion.tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className={`caption ${styles.foot}`}>
             Valor = suma de medias de tus cartas. Los puntos llegarán con las jornadas del torneo.
           </p>
         </section>
@@ -233,14 +357,14 @@ export default function Leagues() {
       {starterPack && (
         <div className={styles.overlay} role="dialog" aria-label="Tu once inicial">
           <h2>Tu once inicial</h2>
-          <p className="caption">11 cartas gratis para arrancar — la mejor la elegimos capitán.</p>
+          <p className="caption">Tus 11 primeras cartas ya están aquí, listas para armar tu club.</p>
           <div className={styles.reveal}>
             {starterPack.map((p, i) => (
               <FlipReveal key={p.id} player={p} delay={300 + i * 220} size="sm" />
             ))}
           </div>
           <button className="primary" onClick={() => setStarterPack(null)}>
-            ¡Vamos!
+            ¡A jugar!
           </button>
         </div>
       )}

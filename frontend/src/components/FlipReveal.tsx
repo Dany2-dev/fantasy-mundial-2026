@@ -20,7 +20,12 @@ export default function FlipReveal({ player, delay, size = "md" }: Props) {
   }, [delay]);
 
   return (
-    <div className={`${styles.scene} ${styles[size]}`}>
+    <button
+      type="button"
+      className={`${styles.scene} ${styles[size]}`}
+      onClick={() => setFlipped(true)}
+      aria-label={flipped ? `Carta revelada: ${player.name}` : "Revelar carta"}
+    >
       <div className={`${styles.flipCard} ${flipped ? styles.flipped : ""}`}>
         <div className={styles.back} aria-hidden={flipped}>
           <span className={styles.sweep} />
@@ -30,6 +35,6 @@ export default function FlipReveal({ player, delay, size = "md" }: Props) {
           <PlayerCard player={player} size={size} />
         </div>
       </div>
-    </div>
+    </button>
   );
 }

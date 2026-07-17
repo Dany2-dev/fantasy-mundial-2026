@@ -1,26 +1,32 @@
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { getToken } from "./api/client";
-import CardClipDefs from "./components/CardClipDefs";
 import Layout from "./components/Layout";
 import { fetchMe } from "./store/authSlice";
 import { fetchLeagues } from "./store/leagueSlice";
 import { useAppDispatch, useAppSelector } from "./store/store";
-import Auth from "./pages/Auth";
-import Collection from "./pages/Collection";
-import History from "./pages/History";
-import Home from "./pages/Home";
-import Leagues from "./pages/Leagues";
-import Market from "./pages/Market";
-import Matches from "./pages/Matches";
-import Packs from "./pages/Packs";
-import Play from "./pages/Play";
-import Rivals from "./pages/Rivals";
-import Squad from "./pages/Squad";
+
+// Cada página va en su propio chunk: quien no ha iniciado sesión no debería
+// descargar el código de Home/Colección/Mercado/etc., y quien ya inició
+// sesión no debería descargar el landing (gsap, video, dome gallery) del
+// login. Antes todo iba en un solo bundle de ~490KB sin importar la ruta.
+const Auth = lazy(() => import("./pages/Auth"));
+const Collection = lazy(() => import("./pages/Collection"));
+const History = lazy(() => import("./pages/History"));
+const Home = lazy(() => import("./pages/Home"));
+const Leagues = lazy(() => import("./pages/Leagues"));
+const Market = lazy(() => import("./pages/Market"));
+const Matches = lazy(() => import("./pages/Matches"));
+const Packs = lazy(() => import("./pages/Packs"));
+const Play = lazy(() => import("./pages/Play"));
+const Rivals = lazy(() => import("./pages/Rivals"));
+const Squad = lazy(() => import("./pages/Squad"));
+
+const PageFallback = () => <p style={{ textAlign: "center", padding: 48 }}>Cargando…</p>;
 
 export default function App() {
   const dispatch = useAppDispatch();
-  const { user, status } = useAppSelector((s) => s.auth);
+  const { user, checkingSession } = useAppSelector((s) => s.auth);
 
   useEffect(() => {
     if (getToken() && !user) dispatch(fetchMe());
@@ -30,13 +36,12 @@ export default function App() {
     if (user) dispatch(fetchLeagues());
   }, [dispatch, user]);
 
-  if (status === "loading" && !user) {
-    return <p style={{ textAlign: "center", padding: 48 }}>Cargando…</p>;
+  if (checkingSession && !user) {
+    return <PageFallback />;
   }
 
   return (
-    <>
-      <CardClipDefs />
+    <Suspense fallback={<PageFallback />}>
       <Routes>
         <Route path="/acceso" element={<Auth />} />
         {user ? (
@@ -57,6 +62,6 @@ export default function App() {
         )}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </>
+    </Suspense>
   );
 }

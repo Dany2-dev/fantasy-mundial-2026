@@ -13,13 +13,13 @@ interface Game {
 // futbol-11.com para ganar monedas y abrir sobres — la lógica de cada
 // juego se conecta después; por ahora las tarjetas ya tienen contenido real.
 const GAMES: Game[] = [
-  { slug: "quiz", title: "¿Quién es?", emoji: "⚡", desc: "Identifica jugadores reales por su foto. Entre más rápido respondas, más monedas ganas.", reward: "Hasta 500" },
-  { slug: "predicciones", title: "Predicciones del día", emoji: "📅", desc: "Pronostica los resultados de los partidos de hoy.", reward: "100 / acierto" },
-  { slug: "adivina-rating", title: "Adivina el rating", emoji: "⭐", desc: "Adivina el overall de cartas reales. Entre más cerca, mayor la recompensa.", reward: "Hasta 1,600" },
-  { slug: "bandera", title: "¿De qué selección?", emoji: "🌍", desc: "Asocia jugadores con su selección o club real.", reward: "Hasta 400" },
-  { slug: "cara-o-cruz", title: "¿Quién tiene más rating?", emoji: "🆚", desc: "Dos jugadores cara a cara: elige cuál tiene el overall más alto.", reward: "Hasta 1,200" },
-  { slug: "posicion", title: "¿Cuál es su posición?", emoji: "🎯", desc: "Mira la foto y el nombre. ¿Portero, defensa, medio o delantero?", reward: "Hasta 1,000" },
-  { slug: "precio-justo", title: "¿Cuánto vale en el mercado?", emoji: "🪙", desc: "Conoces el rating y la posición. Adivina el valor de mercado exacto.", reward: "Hasta 1,400" },
+  { slug: "quiz", title: "¿Quién es?", emoji: "⚡", desc: "Reconoce al jugador por su foto. Mientras más rápido respondas, más monedas te llevas.", reward: "Hasta 500" },
+  { slug: "predicciones", title: "Predicciones del día", emoji: "📅", desc: "Pronostica los partidos de hoy y gana monedas por cada acierto.", reward: "100 / acierto" },
+  { slug: "adivina-rating", title: "Adivina el rating", emoji: "⭐", desc: "Calcula el rating de cada carta. Mientras más te acerques, mayor será el premio.", reward: "Hasta 1,600" },
+  { slug: "bandera", title: "¿De qué selección?", emoji: "🌍", desc: "Une a cada jugador con su selección o club.", reward: "Hasta 400" },
+  { slug: "cara-o-cruz", title: "¿Quién tiene más rating?", emoji: "🆚", desc: "Dos jugadores, un duelo: elige quién tiene mejor rating.", reward: "Hasta 1,200" },
+  { slug: "posicion", title: "¿Cuál es su posición?", emoji: "🎯", desc: "Mira la foto y decide: ¿portero, defensa, medio o delantero?", reward: "Hasta 1,000" },
+  { slug: "precio-justo", title: "¿Cuánto vale en el mercado?", emoji: "🪙", desc: "Tienes su rating y posición. ¿Puedes clavar su valor exacto?", reward: "Hasta 1,400" },
 ];
 
 export default function Play() {
@@ -28,7 +28,7 @@ export default function Play() {
       <div className={styles.headerRow}>
         <div>
           <h1>Jugar</h1>
-          <p className="muted">Completa retos y acumula monedas para fichar a los mejores.</p>
+          <p className="muted">Pon a prueba tu fútbol, gana monedas y vuelve más fuerte al mercado.</p>
         </div>
       </div>
 

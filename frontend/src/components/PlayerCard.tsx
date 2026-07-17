@@ -1,11 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Player, rarityOf } from "../types";
 import Flag from "./Flag";
 import styles from "./PlayerCard.module.css";
-
-// Si la foto no termina de cargar en este tiempo (CDN lenta o bloqueada),
-// se cae a las iniciales en vez de dejar el hueco en blanco indefinidamente.
-const PHOTO_TIMEOUT_MS = 6000;
 
 interface Props {
   player: Player;
@@ -23,7 +19,7 @@ const POS_LABEL: Record<Player["position"], string> = {
   DEL: "Delantero",
 };
 
-function initials(name: string) {
+export function initials(name: string) {
   const parts = name.trim().split(/\s+/);
   const first = parts[0]?.[0] ?? "";
   const last = parts.length > 1 ? parts[parts.length - 1][0] : "";
@@ -32,17 +28,12 @@ function initials(name: string) {
 
 export default function PlayerCard({ player, size = "md", ownerName, captain, selected, onClick }: Props) {
   const rarity = rarityOf(player.rating);
-  const [photoFailed, setPhotoFailed] = useState(false);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const [failedPhotoUrl, setFailedPhotoUrl] = useState<string | null>(null);
   const Tag = onClick ? "button" : "div";
-  const showPhoto = player.photoUrl && !photoFailed;
-
-  useEffect(() => {
-    setPhotoFailed(false);
-    if (!player.photoUrl) return;
-    timeoutRef.current = setTimeout(() => setPhotoFailed(true), PHOTO_TIMEOUT_MS);
-    return () => clearTimeout(timeoutRef.current);
-  }, [player.photoUrl]);
+  const photoUrl = player.photoUrl;
+  // Una foto cargada nunca debe retirarse por un reloj. El fallback se activa
+  // únicamente si el navegador confirma que esta URL realmente falló.
+  const showPhoto = Boolean(photoUrl && failedPhotoUrl !== photoUrl);
 
   return (
     <Tag
@@ -66,13 +57,12 @@ export default function PlayerCard({ player, size = "md", ownerName, captain, se
         <div className={styles.photoWrap}>
           {showPhoto ? (
             <img
-              src={player.photoUrl ?? undefined}
+              src={photoUrl ?? undefined}
               alt=""
               className={styles.photo}
               loading="lazy"
               decoding="async"
-              onLoad={() => clearTimeout(timeoutRef.current)}
-              onError={() => setPhotoFailed(true)}
+              onError={() => photoUrl && setFailedPhotoUrl(photoUrl)}
             />
           ) : (
             <div className={`${styles.initials} ${styles[`bg${player.position}`]}`}>{initials(player.name)}</div>

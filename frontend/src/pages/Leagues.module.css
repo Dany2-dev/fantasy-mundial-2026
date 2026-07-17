@@ -1,3 +1,75 @@
+/* Ligas — mejora visual sobre los tokens globales del design system.
+   Solo estilos de esta página (CSS module): no toca variables.css ni
+   componentes compartidos. */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+}
+
+/* ---------- Cabecera ---------- */
+.hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--r-card);
+  border: 1px solid var(--borde);
+  background: var(--superficie);
+  box-shadow: 0 8px 24px -18px rgba(13, 17, 23, 0.5);
+}
+
+.heroArt {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.85;
+}
+
+.heroWash {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    #fff 0%,
+    rgba(255, 255, 255, 0.94) 42%,
+    rgba(255, 255, 255, 0.6) 72%,
+    rgba(255, 255, 255, 0.25) 100%
+  );
+}
+
+.heroInner {
+  position: relative;
+  z-index: 1;
+  padding: var(--sp-5) var(--sp-5);
+}
+
+.eyebrow {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--tinta-media);
+}
+
+.title {
+  font-size: clamp(28px, 5vw, 40px);
+  font-weight: 800;
+  line-height: 1.05;
+  margin: 4px 0 2px;
+  color: var(--tinta);
+  letter-spacing: -0.5px;
+}
+
+.heroSub {
+  color: var(--tinta-media);
+  font-size: 15px;
+  margin: 0;
+  max-width: 480px;
+}
+
+/* ---------- Formularios ---------- */
 .forms {
   display: grid;
   gap: var(--sp-4);
@@ -7,17 +79,64 @@
   background: var(--superficie);
   border: 1px solid var(--borde);
   border-radius: var(--r-card);
-  padding: var(--sp-4);
+  padding: var(--sp-5);
   display: flex;
   flex-direction: column;
   gap: var(--sp-3);
+  box-shadow: 0 8px 24px -18px rgba(13, 17, 23, 0.5);
+}
+
+/* Las dos tarjetas ya miden igual (el grid las estira), pero la de "Unirme"
+   tiene menos contenido y le sobraba hueco abajo. Anclando el botón al fondo,
+   ambos botones caen a la misma altura y la fila se ve pareja — aunque a
+   "Crear liga" le aparezca el aviso de competencia sin empezar. */
+.formCard button[type="submit"] {
+  margin-top: auto;
+}
+
+.formHead {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-bottom: 2px;
+}
+
+.formIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.formIcon[data-accent="red"] {
+  background: color-mix(in srgb, var(--wc-rojo) 12%, #fff);
+  color: var(--wc-rojo);
+}
+
+.formIcon[data-accent="blue"] {
+  background: color-mix(in srgb, var(--wc-azul-vivo) 12%, #fff);
+  color: var(--wc-azul);
+}
+
+.formHead h3 {
+  margin: 0;
+}
+
+.formHint {
+  font-size: 13px;
+  color: var(--tinta-media);
+  margin: -2px 0 0;
 }
 
 .codeInput {
   text-transform: uppercase;
-  letter-spacing: 4px;
+  letter-spacing: 6px;
   font-weight: 700;
   text-align: center;
+  font-size: 20px;
 }
 
 .notStarted {
@@ -30,32 +149,55 @@
   padding: var(--sp-2) var(--sp-3);
 }
 
-.leagueMeta {
+/* ---------- Sin ligas todavía ---------- */
+.noLeagues {
   display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-top: 4px;
-}
-
-.metaChip {
-  font-size: 12px;
-  font-weight: 700;
-  padding: 3px 10px;
-  border-radius: var(--r-chip);
+  align-items: flex-start;
+  gap: var(--sp-4);
+  padding: var(--sp-4) var(--sp-5);
+  border: 1px dashed var(--borde);
+  border-radius: var(--r-card);
   background: var(--superficie-alta);
+}
+
+.noLeaguesBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--superficie);
   border: 1px solid var(--borde);
+  color: var(--wc-oro-oscuro);
+}
+
+.noLeaguesTitle {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--tinta);
+}
+
+.noLeaguesText {
+  margin: 4px 0 0;
+  font-size: 14px;
   color: var(--tinta-media);
+  max-width: 620px;
 }
 
-.metaChip[data-accent="red"] {
-  color: var(--wc-rojo);
-  border-color: var(--wc-rojo);
-}
-
+/* ---------- Secciones ---------- */
 .section {
-  margin-top: var(--sp-6);
+  margin-top: var(--sp-2);
 }
 
+.sectionTitle {
+  font-size: 21px;
+  font-weight: 800;
+  margin: 0 0 var(--sp-3);
+}
+
+/* ---------- Lista de ligas ---------- */
 .leagueList {
   display: flex;
   gap: var(--sp-3);
@@ -66,35 +208,251 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 2px;
+  gap: 4px;
   background: var(--superficie);
   border: 1px solid var(--borde);
-  min-width: 180px;
+  border-radius: var(--r-card);
+  padding: var(--sp-4);
+  min-width: 190px;
   text-align: left;
+  transition: transform 0.14s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.leagueItem:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px -20px rgba(13, 17, 23, 0.5);
+}
+
+.leagueItemTop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.leagueBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: var(--superficie-alta);
+  color: var(--tinta-media);
+  flex-shrink: 0;
 }
 
 .leagueActive {
   border-color: var(--wc-rojo);
-  box-shadow: 0 0 0 1px var(--wc-rojo);
+  box-shadow: 0 0 0 1px var(--wc-rojo), 0 14px 30px -20px var(--wc-rojo);
 }
 
+.leagueActive .leagueBadge {
+  background: color-mix(in srgb, var(--wc-rojo) 14%, #fff);
+  color: var(--wc-rojo);
+}
+
+/* ---------- Clasificación ---------- */
 .standingsHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--sp-3);
   flex-wrap: wrap;
+  margin-bottom: var(--sp-3);
+}
+
+.leagueMeta {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.metaChip {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 11px;
+  border-radius: var(--r-chip);
+  background: var(--superficie-alta);
+  border: 1px solid var(--borde);
+  color: var(--tinta-media);
+}
+
+.metaChip[data-accent="red"] {
+  color: var(--wc-rojo);
+  border-color: var(--wc-rojo);
+  background: color-mix(in srgb, var(--wc-rojo) 8%, #fff);
 }
 
 .copyBtn {
+  position: relative;
+  overflow: hidden;
+  font-variant-numeric: tabular-nums;
+}
+
+.copyBtnInner {
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }
 
-.trophyIcon {
+/* ---------- Podio escalonado ----------
+   El DOM va en orden 1º,2º,3º (correcto para lectores de pantalla) y el
+   `order` los recoloca: 2º izquierda, 1º centro, 3º derecha. */
+.podium {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  align-items: end;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-4);
+}
+
+.podiumSlot {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.podiumSlot[data-rank="1"] {
+  order: 2;
+}
+.podiumSlot[data-rank="2"] {
+  order: 1;
+}
+.podiumSlot[data-rank="3"] {
+  order: 3;
+}
+
+.podiumCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: var(--sp-4) var(--sp-2) var(--sp-3);
+  border-radius: var(--r-card) var(--r-card) 0 0;
+  border: 1px solid var(--borde);
+  border-bottom: none;
+  background: var(--superficie);
+  text-align: center;
+  overflow: hidden;
+  /* --tono lo define cada puesto abajo; es el color que se enciende al hover */
+  --tono: var(--tinta-media);
+  --mouse-x: 50%;
+  --mouse-y: 50%;
+  transition: border-color 0.25s ease, transform 0.2s ease, box-shadow 0.25s ease;
+}
+
+.podiumCard:hover {
+  transform: translateY(-3px);
+  border-color: var(--tono);
+  box-shadow: 0 14px 28px -18px var(--tono);
+}
+
+/* Foco radial que sigue al cursor: en reposo invisible, al hover tiñe la
+   tarjeta con el color de su puesto (oro/plata/bronce). */
+.podiumSheen {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  background: radial-gradient(
+    circle 160px at var(--mouse-x) var(--mouse-y),
+    color-mix(in srgb, var(--tono) 42%, transparent),
+    transparent 70%
+  );
+}
+
+.podiumCard:hover .podiumSheen {
+  opacity: 1;
+}
+
+/* El contenido va sobre el foco */
+.podiumMedal,
+.podiumName,
+.podiumPts {
+  position: relative;
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .podiumCard:hover {
+    transform: none;
+  }
+}
+
+/* El escalón: su altura es lo que hace el podio */
+.podiumStep {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-sport);
+  font-size: 22px;
+  line-height: 1;
+  color: #fff;
+  border-radius: 0 0 4px 4px;
+}
+
+.podiumSlot[data-rank="1"] .podiumCard {
+  --tono: var(--wc-oro-oscuro);
+  border-color: var(--wc-oro);
+  background: color-mix(in srgb, var(--wc-oro) 10%, #fff);
+}
+.podiumSlot[data-rank="1"] .podiumStep {
+  height: 76px;
+  background: linear-gradient(180deg, var(--wc-oro) 0%, var(--wc-oro-oscuro) 100%);
+}
+
+.podiumSlot[data-rank="2"] .podiumCard {
+  --tono: #8e98a6;
+  border-color: #c7cdd6;
+}
+.podiumSlot[data-rank="2"] .podiumStep {
+  height: 52px;
+  background: linear-gradient(180deg, #c7cdd6 0%, #8e98a6 100%);
+}
+
+.podiumSlot[data-rank="3"] .podiumCard {
+  --tono: #a9713c;
+  border-color: #d9a877;
+}
+.podiumSlot[data-rank="3"] .podiumStep {
+  height: 36px;
+  background: linear-gradient(180deg, #d9a877 0%, #a9713c 100%);
+}
+
+.podiumMedal {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.podiumName {
+  font-weight: 800;
+  font-size: 14px;
+  color: var(--tinta);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.podiumPts {
+  font-family: var(--font-sport);
+  font-weight: 400;
+  font-size: 18px;
   color: var(--wc-oro-oscuro);
-  vertical-align: -4px;
+}
+
+.podiumMe {
+  color: var(--wc-rojo);
+}
+
+.tableWrap {
+  overflow-x: auto;
 }
 
 .table {
@@ -115,9 +473,18 @@
 
 .table th {
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.4px;
   color: var(--tinta-media);
+  background: var(--superficie-alta);
+}
+
+.table tbody tr {
+  transition: background 0.12s ease;
+}
+
+.table tbody tr:hover {
+  background: var(--superficie-alta);
 }
 
 .table tbody tr:last-child td {
@@ -126,15 +493,35 @@
 
 .num {
   text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.rankCell {
+  font-weight: 800;
+  color: var(--tinta-media);
 }
 
 .me {
   background: color-mix(in srgb, var(--wc-rojo) 6%, transparent);
 }
 
+.me:hover {
+  background: color-mix(in srgb, var(--wc-rojo) 10%, transparent) !important;
+}
+
+.trophyIcon {
+  color: var(--wc-oro-oscuro);
+  vertical-align: -4px;
+}
+
 .youTag {
   color: var(--wc-rojo);
+  font-weight: 700;
   font-size: 13px;
+}
+
+.foot {
+  margin-top: var(--sp-2);
 }
 
 @media (min-width: 720px) {
@@ -143,6 +530,136 @@
   }
 }
 
+/* ---------- Móvil ---------- */
+@media (max-width: 640px) {
+  .heroInner {
+    padding: var(--sp-4);
+  }
+
+  .formCard {
+    padding: var(--sp-4);
+  }
+
+  .noLeagues {
+    padding: var(--sp-4);
+    gap: var(--sp-3);
+  }
+
+  /* El botón de código se va abajo y ocupa el ancho */
+  .standingsHeader {
+    align-items: stretch;
+  }
+
+  .copyBtn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .podium {
+    gap: 4px;
+  }
+
+  .podiumCard {
+    padding: var(--sp-3) 4px var(--sp-2);
+  }
+
+  .podiumName {
+    font-size: 12.5px;
+  }
+
+  .podiumPts {
+    font-size: 15px;
+  }
+
+  .podiumSlot[data-rank="1"] .podiumStep {
+    height: 54px;
+  }
+  .podiumSlot[data-rank="2"] .podiumStep {
+    height: 38px;
+  }
+  .podiumSlot[data-rank="3"] .podiumStep {
+    height: 26px;
+  }
+
+  /* La tabla de 5 columnas no cabe: cada mánager pasa a ser una tarjeta.
+     Los encabezados se ocultan y cada celda muestra su propia etiqueta
+     (data-label del TSX) a la izquierda. */
+  .tableWrap {
+    overflow-x: visible;
+  }
+
+  .table,
+  .table tbody,
+  .table tr,
+  .table td {
+    display: block;
+  }
+
+  .table {
+    border: none;
+    background: transparent;
+  }
+
+  .table thead {
+    /* Oculto visualmente, pero sigue leyéndose en lectores de pantalla */
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .table tr {
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    border-radius: var(--r-card);
+    padding: var(--sp-2) var(--sp-3);
+    margin-bottom: var(--sp-2);
+  }
+
+  .table td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3);
+    padding: 5px 0;
+    border-bottom: 1px solid var(--borde);
+    text-align: right;
+  }
+
+  .table td::before {
+    content: attr(data-label);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: var(--tinta-media);
+    text-align: left;
+  }
+
+  .table td:last-child {
+    border-bottom: none;
+  }
+
+  /* El nombre del mánager encabeza la tarjeta */
+  .table td[data-label="Mánager"] {
+    font-weight: 800;
+    font-size: 16px;
+  }
+
+  .table tbody tr:hover {
+    background: var(--superficie);
+  }
+
+  .me,
+  .me:hover {
+    border-color: var(--wc-rojo);
+    background: color-mix(in srgb, var(--wc-rojo) 6%, #fff) !important;
+  }
+}
+
+/* ---------- Overlay del once inicial ---------- */
 .overlay {
   position: fixed;
   inset: 0;
@@ -165,4 +682,3 @@
   justify-content: center;
   max-width: 720px;
 }
-

@@ -38,10 +38,13 @@
   --foil-oro: linear-gradient(160deg, #8a6a1f 0%, #f0c24b 35%, #fff3c4 50%, #f0c24b 65%, #6e5418 100%);
   --foil-plata: linear-gradient(160deg, #5a6675 0%, #aab6c5 35%, #eef2f7 50%, #aab6c5 65%, #49535f 100%);
   --foil-bronce: linear-gradient(160deg, #5e3d20 0%, #b0713a 35%, #e8b380 50%, #b0713a 65%, #4a2f18 100%);
+  --foil-legendario: linear-gradient(160deg, #4b1a86 0%, #d9a6ff 24%, #7b2fff 42%, #ffd76f 58%, #7b2fff 74%, #2d0b57 100%);
 
   /* Tipografía */
-  --font-display: "Geomini", system-ui, sans-serif;
-  --font-body: "Changa One", system-ui, sans-serif;
+  --font-body: "Nunito Sans", system-ui, sans-serif;
+  --font-display: "Geomini", "Nunito Sans", sans-serif;
+  --font-brand: "Alfa Slab One", Georgia, serif;
+  --font-sport: "Changa One", "Nunito Sans", sans-serif;
 
   /* Espaciado (escala 4px) */
   --sp-1: 4px;
