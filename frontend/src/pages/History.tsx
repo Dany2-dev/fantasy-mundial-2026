@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
+import AnimatedList from "../components/AnimatedList";
 import { IconCoin, IconExchange } from "../components/icons";
 import { useAppSelector } from "../store/store";
 import { GameweekScore, Trade } from "../types";
@@ -76,8 +77,13 @@ export default function History() {
         <p className="muted">Tu historia aún está por escribirse. La primera jornada o el primer trato aparecerán aquí.</p>
       )}
 
-      <div className={styles.feed}>
-        {events.map((e) =>
+      <AnimatedList
+        className={styles.feed}
+        displayScrollbar
+        showGradients
+        enableArrowNavigation
+        onItemSelect={(_item, index) => console.log("Historial: evento", index)}
+        items={events.map((e) =>
           e.kind === "jornada" ? (
             <div key={`gw-${e.gw.gameweek}`} className={styles.row}>
               <span className={`${styles.icon} ${styles.iconGw}`}>🏆</span>
@@ -114,7 +120,7 @@ export default function History() {
             </div>
           )
         )}
-      </div>
+      />
 
       <p className={`caption ${styles.comingSoon}`}>Pronto también verás aquí tus cláusulas y ventas.</p>
     </div>

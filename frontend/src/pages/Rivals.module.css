@@ -99,3 +99,146 @@
 .miniCard:hover {
   transform: translateY(-4px) scale(1.04);
 }
+
+/* ============================================================
+   LAYOUT MAESTRO-DETALLE (Rivales): lista de mánagers a la
+   izquierda; al hacer clic se abren sus cartas a la derecha.
+============================================================ */
+.split {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  margin-top: var(--sp-3);
+}
+.leftCol {
+  width: 320px;
+  flex: 0 0 320px;
+}
+.rightCol {
+  flex: 1;
+  min-width: 0;
+}
+
+.managerRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  background: #ffffff;
+  border: 1.5px solid #e8edf5;
+  border-left: 5px solid #3b5bdb;
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+.managerRow:hover {
+  box-shadow: 0 6px 20px rgba(59, 91, 219, 0.1);
+}
+
+.rightPanel {
+  background: #ffffff;
+  border: 1.5px solid #e8edf5;
+  border-radius: 14px;
+  padding: 20px 22px 24px;
+}
+.rightHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1.5px solid #eef1f6;
+}
+.cardsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 26px 16px;
+}
+
+.rightEmpty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+  text-align: center;
+  background: #f8fafd;
+  border: 1.5px dashed #d7deea;
+  border-radius: 14px;
+}
+
+@media (max-width: 720px) {
+  .split {
+    flex-direction: column;
+  }
+  .leftCol {
+    width: 100%;
+    flex: none;
+  }
+}
+
+/* ============================================================
+   CANCHA (panel derecho): reutiliza el diseño del "Once" para
+   mostrar a los jugadores del rival acomodados por posición.
+============================================================ */
+.pitch {
+  background:
+    linear-gradient(rgba(11, 18, 32, 0.55), rgba(11, 18, 32, 0.55)),
+    repeating-linear-gradient(0deg, #14532d 0 48px, #166534 48px 96px);
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  border-radius: var(--r-card);
+  padding: var(--sp-5) var(--sp-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+.pitchRow {
+  display: flex;
+  justify-content: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+}
+.pitchSlot {
+  width: 92px;
+  flex: 0 0 auto;
+}
+.pitchEmpty {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.7);
+  padding: var(--sp-5) 0;
+}
+
+/* Banca: los jugadores que no entran al once titular, debajo de la cancha. */
+.bench {
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-4);
+  border-top: 1.5px dashed #d7deea;
+}
+.benchLabel {
+  display: block;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  color: #868e96;
+  margin-bottom: var(--sp-3);
+}
+.benchRow {
+  display: flex;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+}
+
+/* Buscador de mánagers (columna izquierda). */
+.search {
+  width: 100%;
+  margin-bottom: var(--sp-3);
+  padding: 10px 16px;
+  border: 1.5px solid #e3e8ef;
+  border-radius: 999px;
+  font-size: 14px;
+  background: #ffffff;
+}
+.search:focus-visible {
+  outline: 2px solid var(--wc-azul-vivo);
+  outline-offset: 1px;
+}
