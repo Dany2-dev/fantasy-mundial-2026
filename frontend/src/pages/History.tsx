@@ -41,12 +41,14 @@ export default function History() {
 
   if (!activeLeagueId) {
     return (
-      <div className={styles.empty}>
-        <h1>Historial</h1>
-        <p className="muted">Tu historia empieza dentro de una liga. Entra a una y empieza a competir.</p>
-        <Link to="/ligas">
-          <button className="primary">Ir a Ligas</button>
-        </Link>
+      <div className={styles.page}>
+        <div className={styles.empty}>
+          <h1>Historial</h1>
+          <p className="muted">Tu historia empieza dentro de una liga. Entra a una y empieza a competir.</p>
+          <Link to="/ligas">
+            <button className="primary">Ir a Ligas</button>
+          </Link>
+        </div>
       </div>
     );
   }
@@ -60,7 +62,7 @@ export default function History() {
   ].sort((a, b) => (a.date < b.date ? 1 : -1));
 
   return (
-    <div>
+    <div className={styles.page}>
       <div className={styles.headerRow}>
         <div>
           <h1>Historial</h1>

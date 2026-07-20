@@ -5,6 +5,20 @@
   margin: 0 auto;
 }
 
+/* ===== CABECERA (título + botón Comparar) ===== */
+.headerRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+}
+
+.compareBtn {
+  flex: none;
+  white-space: nowrap;
+}
+
 /* ===== LISTA ===== */
 .rivalsList {
   display: flex;
