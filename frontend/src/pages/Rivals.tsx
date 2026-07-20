@@ -2,10 +2,12 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import AnimatedList from "../components/AnimatedList";
+import CompareModal, { SquadOption } from "../components/CompareModal";
 import PlayerCard from "../components/PlayerCard";
 import PlayerDetailModal from "../components/PlayerDetailModal";
+import { pickEleven } from "../lib/formation";
 import { useAppSelector } from "../store/store";
-import { MarketCard, Standing, Trade } from "../types";
+import { MarketCard, Player, Standing, Trade } from "../types";
 import styles from "./Rivals.module.css";
 
 interface RivalGroup {
@@ -14,56 +16,50 @@ interface RivalGroup {
   value: number;
 }
 
-// Once titular 4-3-3 (1 POR, 4 DEF, 3 MED, 3 DEL). Toma los mejores por
-// posición; el resto de las cartas van a la banca.
-const FORMATION: Record<"POR" | "DEF" | "MED" | "DEL", number> = { POR: 1, DEF: 4, MED: 3, DEL: 3 };
+// Valor de mercado de una carta: su cláusula (lo que costaría fichar al
+// jugador ahora mismo) y, si no viene, se estima como basePrice x3.
+const cardValue = (c: MarketCard) => c.clause ?? c.basePrice * 3;
 
-function pickEleven(cards: MarketCard[]): { starters: MarketCard[]; bench: MarketCard[] } {
-  const sorted = [...cards].sort((a, b) => b.rating - a.rating);
-  const starterIds = new Set<number>();
-  const starters: MarketCard[] = [];
-  (["POR", "DEF", "MED", "DEL"] as const).forEach((pos) => {
-    sorted
-      .filter((c) => c.position === pos)
-      .slice(0, FORMATION[pos])
-      .forEach((c) => {
-        starters.push(c);
-        starterIds.add(c.id);
-      });
-  });
-  const bench = sorted.filter((c) => !starterIds.has(c.id));
-  return { starters, bench };
-}
+// El valor del equipo se guarda en la misma unidad que basePrice/clause;
+// lo mostramos como millones de euros (÷1000) para que se lea como en un
+// mercado real de fútbol.
+const formatValueM = (v: number) => `€${(v / 1000).toFixed(1)}M`;
 
 // Naoki trabaja el diseño de esta página. Los mánagers de tu liga y sus
 // cartas ya son datos reales (GET /collection/market); los puntos y el valor
 // de equipo vienen de la tabla de la liga (GET /leagues/:id).
 export default function Rivals() {
   const activeLeagueId = useAppSelector((s) => s.leagues.activeLeagueId);
-  const userId = useAppSelector((s) => s.auth.user?.id);
+  const user = useAppSelector((s) => s.auth.user);
+  const userId = user?.id;
   const [market, setMarket] = useState<MarketCard[]>([]);
+  const [myCollection, setMyCollection] = useState<Player[]>([]);
   const [trades, setTrades] = useState<Trade[]>([]);
   const [standings, setStandings] = useState<Standing[]>([]);
   const [openPlayerId, setOpenPlayerId] = useState<number | null>(null);
   const [selectedOwnerId, setSelectedOwnerId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [compareOpen, setCompareOpen] = useState(false);
 
   useEffect(() => {
     if (!activeLeagueId) return;
     setLoading(true);
     Promise.all([
       api<{ market: MarketCard[] }>(`/collection/market?leagueId=${activeLeagueId}`),
+      api<{ collection: Player[] }>(`/collection?leagueId=${activeLeagueId}`),
       api<{ trades: Trade[] }>(`/trades?leagueId=${activeLeagueId}`),
       api<{ standings: Standing[] }>(`/leagues/${activeLeagueId}`),
     ])
-      .then(([m, t, l]) => {
+      .then(([m, c, t, l]) => {
         setMarket(m.market);
+        setMyCollection(c.collection);
         setTrades(t.trades);
         setStandings(l.standings);
       })
       .catch(() => {
         setMarket([]);
+        setMyCollection([]);
         setTrades([]);
         setStandings([]);
       })
@@ -86,7 +82,7 @@ export default function Rivals() {
   for (const card of market) {
     const g = byOwner.get(card.owner.id) ?? { owner: card.owner, cards: [], value: 0 };
     g.cards.push(card);
-    g.value += card.rating;
+    g.value += cardValue(card);
     byOwner.set(card.owner.id, g);
   }
   const rivals = [...byOwner.values()].sort((a, b) => b.value - a.value);
@@ -109,10 +105,25 @@ export default function Rivals() {
   const selectedRival = rivals.find((r) => r.owner.id === selectedOwnerId) ?? rivals[0] ?? null;
   const eleven = selectedRival ? pickEleven(selectedRival.cards) : { starters: [], bench: [] };
 
+  // Plantillas disponibles para comparar: la tuya + la de cada rival.
+  const squads: SquadOption[] = [
+    ...(userId ? [{ id: userId, name: `${user?.name ?? "Tú"} (tú)`, cards: myCollection }] : []),
+    ...rivals.map((r) => ({ id: r.owner.id, name: r.owner.name, cards: r.cards })),
+  ];
+
   return (
     <div>
-      <h1>Rivales</h1>
-      <p className="muted">Conoce sus plantillas, estudia sus figuras y prepara el próximo clausulazo.</p>
+      <div className={styles.headerRow}>
+        <div>
+          <h1>Rivales</h1>
+          <p className="muted">Conoce sus plantillas, estudia sus figuras y prepara el próximo clausulazo.</p>
+        </div>
+        {squads.length >= 2 && (
+          <button className={`primary ${styles.compareBtn}`} onClick={() => setCompareOpen(true)}>
+            Comparar
+          </button>
+        )}
+      </div>
 
       {loading && <p className="muted">Cargando…</p>}
       {!loading && rivals.length === 0 && (
@@ -149,7 +160,7 @@ export default function Rivals() {
                       <div>
                         <h2 className={styles.rivalName}>{r.owner.name}</h2>
                         <span className="caption tabular">
-                          {r.cards.length} cartas · {pointsFor(r.owner.id)} pts · valor {r.value}
+                          {r.cards.length} cartas · {pointsFor(r.owner.id)} pts · valor {formatValueM(r.value)}
                         </span>
                       </div>
                       {pc > 0 && (
@@ -170,7 +181,8 @@ export default function Rivals() {
                   <div>
                     <h2 className={styles.rivalName}>{selectedRival.owner.name}</h2>
                     <span className="caption tabular">
-                      {selectedRival.cards.length} cartas · {pointsFor(selectedRival.owner.id)} pts · valor {selectedRival.value}
+                      {selectedRival.cards.length} cartas · {pointsFor(selectedRival.owner.id)} pts · valor{" "}
+                      {formatValueM(selectedRival.value)}
                     </span>
                   </div>
                   {pendingFor(selectedRival.owner.id) > 0 && (
@@ -219,6 +231,16 @@ export default function Rivals() {
             )}
           </div>
         </div>
+      )}
+
+      {compareOpen && squads.length >= 2 && (
+        <CompareModal
+          squads={squads}
+          initialLeftId={selectedRival?.owner.id ?? squads[0]?.id}
+          initialRightId={userId ?? squads[1]?.id}
+          onClose={() => setCompareOpen(false)}
+          onOpenPlayer={(id) => setOpenPlayerId(id)}
+        />
       )}
 
       {openPlayerId != null && (

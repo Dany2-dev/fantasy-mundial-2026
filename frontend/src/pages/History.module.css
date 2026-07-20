@@ -1,3 +1,12 @@
+.page {
+  background-image: linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.5)), url("/brand/estadio-bn.avif");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border-radius: 16px;
+  padding: var(--sp-4);
+}
+
 .empty {
   text-align: center;
   padding: var(--sp-7) var(--sp-4);
