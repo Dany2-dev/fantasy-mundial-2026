@@ -12,7 +12,12 @@ import { prisma } from "../lib/prisma";
 
 const router = Router();
 
+// League primero: sus dependientes (LeagueMembership, OwnedPlayer, FantasySquad,
+// TradeOffer, PlayerListing, UserGameweekScore) tienen onDelete: Cascade a nivel
+// de BD, así que se limpian solas. Sin esto, borrar Competition falla con
+// RESTRICT si ya existen ligas creadas apuntando a las competencias viejas.
 const REF_TABLES_IN_DELETE_ORDER = [
+  "League",
   "PlayerGameweekStats",
   "Match",
   "Player",
