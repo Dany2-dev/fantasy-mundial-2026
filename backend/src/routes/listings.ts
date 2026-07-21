@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { AuthRequest, requireAuth } from "../middleware/auth";
 import { protectionExpiry } from "../services/economy";
+import { getWallet, transfer } from "../services/wallet";
 
 const router = Router();
 router.use(requireAuth);

@@ -1,5 +1,7 @@
+import compression from "compression";
 import cors from "cors";
 import express from "express";
+import { startScheduler } from "./scheduler";
 import authRouter from "./routes/auth";
 import clauseRouter from "./routes/clause";
 import collectionRouter from "./routes/collection";
@@ -15,6 +17,7 @@ import { handleStripeWebhook } from "./routes/webhook";
 import checkoutRouter from "./routes/checkout";
 
 const app = express();
+app.use(compression());
 app.use(cors());
 
 // Capturar body raw para la validación de firma de Stripe Webhook
@@ -46,4 +49,5 @@ app.use((err: unknown, _req: express.Request, res: express.Response, _next: expr
 const PORT = Number(process.env.PORT ?? 4000);
 app.listen(PORT, () => {
   console.log(`⚽ API lista en http://localhost:${PORT}/api/health`);
+  startScheduler();
 });

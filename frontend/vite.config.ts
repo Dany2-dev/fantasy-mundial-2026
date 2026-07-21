@@ -16,7 +16,6 @@ export default defineConfig({
           react: ["react", "react-dom", "react-router-dom"],
           redux: ["@reduxjs/toolkit", "react-redux"],
           motion: ["motion"],
-          ogl: ["ogl"],
         },
       },
     },

@@ -7,6 +7,7 @@
 import { PrismaClient } from "@prisma/client";
 import { COMPETITIONS, type CatalogEntry } from "../src/lib/catalog";
 import { flagFor } from "../src/lib/flags";
+import { valueFromOverall } from "../src/services/economy";
 import {
   getLeague,
   getTeamSquad,
@@ -31,7 +32,11 @@ function overallFromValue(p: FMSquadPlayer): number {
   const bias = p.position === "FWD" ? 3 : p.position === "MID" ? 2 : p.position === "GK" ? 1 : 0;
   return 64 + ((p.fotmobId % 10) + bias);
 }
-const priceFromOverall = (o: number) => Math.max(50, Math.round(Math.pow(o - 50, 2) * 0.9));
+
+// Precio de carta = valor de mercado REAL de FotMob (€); si no lo publica,
+// se estima con la inversa de la curva del overall (valueFromOverall).
+const priceFor = (p: FMSquadPlayer, overall: number) =>
+  p.transferValue && p.transferValue > 0 ? p.transferValue : valueFromOverall(overall);
 
 async function clearAll() {
   await prisma.tradeOffer.deleteMany();
@@ -114,7 +119,7 @@ async function seedCompetition(entry: CatalogEntry) {
             name: p.name,
             position: POS_MAP[p.position] ?? "MED",
             rating: overall,
-            basePrice: priceFromOverall(overall),
+            basePrice: priceFor(p, overall),
             photoUrl: playerPhotoUrl(p.fotmobId),
             age: p.age,
           };

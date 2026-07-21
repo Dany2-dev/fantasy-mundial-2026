@@ -261,7 +261,7 @@
 .heroTitle {
   max-width: 14ch;
   font-size: clamp(34px, 5.5vw, 58px);
-  font-weight: 900;
+  font-weight: 800;
   line-height: 1.02;
   letter-spacing: 0.01em;
   text-wrap: balance;
@@ -293,13 +293,6 @@
   font-size: 16px;
   max-width: 480px;
   margin: 0 0 var(--sp-4);
-}
-
-.heroStats {
-  display: flex;
-  gap: var(--sp-2);
-  flex-wrap: wrap;
-  margin-bottom: var(--sp-5);
 }
 
 .heroActions {
@@ -410,29 +403,44 @@
 .sectionHead h2,
 .sectionTitle {
   position: relative;
+  display: inline-block;
+  /* .sectionTitle a veces cuelga directo de .section (flex-column, que
+     estira los hijos por default) — sin esto se estira a ancho completo y
+     el subrayado (100% del propio ancho) queda tan largo como la sección. */
+  align-self: flex-start;
   font-size: 21px;
-  font-weight: 900;
+  font-weight: 800;
   letter-spacing: 0.01em;
   margin: 0;
+  /* El subrayado es absoluto (no ocupa layout), así que este padding es lo
+     único que reserva el hueco para él: 7px entre el texto y la línea, 3px
+     de línea, 4px libres antes de que empiece el contenido de abajo. Sin
+     ese último tramo la línea queda pegada a lo que sigue. */
+  padding-bottom: 14px;
   color: var(--hink);
 }
 
+/* Ancho relativo al título real (no un px fijo): un subrayado fijo de 30px
+   queda perfecto bajo "Partido destacado" pero se ve fuera de lugar bajo
+   algo corto como "Tu once", que apenas cubre la primera palabra. */
 .sectionHead h2::after,
 .sectionTitle::after {
   content: "";
-  display: block;
-  width: 54px;
+  position: absolute;
+  left: 0;
+  bottom: 4px;
+  width: 100%;
   height: 3px;
-  margin-top: 7px;
   border-radius: 999px;
   background: var(--hred);
-  transform: scaleX(0.556); /* 30px en reposo, 54px al hover */
+  transform: scaleX(0.55);
   transform-origin: left;
   transition: transform 250ms var(--sport-ease);
 }
 
 .section:hover .sectionHead h2::after,
-.section:hover .sectionTitle::after {
+.section:hover .sectionTitle::after,
+.card:hover .sectionHead h2::after {
   transform: scaleX(1);
 }
 
@@ -452,24 +460,65 @@
   transform: translateX(3px);
 }
 
-.showcaseRow {
+.showcaseSplit {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-4);
+  align-items: center;
+}
+
+@media (min-width: 860px) {
+  .showcaseSplit {
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 460px);
+  }
+}
+
+.carousel {
+  position: relative;
+  min-width: 0;
+}
+
+.carouselTrack {
   display: flex;
   gap: var(--sp-3);
   overflow-x: auto;
-  padding: 4px 4px 14px;
+  /* overflow-x distinto de visible hace que overflow-y también recorte
+     (regla de CSS), así que el padding-top tiene que alcanzar para el
+     translateY(-8px) + scale(1.03) del hover de PlayerCard o se corta. */
+  padding: 20px 4px 14px;
   scrollbar-width: thin;
   scrollbar-color: var(--hborder) transparent;
   scroll-snap-type: x proximity;
+  animation: home-slide-in 420ms var(--sport-ease);
+}
+
+@keyframes home-slide-in {
+  from {
+    transform: translateX(28px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .carouselTrack {
+    animation: none;
+  }
 }
 
 .showcaseMini {
-  width: 138px;
+  /* Escala con el viewport en vez de un ancho fijo: a 138px fijos sobraba
+     mucho espacio en blanco a la derecha del carrusel en pantallas anchas. */
+  width: clamp(150px, 18vw, 210px);
   flex: 0 0 auto;
   scroll-snap-align: start;
   /* Cada carta pinta 3 capas con clip-path SVG; con 8 en fila esto evita
      que el navegador las mantenga todas rasterizadas fuera de vista. */
   content-visibility: auto;
-  contain-intrinsic-size: 138px 193px;
+  contain-intrinsic-size: 210px 294px;
 }
 
 /* ---------- Tarjetas blancas ---------- */
@@ -510,6 +559,440 @@
   .twoCol {
     grid-template-columns: 1.3fr 1fr;
   }
+}
+
+.formationCard {
+  grid-column: 1 / -1;
+  overflow: hidden;
+  background: linear-gradient(180deg, #ffffff 0%, #f7faf8 100%);
+}
+
+.miniPitch {
+  --pitch-line: rgba(235, 255, 242, 0.52);
+
+  position: relative;
+  isolation: isolate;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: clamp(480px, 34vw, 560px);
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: stretch;
+  gap: clamp(4px, 1.8vw, 28px);
+  padding: clamp(34px, 4vw, 54px) clamp(26px, 5vw, 72px);
+  background:
+    radial-gradient(circle at 50% 50%, rgba(112, 255, 176, 0.16), transparent 42%),
+    linear-gradient(180deg, rgba(7, 43, 27, 0.05), rgba(2, 24, 15, 0.38)),
+    repeating-linear-gradient(90deg, #11663e 0 9%, #0d5835 9% 18%);
+  border: 1px solid rgba(21, 132, 79, 0.65);
+  border-radius: 24px;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    inset 0 0 90px rgba(0, 0, 0, 0.36),
+    0 20px 42px -30px rgba(3, 49, 28, 0.85);
+}
+
+.miniPitch::before,
+.miniPitch::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.miniPitch::before {
+  z-index: 0;
+  background:
+    radial-gradient(circle at 15% 0%, rgba(209, 255, 226, 0.12), transparent 28%),
+    radial-gradient(circle at 85% 100%, rgba(209, 255, 226, 0.08), transparent 30%);
+}
+
+.miniPitch::after {
+  z-index: 0;
+  opacity: 0.12;
+  background: repeating-linear-gradient(0deg, transparent 0 3px, rgba(255, 255, 255, 0.12) 3px 4px);
+}
+
+.pitchMarkings {
+  position: absolute;
+  inset: clamp(18px, 2.2vw, 32px);
+  z-index: 1;
+  display: block;
+  border: 2px solid var(--pitch-line);
+  border-radius: 5px;
+  pointer-events: none;
+  filter: drop-shadow(0 0 5px rgba(220, 255, 233, 0.08));
+}
+
+.pitchMarkings > span {
+  position: absolute;
+  display: block;
+  box-sizing: border-box;
+}
+
+.pitchCenterLine {
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  border-left: 2px solid var(--pitch-line);
+  transform: translateX(-1px);
+}
+
+.pitchCenterCircle {
+  top: 50%;
+  left: 50%;
+  width: clamp(106px, 11vw, 150px);
+  aspect-ratio: 1;
+  border: 2px solid var(--pitch-line);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.pitchCenterSpot,
+.pitchPenaltySpot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--pitch-line);
+  transform: translate(-50%, -50%);
+}
+
+.pitchCenterSpot {
+  top: 50%;
+  left: 50%;
+}
+
+.pitchPenaltyArea {
+  top: 22%;
+  bottom: 22%;
+  width: 16%;
+  border: 2px solid var(--pitch-line);
+}
+
+.pitchPenaltyAreaLeft {
+  left: -2px;
+  border-left: 0;
+}
+
+.pitchPenaltyAreaRight {
+  right: -2px;
+  border-right: 0;
+}
+
+.pitchGoalArea {
+  top: 36%;
+  bottom: 36%;
+  width: 6.5%;
+  border: 2px solid var(--pitch-line);
+}
+
+.pitchGoalAreaLeft {
+  left: -2px;
+  border-left: 0;
+}
+
+.pitchGoalAreaRight {
+  right: -2px;
+  border-right: 0;
+}
+
+.pitchGoal {
+  top: 42%;
+  bottom: 42%;
+  width: 12px;
+  border: 2px solid var(--pitch-line);
+  background: rgba(224, 255, 236, 0.05);
+}
+
+.pitchGoalLeft {
+  left: -14px;
+  border-right: 0;
+}
+
+.pitchGoalRight {
+  right: -14px;
+  border-left: 0;
+}
+
+.pitchPenaltySpot {
+  top: 50%;
+}
+
+.pitchPenaltySpotLeft {
+  left: 11%;
+}
+
+.pitchPenaltySpotRight {
+  left: 89%;
+}
+
+.miniRow {
+  position: relative;
+  z-index: 2;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-evenly;
+  gap: clamp(4px, 0.8vw, 10px);
+}
+
+.miniPlayer {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  max-width: 118px;
+  min-width: 0;
+}
+
+.miniDot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(52px, 4.8vw, 76px);
+  height: clamp(52px, 4.8vw, 76px);
+  flex: none;
+  overflow: hidden;
+  border-radius: 50%;
+  border: 3px dashed rgba(232, 255, 240, 0.48);
+  background: rgba(3, 35, 20, 0.5);
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 12px;
+  font-weight: 900;
+  box-shadow:
+    0 8px 18px rgba(0, 0, 0, 0.28),
+    inset 0 0 18px rgba(255, 255, 255, 0.05);
+  transition:
+    transform 220ms var(--sport-ease),
+    border-color 200ms ease,
+    box-shadow 220ms ease;
+}
+
+.miniDotFilled {
+  border-style: solid;
+  border-color: #31d67d;
+  background: color-mix(in srgb, var(--hgreen) 22%, rgba(5, 25, 16, 0.78));
+  color: #fff;
+  box-shadow:
+    0 0 0 3px rgba(5, 35, 20, 0.7),
+    0 10px 22px rgba(0, 0, 0, 0.34),
+    0 0 20px rgba(49, 214, 125, 0.2);
+}
+
+.miniPlayer:hover .miniDotFilled {
+  transform: translateY(-3px) scale(1.08);
+  border-color: var(--hgold);
+  box-shadow:
+    0 0 0 3px rgba(46, 33, 3, 0.72),
+    0 14px 26px rgba(0, 0, 0, 0.4),
+    0 0 24px rgba(255, 200, 61, 0.26);
+}
+
+.miniDotCaptain {
+  border-color: var(--hgold);
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--hgold) 38%, transparent),
+    0 10px 24px rgba(0, 0, 0, 0.38),
+    0 0 24px rgba(255, 200, 61, 0.32);
+}
+
+.miniDotPhoto {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+
+.miniDotInitials {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: clamp(12px, 1.2vw, 17px);
+  font-weight: 900;
+  color: #fff;
+}
+
+.miniDotPosPOR {
+  background: var(--pos-por);
+}
+
+.miniDotPosDEF {
+  background: var(--pos-def);
+}
+
+.miniDotPosMED {
+  background: var(--pos-med);
+}
+
+.miniDotPosDEL {
+  background: var(--pos-del);
+}
+
+.miniDotRating {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  z-index: 2;
+  min-width: 25px;
+  padding: 2px 5px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(255, 255, 255, 0.88);
+  background: rgba(7, 14, 11, 0.92);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1.25;
+  text-align: center;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
+}
+
+.miniDotCaptainBadge {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 21px;
+  height: 21px;
+  border: 1.5px solid rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  background: linear-gradient(145deg, #ffe58b, var(--hgold));
+  color: #352500;
+  font-size: 10px;
+  font-weight: 950;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
+}
+
+.miniPlayerName {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 112px;
+  overflow: hidden;
+  padding: 3px 8px;
+  border: 1px solid rgba(225, 255, 236, 0.14);
+  border-radius: 999px;
+  background: rgba(2, 25, 14, 0.74);
+  color: rgba(255, 255, 255, 0.94);
+  font-size: clamp(9px, 0.75vw, 11px);
+  font-weight: 800;
+  line-height: 1.25;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(5px);
+}
+
+.formationCaption {
+  display: inline-flex;
+  align-items: center;
+  margin: var(--sp-3) 0 0;
+  padding: 7px 11px;
+  border: 1px solid var(--hborder);
+  border-radius: 999px;
+  background: var(--hcard-hi);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--hmuted);
+}
+
+@media (max-width: 680px) {
+  .miniPitch {
+    min-height: 450px;
+    gap: 3px;
+    padding: 30px 16px;
+    border-radius: 18px;
+  }
+
+  .pitchMarkings {
+    inset: 14px;
+  }
+
+  .pitchCenterCircle {
+    width: 90px;
+  }
+
+  .miniDot {
+    width: 48px;
+    height: 48px;
+  }
+
+  .miniPlayer {
+    max-width: 76px;
+    gap: 3px;
+  }
+
+  .miniPlayerName {
+    max-width: 74px;
+    padding: 2px 5px;
+    font-size: 8px;
+  }
+
+  .miniDotRating {
+    right: 0;
+    bottom: 0;
+    min-width: 21px;
+    padding: 1px 4px;
+    font-size: 8px;
+  }
+
+  .miniDotCaptainBadge {
+    top: 1px;
+    left: 1px;
+    width: 17px;
+    height: 17px;
+    font-size: 8px;
+  }
+}
+
+@media (max-width: 420px) {
+  .miniPitch {
+    min-height: 420px;
+    padding: 27px 10px;
+  }
+
+  .miniDot {
+    width: 44px;
+    height: 44px;
+  }
+
+  .miniPlayer {
+    max-width: 66px;
+  }
+
+  .miniPlayerName {
+    max-width: 64px;
+  }
+}
+
+.highlightCol {
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.highlightWrap {
+  border-radius: 16px;
+  overflow: hidden;
+  background: #0b1220;
+  box-shadow: var(--sport-shadow);
+}
+
+.highlightCaption {
+  margin: var(--sp-2) 0 0;
+  font-size: 13px;
+  color: var(--hmuted);
+  text-align: center;
 }
 
 .liveBadge {
@@ -572,8 +1055,8 @@
 }
 
 .matchScoreNums {
-  font-family: var(--font-display);
-  font-weight: 900;
+  font-family: var(--font-sport);
+  font-weight: 400;
   font-size: 26px;
   letter-spacing: 0.04em;
   font-variant-numeric: tabular-nums;

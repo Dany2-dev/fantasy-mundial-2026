@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { AuthRequest, requireAuth } from "../middleware/auth";
+import { getWallet, transfer } from "../services/wallet";
 
 const router = Router();
 router.use(requireAuth);
@@ -51,14 +52,15 @@ router.post("/", async (req, res) => {
 
   if (toUserId === userId) return res.status(400).json({ error: "No puedes ofertarte a ti mismo" });
 
-  const [mine, theirs, me] = await Promise.all([
+  const [mine, theirs, myWallet] = await Promise.all([
     prisma.ownedPlayer.findUnique({ where: { leagueId_playerId: { leagueId, playerId: offeredPlayerId } } }),
     prisma.ownedPlayer.findUnique({ where: { leagueId_playerId: { leagueId, playerId: requestedPlayerId } } }),
-    prisma.user.findUniqueOrThrow({ where: { id: userId } }),
+    getWallet(prisma, userId, leagueId),
   ]);
+  if (!myWallet) return res.status(403).json({ error: "No eres miembro de esta liga" });
   if (!mine || mine.userId !== userId) return res.status(400).json({ error: "Esa carta no es tuya en esta liga" });
   if (!theirs || theirs.userId !== toUserId) return res.status(400).json({ error: "El otro mánager ya no tiene esa carta" });
-  if (me.coins < coins) return res.status(400).json({ error: "No tienes esas monedas" });
+  if (myWallet.coins < coins) return res.status(400).json({ error: "No te alcanza el presupuesto de esta liga" });
 
   const trade = await prisma.tradeOffer.create({
     data: { leagueId, fromUserId: userId, toUserId, offeredPlayerId, requestedPlayerId, coins },

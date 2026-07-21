@@ -5,53 +5,254 @@
   margin: 0 auto;
 }
 
+/* ===== CABECERA (título + botón Comparar) ===== */
+.headerRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+}
+
+.compareBtn {
+  flex: none;
+  white-space: nowrap;
+}
+
+/* ===== LISTA ===== */
 .rivalsList {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-4);
-  margin-top: var(--sp-4);
+  gap: 14px;
+  margin-top: var(--sp-3);
 }
 
+/* ===== CARD RIVAL ===== */
 .rivalCard {
-  background: var(--superficie);
-  border: 1px solid var(--borde);
-  border-radius: var(--r-card);
-  padding: var(--sp-4);
+  background: #ffffff;
+  border: 1.5px solid #e8edf5;
+  border-left: 5px solid #3b5bdb;
+  border-radius: 12px;
+  padding: 18px 20px;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+  font-family: var(--font-body);
 }
 
+.rivalCard:hover {
+  box-shadow: 0 6px 20px rgba(59, 91, 219, 0.1);
+  transform: translateY(-2px);
+}
+
+.rivalCard:nth-child(1) { border-left-color: #3b5bdb; }
+.rivalCard:nth-child(2) { border-left-color: #2f9e44; }
+.rivalCard:nth-child(3) { border-left-color: #f59f00; }
+.rivalCard:nth-child(4) { border-left-color: #e03131; }
+.rivalCard:nth-child(5) { border-left-color: #7048e8; }
+
+/* ===== CABECERA ===== */
 .rivalHead {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--sp-3);
   flex-wrap: wrap;
-  margin-bottom: var(--sp-3);
+  margin-bottom: 14px;
 }
 
 .rivalName {
   font-size: 17px;
-  margin: 0 0 2px;
-}
-
-.pendingBadge {
-  font-size: 12px;
   font-weight: 700;
-  padding: 4px 10px;
-  border-radius: var(--r-chip);
-  background: color-mix(in srgb, var(--wc-oro) 14%, transparent);
-  color: var(--wc-oro-oscuro);
-  border: 1px solid var(--wc-oro);
-  white-space: nowrap;
+  margin: 0 0 3px;
+  color: #212529;
+  font-family: var(--font-body);
+  letter-spacing: -0.3px;
 }
 
+/* ===== BADGE PENDIENTE ===== */
+.pendingBadge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: #fff3cd;
+  color: #886500;
+  border: 1px solid #ffd43b;
+  white-space: nowrap;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  font-family: var(--font-body);
+}
+
+/* ===== FILA DE CARTAS ===== */
 .cardsRow {
   display: flex;
-  gap: var(--sp-3);
+  gap: 12px;
   overflow-x: auto;
-  padding: 2px 2px 6px;
+  /* overflow-x distinto de visible hace que overflow-y también recorte
+     (regla de CSS), así que el padding-top tiene que alcanzar para el
+     translateY(-8px) + scale(1.03) del hover de PlayerCard o se corta. */
+  padding: 20px 2px 6px;
+  scrollbar-width: thin;
+  scrollbar-color: #dee2e6 transparent;
+}
+
+.cardsRow::-webkit-scrollbar {
+  height: 4px;
+}
+.cardsRow::-webkit-scrollbar-thumb {
+  background: #dee2e6;
+  border-radius: 99px;
 }
 
 .miniCard {
   width: 100px;
   flex: 0 0 auto;
+  transition: transform 0.15s ease;
+}
+
+.miniCard:hover {
+  transform: translateY(-4px) scale(1.04);
+}
+
+/* ============================================================
+   LAYOUT MAESTRO-DETALLE (Rivales): lista de mánagers a la
+   izquierda; al hacer clic se abren sus cartas a la derecha.
+============================================================ */
+.split {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  margin-top: var(--sp-3);
+}
+.leftCol {
+  width: 320px;
+  flex: 0 0 320px;
+}
+.rightCol {
+  flex: 1;
+  min-width: 0;
+}
+
+.managerRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  background: #ffffff;
+  border: 1.5px solid #e8edf5;
+  border-left: 5px solid #3b5bdb;
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+.managerRow:hover {
+  box-shadow: 0 6px 20px rgba(59, 91, 219, 0.1);
+}
+
+.rightPanel {
+  background: #ffffff;
+  border: 1.5px solid #e8edf5;
+  border-radius: 14px;
+  padding: 20px 22px 24px;
+}
+.rightHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1.5px solid #eef1f6;
+}
+.cardsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 26px 16px;
+}
+
+.rightEmpty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+  text-align: center;
+  background: #f8fafd;
+  border: 1.5px dashed #d7deea;
+  border-radius: 14px;
+}
+
+@media (max-width: 720px) {
+  .split {
+    flex-direction: column;
+  }
+  .leftCol {
+    width: 100%;
+    flex: none;
+  }
+}
+
+/* ============================================================
+   CANCHA (panel derecho): reutiliza el diseño del "Once" para
+   mostrar a los jugadores del rival acomodados por posición.
+============================================================ */
+.pitch {
+  background:
+    linear-gradient(rgba(11, 18, 32, 0.55), rgba(11, 18, 32, 0.55)),
+    repeating-linear-gradient(0deg, #14532d 0 48px, #166534 48px 96px);
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  border-radius: var(--r-card);
+  padding: var(--sp-5) var(--sp-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+.pitchRow {
+  display: flex;
+  justify-content: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+}
+.pitchSlot {
+  width: 92px;
+  flex: 0 0 auto;
+}
+.pitchEmpty {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.7);
+  padding: var(--sp-5) 0;
+}
+
+/* Banca: los jugadores que no entran al once titular, debajo de la cancha. */
+.bench {
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-4);
+  border-top: 1.5px dashed #d7deea;
+}
+.benchLabel {
+  display: block;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  color: #868e96;
+  margin-bottom: var(--sp-3);
+}
+.benchRow {
+  display: flex;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+}
+
+/* Buscador de mánagers (columna izquierda). */
+.search {
+  width: 100%;
+  margin-bottom: var(--sp-3);
+  padding: 10px 16px;
+  border: 1.5px solid #e3e8ef;
+  border-radius: 999px;
+  font-size: 14px;
+  background: #ffffff;
+}
+.search:focus-visible {
+  outline: 2px solid var(--wc-azul-vivo);
+  outline-offset: 1px;
 }

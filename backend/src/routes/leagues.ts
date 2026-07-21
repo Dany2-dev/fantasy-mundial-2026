@@ -4,6 +4,7 @@ import { prisma } from "../lib/prisma";
 import { AuthRequest, requireAuth } from "../middleware/auth";
 import { currentGameweek } from "../services/gameweeks";
 import { gwLabel } from "../lib/rounds";
+import { STARTING_COINS } from "../services/economy";
 import { grantStarterPack } from "../services/starterPack";
 
 const router = Router();
@@ -36,6 +37,7 @@ router.get("/", async (req, res) => {
       ownerId: m.league.ownerId,
       memberCount: m.league._count.members,
       competitionId: m.league.competitionId,
+      myCoins: m.coins, // presupuesto del usuario DENTRO de esta liga
       competition: m.league.competition
         ? { id: m.league.competition.id, name: m.league.competition.name, logoUrl: m.league.competition.logoUrl }
         : null,
@@ -67,7 +69,7 @@ router.post("/", async (req, res) => {
   });
 
   const starterPack = await grantStarterPack(userId, league.id, competition.id);
-  res.status(201).json({ league, starterPack });
+  res.status(201).json({ league: { ...league, myCoins: STARTING_COINS }, starterPack });
 });
 
 router.post("/join", async (req, res) => {
@@ -85,7 +87,7 @@ router.post("/join", async (req, res) => {
 
   await prisma.leagueMembership.create({ data: { userId, leagueId: league.id } });
   const starterPack = await grantStarterPack(userId, league.id, league.competitionId);
-  res.status(201).json({ league, starterPack });
+  res.status(201).json({ league: { ...league, myCoins: STARTING_COINS }, starterPack });
 });
 
 // Detalle + clasificación
@@ -125,6 +127,7 @@ router.get("/:id", async (req, res) => {
     .sort((a, b) => b.points - a.points || b.teamValue - a.teamValue);
 
   const gameweek = await currentGameweek(league.competitionId);
+  const myMembership = league.members.find((m) => m.userId === userId);
 
   res.json({
     league: {
@@ -134,6 +137,7 @@ router.get("/:id", async (req, res) => {
       ownerId: league.ownerId,
       competition: league.competition,
       currentGameweek: gameweek,
+      myCoins: myMembership?.coins ?? 0,
     },
     standings,
   });

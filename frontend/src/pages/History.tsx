@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
+import AnimatedList from "../components/AnimatedList";
 import { IconCoin, IconExchange } from "../components/icons";
+import { formatMoney } from "../lib/money";
 import { useAppSelector } from "../store/store";
 import { GameweekScore, Trade } from "../types";
 import styles from "./History.module.css";
@@ -40,12 +42,14 @@ export default function History() {
 
   if (!activeLeagueId) {
     return (
-      <div className={styles.empty}>
-        <h1>Historial</h1>
-        <p className="muted">Tu historial vive dentro de una liga.</p>
-        <Link to="/ligas">
-          <button className="primary">Ir a Ligas</button>
-        </Link>
+      <div className={styles.page}>
+        <div className={styles.empty}>
+          <h1>Historial</h1>
+          <p className="muted">Tu historia empieza dentro de una liga. Entra a una y empieza a competir.</p>
+          <Link to="/ligas">
+            <button className="primary">Ir a Ligas</button>
+          </Link>
+        </div>
       </div>
     );
   }
@@ -59,11 +63,11 @@ export default function History() {
   ].sort((a, b) => (a.date < b.date ? 1 : -1));
 
   return (
-    <div>
+    <div className={styles.page}>
       <div className={styles.headerRow}>
         <div>
           <h1>Historial</h1>
-          <p className="muted">Tus jornadas y tus movimientos en esta liga.</p>
+          <p className="muted">Tus puntos, tus tratos y cada capítulo de esta liga.</p>
         </div>
         <div className={styles.totalBadge}>
           <span className={styles.totalNum}>{totalPoints}</span>
@@ -73,11 +77,16 @@ export default function History() {
 
       {loading && <p className="muted">Cargando…</p>}
       {!loading && events.length === 0 && (
-        <p className="muted">Aún no hay jornadas jugadas ni movimientos en esta liga.</p>
+        <p className="muted">Tu historia aún está por escribirse. La primera jornada o el primer trato aparecerán aquí.</p>
       )}
 
-      <div className={styles.feed}>
-        {events.map((e) =>
+      <AnimatedList
+        className={styles.feed}
+        displayScrollbar
+        showGradients
+        enableArrowNavigation
+        onItemSelect={(_item, index) => console.log("Historial: evento", index)}
+        items={events.map((e) =>
           e.kind === "jornada" ? (
             <div key={`gw-${e.gw.gameweek}`} className={styles.row}>
               <span className={`${styles.icon} ${styles.iconGw}`}>🏆</span>
@@ -103,7 +112,7 @@ export default function History() {
                   {e.trade.coins > 0 && (
                     <>
                       {" "}
-                      +{e.trade.coins} <IconCoin size={11} />
+                      +{formatMoney(e.trade.coins)} <IconCoin size={11} />
                     </>
                   )}
                 </span>
@@ -114,9 +123,9 @@ export default function History() {
             </div>
           )
         )}
-      </div>
+      />
 
-      <p className={`caption ${styles.comingSoon}`}>Cláusulas y ventas llegan pronto a este historial.</p>
+      <p className={`caption ${styles.comingSoon}`}>Pronto también verás aquí tus cláusulas y ventas.</p>
     </div>
   );
 }

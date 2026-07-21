@@ -2,12 +2,14 @@ import { motion } from "motion/react";
 import { CSSProperties, useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { api } from "../api/client";
+import { formatMoney } from "../lib/money";
 import { useScrollHidden } from "../hooks/useScrollHidden";
-import { competitionTheme } from "../lib/competitionTheme";
+import { competitionTheme, Theme } from "../lib/competitionTheme";
 import { logout } from "../store/authSlice";
+import { fetchCollection } from "../store/collectionSlice";
 import { clearLeagues, setActiveLeague } from "../store/leagueSlice";
 import { useAppDispatch, useAppSelector } from "../store/store";
-import { Trade } from "../types";
+import { GameweekInfo, Trade } from "../types";
 import {
   IconBall,
   IconCalendar,
@@ -47,18 +49,59 @@ const MORE_NAV = [
 ];
 const NAV = [...PRIMARY_NAV, ...MORE_NAV];
 
+const THEME_CACHE_KEY = "fm26_tema_liga";
+
 export default function Layout() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const location = useLocation();
   const user = useAppSelector((s) => s.auth.user);
-  const { leagues, activeLeagueId } = useAppSelector((s) => s.leagues);
+  const { leagues, activeLeagueId, status: leaguesStatus } = useAppSelector((s) => s.leagues);
+  const collection = useAppSelector((s) => s.collection.items);
   const [offer, setOffer] = useState<Trade | null>(null);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [gameweek, setGameweek] = useState<GameweekInfo | null>(null);
   const hidden = useScrollHidden();
   const moreActive = MORE_NAV.some((item) => location.pathname === item.to);
   const activeLeague = leagues.find((l) => l.id === activeLeagueId);
-  const theme = competitionTheme(activeLeague?.competition?.name);
+  // El tema arranca leyendo el último aplicado (localStorage) en vez del
+  // default: `leagues` todavía no llegó de la API en el primer render, así
+  // que sin esto se veía un salto de "rojo por defecto" a los colores reales
+  // de la liga apenas resolvía el fetch.
+  const [theme, setTheme] = useState<Theme>(() => {
+    try {
+      const cached = localStorage.getItem(THEME_CACHE_KEY);
+      return cached ? (JSON.parse(cached) as Theme) : competitionTheme(null);
+    } catch {
+      return competitionTheme(null);
+    }
+  });
+
+  useEffect(() => {
+    if (!activeLeague) {
+      // Todavía cargando: no pisar el tema cacheado con el default mientras
+      // esperamos la respuesta. Si ya cargó y de verdad no hay liga activa
+      // (cuenta nueva), ahí sí volvemos al tema por defecto.
+      if (leaguesStatus !== "ready") return;
+      setTheme(competitionTheme(null));
+      localStorage.removeItem(THEME_CACHE_KEY);
+      return;
+    }
+    const next = competitionTheme(activeLeague.competition?.name);
+    setTheme(next);
+    try {
+      localStorage.setItem(THEME_CACHE_KEY, JSON.stringify(next));
+    } catch {
+      // localStorage puede fallar en modo privado; no es crítico, solo se
+      // pierde el cache de arranque optimista.
+    }
+  }, [activeLeague?.competition?.name, leaguesStatus]);
+  const avgRating = collection.length
+    ? Math.round(collection.reduce((s, p) => s + p.rating, 0) / collection.length)
+    : 0;
+  const avatarInitial = user?.name?.trim()?.[0]?.toUpperCase() ?? "?";
+  // Presupuesto de la liga activa: el dinero es por liga, no global.
+  const budget = activeLeague?.myCoins ?? 0;
 
   function handleLogout() {
     dispatch(logout());
@@ -83,10 +126,30 @@ export default function Layout() {
       .catch(() => setOffer(null));
   }, [activeLeagueId, user]);
 
+  // Media del club y jornada actual: viven en el header en vez de en Home,
+  // así se ven en cualquier página, no solo al entrar.
+  useEffect(() => {
+    if (!activeLeagueId) {
+      setGameweek(null);
+      return;
+    }
+    dispatch(fetchCollection(activeLeagueId));
+    api<{ league: { currentGameweek: GameweekInfo | null } }>(`/leagues/${activeLeagueId}`)
+      .then((d) => setGameweek(d.league.currentGameweek))
+      .catch(() => setGameweek(null));
+  }, [dispatch, activeLeagueId]);
+
   return (
     <div
       className={styles.shell}
-      style={{ "--league-c1": theme.c1, "--league-c2": theme.c2 } as CSSProperties}
+      style={
+        {
+          "--league-c1": theme.primary,
+          "--league-c2": theme.secondary,
+          "--league-cta": theme.cta,
+          "--league-accent": theme.accent,
+        } as CSSProperties
+      }
     >
       {/* Escritorio: riel fijo a la izquierda que se expande al pasar el cursor. */}
       <aside className={styles.sidebar} aria-label="Navegación principal">
@@ -107,7 +170,7 @@ export default function Layout() {
         <div className={styles.sidebarFooter}>
           <Link to="/shop" className={styles.sidebarCoins} title="Comprar monedas / Reclamar recompensa">
             <IconCoin size={20} className={styles.sidebarIcon} />
-            <span className={styles.sidebarLabel}>{user?.coins.toLocaleString("es-MX")}</span>
+            <span className={styles.sidebarLabel}>{(user?.coins ?? 0).toLocaleString("es-MX")}</span>
           </Link>
           <button className={styles.sidebarItem} onClick={handleLogout}>
             <IconLogOut size={20} aria-hidden="true" className={styles.sidebarIcon} />
@@ -122,7 +185,7 @@ export default function Layout() {
             <span>
               <strong>{offer.fromUser.name}</strong> quiere fichar a tu <strong>{offer.requestedPlayer?.name}</strong>{" "}
               a cambio de {offer.offeredPlayer?.name}
-              {offer.coins > 0 ? ` + ${offer.coins.toLocaleString("es-MX")} monedas` : ""}.
+              {offer.coins > 0 ? ` + ${formatMoney(offer.coins)}` : ""}.
             </span>
             <Link to="/mercado">Ver oferta</Link>
           </StickyBanner>
@@ -153,10 +216,18 @@ export default function Layout() {
               </select>
             )}
 
+            {activeLeague?.competition?.logoUrl && (
+              <img
+                src={activeLeague.competition.logoUrl}
+                alt={activeLeague.competition.name}
+                className={styles.leagueBadge}
+              />
+            )}
+
             <div className={styles.right}>
               <Link to="/shop" className={`${styles.coins} tabular`} title="Comprar monedas / Reclamar recompensa">
                 <IconCoin size={17} />
-                {user?.coins.toLocaleString("es-MX")}
+                {(user?.coins ?? 0).toLocaleString("es-MX")}
               </Link>
               <button className={styles.logoutBtn} onClick={handleLogout} title="Cerrar sesión">
                 <IconLogOut size={16} />

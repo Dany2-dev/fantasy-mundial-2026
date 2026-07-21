@@ -1,10 +1,12 @@
 .shell {
   min-height: 100vh;
   display: flex;
+  /* Tinte uniforme de base en todo el fondo (no solo esquinas) + los
+     radiales encima le dan algo de dirección/profundidad. */
   background:
-    radial-gradient(900px 500px at -5% -10%, color-mix(in srgb, var(--league-c1, var(--wc-rojo)) 16%, transparent), transparent 60%),
-    radial-gradient(900px 600px at 105% 15%, color-mix(in srgb, var(--league-c2, var(--wc-azul)) 14%, transparent), transparent 60%),
-    var(--bg);
+    radial-gradient(900px 500px at -5% -10%, color-mix(in srgb, var(--league-c1, var(--wc-rojo)) 30%, transparent), transparent 60%),
+    radial-gradient(900px 600px at 105% 15%, color-mix(in srgb, var(--league-c2, var(--wc-azul)) 26%, transparent), transparent 60%),
+    color-mix(in srgb, var(--league-c1, var(--wc-rojo)) 7%, var(--bg));
   transition: background 0.4s ease;
 }
 
@@ -24,10 +26,10 @@
     flex-direction: column;
     width: 64px;
     padding: var(--sp-5) 0;
-    background: var(--superficie);
+    background: color-mix(in srgb, var(--league-c1, var(--wc-rojo)) 10%, var(--superficie));
     border-right: 1px solid var(--borde);
     overflow: hidden;
-    transition: width 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: width 0.22s cubic-bezier(0.22, 1, 0.36, 1), background 0.4s ease;
   }
 
   .sidebar:hover,
@@ -74,7 +76,7 @@
   }
 
   .sidebarItem.active {
-    color: var(--wc-rojo);
+    color: var(--league-cta, var(--wc-rojo));
   }
 
   .sidebarIcon {
@@ -135,14 +137,16 @@
   position: sticky;
   top: 0;
   z-index: 20;
-  background: rgba(255, 255, 255, 0.9);
-  /* El fondo ya es 90% opaco: un blur chico basta para el efecto vidrio
+  background: color-mix(in srgb, var(--league-c1, var(--wc-rojo)) 10%, rgba(255, 255, 255, 0.9));
+  /* El fondo ya es ~90% opaco: un blur chico basta para el efecto vidrio
      y cuesta mucho menos recomponer en cada frame de scroll (header sticky). */
   backdrop-filter: blur(4px);
   border-bottom: 1px solid var(--borde);
+  transition: background 0.4s ease;
 }
 
 .headerInner {
+  position: relative;
   max-width: var(--max-w);
   margin: 0 auto;
   padding: var(--sp-3) var(--sp-4);
@@ -152,15 +156,34 @@
 }
 
 .logo {
-  font-family: var(--font-display);
-  font-weight: 800;
+  font-family: var(--font-brand);
+  font-weight: 400;
   font-size: 22px;
   letter-spacing: 0.5px;
   color: var(--tinta);
 }
 
 .logoYear {
-  color: var(--wc-rojo);
+  color: var(--league-cta, var(--wc-rojo));
+}
+
+/* Escudo de la competencia de la liga activa: centrado respecto al header
+   completo, no al hueco entre .logo y .right (que cambia de ancho). */
+.leagueBadge {
+  display: none;
+}
+
+@media (min-width: 560px) {
+  .leagueBadge {
+    display: block;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    height: 30px;
+    width: auto;
+    object-fit: contain;
+  }
 }
 
 .leagueSelect {
@@ -185,6 +208,43 @@
   color: var(--wc-oro-oscuro);
   white-space: nowrap;
   text-decoration: none;
+}
+
+/* Jornada actual + media del club: a diferencia de .coins/.logoutBtn, estos
+   sí se quedan visibles en escritorio — el riel lateral no los duplica. */
+.headerStat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--tinta-media);
+  white-space: nowrap;
+}
+
+.headerStatLabel {
+  display: none;
+}
+
+@media (min-width: 480px) {
+  .headerStatLabel {
+    display: inline;
+  }
+}
+
+.avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--wc-azul), var(--wc-azul-vivo));
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 13px;
 }
 
 .logoutBtn {
@@ -253,7 +313,8 @@
 }
 
 .footerLogo {
-  font-family: var(--font-display);
+  font-family: var(--font-brand);
+  font-weight: 400;
   font-size: 18px;
   color: var(--tinta);
 }
@@ -273,9 +334,10 @@
   z-index: 20;
   display: flex;
   justify-content: space-around;
-  background: rgba(255, 255, 255, 0.97);
+  background: color-mix(in srgb, var(--league-c1, var(--wc-rojo)) 10%, rgba(255, 255, 255, 0.97));
   border-top: 1px solid var(--borde);
   padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+  transition: background 0.4s ease;
 }
 
 .mobileItem {
@@ -296,7 +358,7 @@
 }
 
 .mobileItem.active {
-  color: var(--wc-rojo);
+  color: var(--league-cta, var(--wc-rojo));
 }
 
 @media (min-width: 720px) {
@@ -319,7 +381,7 @@
   right: 0;
   bottom: 0;
   z-index: 26;
-  background: var(--superficie);
+  background: color-mix(in srgb, var(--league-c1, var(--wc-rojo)) 10%, var(--superficie));
   border-top: 1px solid var(--borde);
   border-radius: 18px 18px 0 0;
   padding: var(--sp-4) var(--sp-4) calc(var(--sp-5) + env(safe-area-inset-bottom));
@@ -369,7 +431,7 @@
 }
 
 .moreItem.active {
-  color: var(--wc-rojo);
+  color: var(--league-cta, var(--wc-rojo));
 }
 
 @media (min-width: 720px) {

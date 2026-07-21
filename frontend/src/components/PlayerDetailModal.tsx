@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
-import { fetchMe } from "../store/authSlice";
+import { formatMoney } from "../lib/money";
+import { fetchLeagues } from "../store/leagueSlice";
 import { useAppDispatch, useAppSelector } from "../store/store";
 import { PlayerDetail } from "../types";
 import Flag from "./Flag";
@@ -23,13 +24,16 @@ function formatDate(iso: string | null) {
 
 export default function PlayerDetailModal({ playerId, leagueId, onClose, onChanged, onProposeTrade }: Props) {
   const dispatch = useAppDispatch();
-  const coins = useAppSelector((s) => s.auth.user?.coins ?? 0);
+  // Presupuesto del usuario EN ESTA LIGA (el dinero es por liga, no global).
+  const coins = useAppSelector(
+    (s) => s.leagues.leagues.find((l) => l.id === leagueId)?.myCoins ?? 0
+  );
 
   const [detail, setDetail] = useState<PlayerDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
-  const [raiseAmount, setRaiseAmount] = useState(500);
+  const [raiseAmount, setRaiseAmount] = useState(1_000_000);
   const [sellPrice, setSellPrice] = useState(0);
 
   function load() {
@@ -52,7 +56,7 @@ export default function PlayerDetailModal({ playerId, leagueId, onClose, onChang
       await action();
       setMsg({ kind: "ok", text: okText });
       load();
-      dispatch(fetchMe());
+      dispatch(fetchLeagues()); // refresca el presupuesto de la liga
       onChanged?.();
     } catch (e) {
       setMsg({ kind: "error", text: e instanceof Error ? e.message : "Algo falló" });
@@ -64,23 +68,23 @@ export default function PlayerDetailModal({ playerId, leagueId, onClose, onChang
   const raise = () =>
     run(
       () => api("/clause/raise", { method: "POST", body: JSON.stringify({ leagueId, playerId, amount: raiseAmount }) }),
-      `Cláusula subida +${raiseAmount.toLocaleString("es-MX")}`
+      `¡Crack blindado! Sumaste ${formatMoney(raiseAmount)} a su cláusula.`
     );
 
   const clausulazo = () =>
     run(
       () => api("/clause/pay", { method: "POST", body: JSON.stringify({ leagueId, playerId }) }),
-      "¡Clausulazo hecho! El jugador ya es tuyo."
+      "¡Clausulazo! Ya es jugador de tu club."
     );
 
   const sell = () =>
     run(
       () => api("/listings", { method: "POST", body: JSON.stringify({ leagueId, playerId, price: sellPrice }) }),
-      "Publicado en el mercado"
+      "¡Carta publicada! Ya está en el mercado."
     );
 
   const cancelSale = () =>
-    run(() => api(`/listings/${detail?.listing?.id}`, { method: "DELETE" }), "Venta cancelada");
+    run(() => api(`/listings/${detail?.listing?.id}`, { method: "DELETE" }), "Venta cancelada. Ya no está en el mercado.");
 
   return (
     <div className={styles.backdrop} onClick={onClose}>
@@ -112,7 +116,7 @@ export default function PlayerDetailModal({ playerId, leagueId, onClose, onChang
                       {detail.ownership.isMine ? "Es tuyo" : `Dueño: ${detail.ownership.owner.name}`}
                     </span>
                     <span className={styles.clauseTag}>
-                      <IconCoin size={14} /> Cláusula {detail.ownership.clause.toLocaleString("es-MX")}
+                      <IconCoin size={14} /> Cláusula {formatMoney(detail.ownership.clause)}
                     </span>
                     {detail.ownership.protected && (
                       <span className={styles.protectedTag}>
@@ -121,12 +125,12 @@ export default function PlayerDetailModal({ playerId, leagueId, onClose, onChang
                     )}
                     {detail.listing && (
                       <span className={styles.listedTag}>
-                        En venta por {detail.listing.price.toLocaleString("es-MX")}
+                        En venta por {formatMoney(detail.listing.price)}
                       </span>
                     )}
                   </div>
                 ) : (
-                  <p className="caption">Nadie lo tiene todavía en esta liga.</p>
+                  <p className="caption">Todavía está libre en esta liga.</p>
                 )}
               </div>
             </div>
@@ -137,7 +141,7 @@ export default function PlayerDetailModal({ playerId, leagueId, onClose, onChang
               <div className={styles.actions}>
                 <div className={styles.actionRow}>
                   <label className={styles.field}>
-                    <span className="caption">Subir tu cláusula (tienes {coins.toLocaleString("es-MX")})</span>
+                    <span className="caption">Subir tu cláusula (tienes {formatMoney(coins)})</span>
                     <div className={styles.inputBtn}>
                       <input
                         type="number"
@@ -155,7 +159,7 @@ export default function PlayerDetailModal({ playerId, leagueId, onClose, onChang
                 <div className={styles.actionRow}>
                   {detail.listing ? (
                     <button className="danger" onClick={cancelSale} disabled={busy}>
-                      Quitar de venta ({detail.listing.price.toLocaleString("es-MX")})
+                      Quitar de venta ({formatMoney(detail.listing.price)})
                     </button>
                   ) : (
                     <label className={styles.field}>
@@ -185,7 +189,7 @@ export default function PlayerDetailModal({ playerId, leagueId, onClose, onChang
                   disabled={busy || detail.ownership.protected || coins < detail.ownership.clause}
                   title={detail.ownership.protected ? "Este jugador está protegido" : undefined}
                 >
-                  Clausulazo por {detail.ownership.clause.toLocaleString("es-MX")}
+                  Clausulazo por {formatMoney(detail.ownership.clause)}
                 </button>
                 {onProposeTrade && (
                   <button
@@ -199,7 +203,7 @@ export default function PlayerDetailModal({ playerId, leagueId, onClose, onChang
             )}
 
             <h4 className={styles.statsTitle}>Estadísticas por jornada</h4>
-            {detail.stats.length === 0 && <p className="muted">Aún no hay partidos jugados registrados.</p>}
+            {detail.stats.length === 0 && <p className="muted">Este jugador todavía no tiene estadísticas en el torneo.</p>}
             <div className={styles.statsList}>
               {detail.stats.map((s) => (
                 <div key={s.gameweek} className={styles.statRow}>

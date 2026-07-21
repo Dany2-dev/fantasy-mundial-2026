@@ -4,8 +4,9 @@ import { api } from "../api/client";
 import { IconCoin } from "../components/icons";
 import PlayerCard from "../components/PlayerCard";
 import PlayerDetailModal from "../components/PlayerDetailModal";
+import { formatMoney } from "../lib/money";
 import { fetchCollection } from "../store/collectionSlice";
-import { fetchMe } from "../store/authSlice";
+import { fetchLeagues } from "../store/leagueSlice";
 import { useAppDispatch, useAppSelector } from "../store/store";
 import { Listing, MarketCard, Trade } from "../types";
 import styles from "./Market.module.css";
@@ -16,6 +17,10 @@ export default function Market() {
   const dispatch = useAppDispatch();
   const user = useAppSelector((s) => s.auth.user);
   const activeLeagueId = useAppSelector((s) => s.leagues.activeLeagueId);
+  // Presupuesto de la liga activa (el dinero es por liga, no global).
+  const budget = useAppSelector(
+    (s) => s.leagues.leagues.find((l) => l.id === s.leagues.activeLeagueId)?.myCoins ?? 0
+  );
   const myCards = useAppSelector((s) => s.collection.items);
 
   const [tab, setTab] = useState<Tab>("cartas");
@@ -61,7 +66,7 @@ export default function Market() {
       setTarget(null);
       setOfferedId("");
       setCoinsOffer(0);
-      setMsg({ kind: "ok", text: "Oferta enviada. La verás en Enviadas." });
+      setMsg({ kind: "ok", text: "Oferta enviada. Puedes seguirla en Enviadas." });
       refresh();
       setTab("enviadas");
     } catch (e) {
@@ -73,9 +78,9 @@ export default function Market() {
     setMsg(null);
     try {
       await api(`/trades/${tradeId}/respond`, { method: "POST", body: JSON.stringify({ accept }) });
-      setMsg({ kind: "ok", text: accept ? "¡Intercambio hecho!" : "Oferta rechazada" });
+      setMsg({ kind: "ok", text: accept ? "¡Trato cerrado!" : "Oferta rechazada" });
       refresh();
-      dispatch(fetchMe());
+      dispatch(fetchLeagues()); // refresca el presupuesto de la liga
     } catch (e) {
       setMsg({ kind: "error", text: e instanceof Error ? e.message : "No se pudo responder" });
     }
@@ -85,9 +90,9 @@ export default function Market() {
     setMsg(null);
     try {
       await api(`/listings/${id}/buy`, { method: "POST" });
-      setMsg({ kind: "ok", text: "¡Comprado!" });
+      setMsg({ kind: "ok", text: "¡Fichaje cerrado!" });
       refresh();
-      dispatch(fetchMe());
+      dispatch(fetchLeagues()); // refresca el presupuesto de la liga
     } catch (e) {
       setMsg({ kind: "error", text: e instanceof Error ? e.message : "No se pudo comprar" });
     }
@@ -97,7 +102,7 @@ export default function Market() {
     return (
       <div className={styles.empty}>
         <h1>Mercado</h1>
-        <p className="muted">El mercado es entre los mánagers de tu liga.</p>
+        <p className="muted">El mercado se mueve dentro de tu liga. Entra a una y empieza a fichar.</p>
         <Link to="/ligas">
           <button className="primary">Ir a Ligas</button>
         </Link>
@@ -111,6 +116,7 @@ export default function Market() {
   return (
     <div>
       <h1>Mercado</h1>
+      <p className="muted">Negocia, vende o lanza un clausulazo antes de que otro mánager se adelante.</p>
 
       <div className={styles.tabs} role="tablist">
         {(
@@ -137,10 +143,10 @@ export default function Market() {
 
       {tab === "cartas" && (
         <>
-          <p className="caption">Toca una carta para ver sus estadísticas, clausularla o proponer un cambio.</p>
+          <p className="caption">Toca una carta y mueve ficha: paga su cláusula o manda una oferta.</p>
           {market.length === 0 && (
             <p className="muted">
-              Nadie más tiene cartas todavía. Invita a tus amigos con el código de la liga.
+              El mercado está quieto por ahora. Invita al grupo y que empiecen los fichajes.
             </p>
           )}
           <div className={styles.grid}>
@@ -161,12 +167,12 @@ export default function Market() {
 
       {tab === "ventas" && (
         <div className={styles.tradeList}>
-          {listings.length === 0 && <p className="muted">Nadie tiene cartas en venta abierta ahora mismo.</p>}
+          {listings.length === 0 && <p className="muted">No hay cartas a la venta. Vuelve pronto o busca un clausulazo.</p>}
           {listings.map((l) => (
             <div key={l.id} className={styles.trade}>
               <p>
                 <strong>{l.player.name}</strong> ({l.player.rating}) de <strong>{l.seller.name}</strong> —{" "}
-                {l.price.toLocaleString("es-MX")} <IconCoin size={14} className={styles.inlineIcon} />
+                {formatMoney(l.price)} <IconCoin size={14} className={styles.inlineIcon} />
               </p>
               {l.sellerId === user?.id ? (
                 <span className="caption">Es tu publicación</span>
@@ -182,7 +188,7 @@ export default function Market() {
 
       {tab === "recibidas" && (
         <div className={styles.tradeList}>
-          {received.length === 0 && <p className="muted">No tienes ofertas pendientes.</p>}
+          {received.length === 0 && <p className="muted">Tu bandeja está tranquila: no tienes ofertas por responder.</p>}
           {received.map((t) => (
             <div key={t.id} className={styles.trade}>
               <p>
@@ -191,7 +197,7 @@ export default function Market() {
                 {t.coins > 0 && (
                   <>
                     {" "}
-                    + {t.coins.toLocaleString("es-MX")} <IconCoin size={14} className={styles.inlineIcon} />
+                    + {formatMoney(t.coins)} <IconCoin size={14} className={styles.inlineIcon} />
                   </>
                 )}{" "}
                 por tu <strong>{t.requestedPlayer?.name}</strong>
@@ -211,7 +217,7 @@ export default function Market() {
 
       {tab === "enviadas" && (
         <div className={styles.tradeList}>
-          {sent.length === 0 && <p className="muted">No has enviado ofertas.</p>}
+          {sent.length === 0 && <p className="muted">Aún no has movido ficha. Busca un jugador y manda tu primera oferta.</p>}
           {sent.map((t) => (
             <div key={t.id} className={styles.trade}>
               <p>
@@ -219,7 +225,7 @@ export default function Market() {
                 {t.coins > 0 && (
                   <>
                     {" "}
-                    + {t.coins.toLocaleString("es-MX")} <IconCoin size={14} className={styles.inlineIcon} />
+                    + {formatMoney(t.coins)} <IconCoin size={14} className={styles.inlineIcon} />
                   </>
                 )}{" "}
                 a <strong>{t.toUser.name}</strong> por <strong>{t.requestedPlayer?.name}</strong>
@@ -249,7 +255,7 @@ export default function Market() {
       {target && (
         <div className={styles.modalBackdrop} onClick={() => setTarget(null)}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Proponer intercambio">
-            <h3>Quieres a {target.name}</h3>
+            <h3>Vas por {target.name}</h3>
             <label className={styles.field}>
               <span className="caption">Tu carta a cambio</span>
               <select value={offeredId} onChange={(e) => setOfferedId(e.target.value ? Number(e.target.value) : "")}>
@@ -262,11 +268,11 @@ export default function Market() {
               </select>
             </label>
             <label className={styles.field}>
-              <span className="caption">Monedas extra (opcional) — tienes {user?.coins.toLocaleString("es-MX")}</span>
+              <span className="caption">Euros extra (opcional) — tienes {formatMoney(budget)} en esta liga</span>
               <input
                 type="number"
                 min={0}
-                max={user?.coins ?? 0}
+                max={budget}
                 value={coins}
                 onChange={(e) => setCoinsOffer(Math.max(0, Number(e.target.value)))}
               />

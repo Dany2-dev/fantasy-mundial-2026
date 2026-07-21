@@ -1,7 +1,6 @@
 import { lazy, Suspense, useEffect } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { getToken } from "./api/client";
-import CardClipDefs from "./components/CardClipDefs";
 import Layout from "./components/Layout";
 import { fetchMe } from "./store/authSlice";
 import { fetchLeagues } from "./store/leagueSlice";
@@ -40,7 +39,6 @@ export default function App() {
 
   return (
     <Suspense fallback={<PageFallback />}>
-      <CardClipDefs />
       <Routes>
         <Route path="/acceso" element={<Auth />} />
         {user ? (

@@ -4,6 +4,7 @@
 import { PrismaClient } from "@prisma/client";
 import { COMPETITIONS } from "../lib/catalog";
 import { getLeague, getMatchDetails } from "../lib/fotmob";
+import { COINS_PER_POINT } from "./economy";
 import { computePoints } from "./points";
 
 const prisma = new PrismaClient();
@@ -14,6 +15,8 @@ export interface SyncResult {
   matchesSynced: number;
   statsUpserted: number;
   scoresUpdated: number;
+  gameweeksClosed: number;
+  rewardsPaid: number;
 }
 
 const groupStageById = new Map(COMPETITIONS.map((c) => [c.fotmobId, c.groupStageOnly === true]));
@@ -39,17 +42,23 @@ async function refreshFixtures(competitionFotmobIds: number[]): Promise<number> 
   return updated;
 }
 
+// Solo marcador/estado (1 request por competencia, sin detalle de partido) —
+// pensado para correr seguido y mantener el marcador al día sin pagar el
+// costo del sync completo (que sí pega un request por partido a sincronizar).
+export async function refreshScoreboards(competitionId?: number): Promise<number> {
+  const comps = await prisma.competition.findMany({
+    where: competitionId ? { id: competitionId } : undefined,
+    select: { fotmobId: true },
+  });
+  return refreshFixtures(comps.map((c) => c.fotmobId));
+}
+
 export async function syncResults(
   opts: { limit?: number; force?: boolean; competitionId?: number } = {}
 ): Promise<SyncResult> {
   const { limit = 60, force = false, competitionId } = opts;
 
-  // Solo refrescamos/sincronizamos competencias que existen en BD (o solo la pedida).
-  const comps = await prisma.competition.findMany({
-    where: competitionId ? { id: competitionId } : undefined,
-    select: { id: true, fotmobId: true },
-  });
-  const matchesUpdated = await refreshFixtures(comps.map((c) => c.fotmobId));
+  const matchesUpdated = await refreshScoreboards(competitionId);
 
   const pending = await prisma.match.findMany({
     where: {
@@ -109,7 +118,53 @@ export async function syncResults(
   }
 
   const scoresUpdated = await recomputeScores();
-  return { matchesUpdated, matchesSynced, statsUpserted, scoresUpdated };
+  const gameweeksClosed = await closeFinishedGameweeks(competitionId);
+  const rewardsPaid = await payGameweekRewards();
+  return { matchesUpdated, matchesSynced, statsUpserted, scoresUpdated, gameweeksClosed, rewardsPaid };
+}
+
+// Cierra jornadas cuyo deadline ya pasó y cuyos partidos ya terminaron todos.
+// (El seed las crea "upcoming" y nada más las transicionaba — sin esto el
+// Historial nunca listaba jornadas y no había momento de pagar premios.)
+export async function closeFinishedGameweeks(competitionId?: number): Promise<number> {
+  const now = new Date();
+  const open = await prisma.gameweek.findMany({
+    where: { status: "upcoming", deadline: { lt: now }, ...(competitionId ? { competitionId } : {}) },
+  });
+  let closed = 0;
+  for (const gw of open) {
+    const unfinished = await prisma.match.count({
+      where: { competitionId: gw.competitionId, round: gw.number, status: { not: "finished" } },
+    });
+    const total = await prisma.match.count({ where: { competitionId: gw.competitionId, round: gw.number } });
+    if (total > 0 && unfinished === 0) {
+      await prisma.gameweek.update({ where: { id: gw.id }, data: { status: "finished" } });
+      closed++;
+    }
+  }
+  return closed;
+}
+
+// Ingreso de la economía: al cerrar una jornada, cada mánager cobra
+// COINS_PER_POINT por punto de su once esa jornada (una sola vez, paidOut).
+// El premio se abona al presupuesto de ESA liga (LeagueMembership), no a un
+// saldo global — cada liga es una economía cerrada.
+export async function payGameweekRewards(): Promise<number> {
+  const due = await prisma.userGameweekScore.findMany({
+    where: { paidOut: false, gameweek: { status: "finished" } },
+  });
+  for (const s of due) {
+    await prisma.$transaction([
+      // updateMany: si el mánager dejó la liga (membresía borrada), no truena;
+      // el score igual se marca pagado para no reintentarlo por siempre.
+      prisma.leagueMembership.updateMany({
+        where: { userId: s.userId, leagueId: s.leagueId },
+        data: { coins: { increment: s.points * COINS_PER_POINT } },
+      }),
+      prisma.userGameweekScore.update({ where: { id: s.id }, data: { paidOut: true } }),
+    ]);
+  }
+  return due.length;
 }
 
 // Recalcula UserGameweekScore: por cada liga (atada a su competencia) suma los

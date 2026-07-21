@@ -12,7 +12,7 @@ model User {
   email     String   @unique
   name      String
   password  String
-  coins     Int      @default(15000)
+  coins     Int      @default(1000)
   createdAt DateTime @default(now())
 
   owned          OwnedPlayer[]
@@ -112,10 +112,13 @@ model League {
   @@index([competitionId])
 }
 
+// El presupuesto vive AQUÍ, no en User: cada liga tiene su propia economía
+// cerrada (empiezas con €50M en cada liga y el dinero no cruza entre ligas).
 model LeagueMembership {
   id       String   @id @default(cuid())
   userId   String
   leagueId String
+  coins    Int      @default(50000000) // presupuesto en € dentro de ESTA liga (STARTING_COINS)
   joinedAt DateTime @default(now())
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   league   League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
@@ -221,6 +224,7 @@ model UserGameweekScore {
   leagueId   String
   gameweekId Int
   points     Int      @default(0)
+  paidOut    Boolean  @default(false) // premio en € ya abonado al cerrar la jornada
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   league     League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
   gameweek   Gameweek @relation(fields: [gameweekId], references: [id], onDelete: Cascade)

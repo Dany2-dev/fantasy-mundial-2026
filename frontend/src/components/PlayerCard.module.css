@@ -1,12 +1,9 @@
 /* ============================================================
-   FC25 CARD STYLE — silueta FUT recortada con curvas reales
-   (SVG en CardClipDefs), con degradado y efectos propios por rango:
-   bronce, plata, oro y legendario.
+   FC25 CARD STYLE — carta rectangular con marco metálico grabado
+   (borde grueso + filete oscuro fuera / filete claro dentro), con
+   degradado y efectos propios por rango: bronce, plata, oro y
+   legendario.
 ============================================================ */
-
-.shield {
-  clip-path: url(#futShield);
-}
 
 .card {
   position: relative;
@@ -22,7 +19,7 @@
   color: var(--crema);
   cursor: pointer;
   transform-style: preserve-3d;
-  /* La carta tiene 3 capas con clip-path SVG (foil/panel/sheen): sin esto,
+  /* La carta tiene varias capas superpuestas (foil/panel/sheen): sin esto,
      cada hover/scroll fuerza repintar toda la fila cuando hay varias cartas
      en pantalla a la vez (colección, Home). */
   contain: layout paint;
@@ -54,6 +51,7 @@ button.card:focus-visible,
   --metal-rgb: 183, 118, 67;
   --metal-light: #ffd3ab;
   --metal-dark: #47250f;
+  --metal-dark-rgb: 71, 37, 15;
   --metal-foil: linear-gradient(140deg, #f7c699 0%, #d78a47 22%, #955225 42%, #ffc48b 58%, #a55d2e 76%, #e7aa72 100%);
 }
 
@@ -61,6 +59,7 @@ button.card:focus-visible,
   --metal-rgb: 185, 194, 208;
   --metal-light: #ffffff;
   --metal-dark: #333a45;
+  --metal-dark-rgb: 51, 58, 69;
   --metal-foil: linear-gradient(140deg, #ffffff 0%, #d9dee6 20%, #9aa4b7 42%, #eef2f8 58%, #b5becc 80%, #ffffff 100%);
 }
 
@@ -68,6 +67,7 @@ button.card:focus-visible,
   --metal-rgb: 240, 194, 75;
   --metal-light: #fff7d8;
   --metal-dark: #5a3a00;
+  --metal-dark-rgb: 90, 58, 0;
   --metal-foil: linear-gradient(140deg, #ffe59f 0%, #ffd164 12%, #bb7a00 28%, #fff5c7 46%, #c88400 60%, #fff0b8 78%, #d89a18 100%);
 }
 
@@ -77,25 +77,28 @@ button.card:focus-visible,
   --metal-rgb: 190, 110, 255;
   --metal-light: #f6ecff;
   --metal-dark: #1a0630;
+  --metal-dark-rgb: 26, 6, 48;
   --metal-foil: linear-gradient(140deg, #ffe9ff 0%, #d9a6ff 16%, #7b2fff 32%, #2d0b57 46%, #ff7ad1 62%, #4b1a86 80%, #ffd76f 100%);
 }
 
 /* ============================================================
-   BORDE METÁLICO — recortado al escudo, con brillo diagonal
+   BORDE METÁLICO — marco grueso con filete oscuro por fuera y
+   filete claro por dentro (efecto grabado), más brillo diagonal
    animado al pasar el cursor. Su color/tono viene del rango.
 ============================================================ */
 
 .foil {
-  composes: shield;
   position: absolute;
   inset: 0;
   overflow: hidden;
+  border-radius: var(--r-carta);
   background:
     radial-gradient(circle at 50% 8%, rgba(255, 255, 255, 0.42), transparent 18%),
     repeating-linear-gradient(125deg, rgba(255, 255, 255, 0.05) 0px, rgba(255, 255, 255, 0.05) 2px, transparent 2px, transparent 16px),
     repeating-linear-gradient(-55deg, rgba(255, 255, 255, 0.04) 0px, rgba(255, 255, 255, 0.04) 1px, transparent 1px, transparent 24px),
     var(--metal-foil);
   box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.45),
     inset 0 0 2px rgba(255, 255, 255, 0.95),
     inset 0 0 18px rgba(255, 255, 255, 0.3),
     inset 0 -12px 30px rgba(0, 0, 0, 0.25),
@@ -128,14 +131,22 @@ button.card:hover .foil::before {
 ============================================================ */
 
 .panel {
-  composes: shield;
   position: absolute;
-  inset: 4px;
+  inset: 8px;
   overflow: hidden;
+  border-radius: calc(var(--r-carta) - 8px);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35), 0 1px 2px rgba(0, 0, 0, 0.5);
+  /* Textura de grada desvanecida detrás del degradado (casi opaco, apenas
+     se asoma) — le da algo de atmósfera de estadio al panel sin competir
+     con la foto/nombre. */
   background:
     radial-gradient(120% 65% at 50% -6%, rgba(var(--metal-rgb), 0.4), transparent 55%),
     radial-gradient(90% 50% at 50% 108%, rgba(var(--metal-rgb), 0.16), transparent 60%),
-    linear-gradient(180deg, var(--metal-dark) 0%, #10131c 55%, #070810 100%);
+    linear-gradient(180deg, rgba(var(--metal-dark-rgb), 0.93) 0%, rgba(16, 19, 28, 0.95) 55%, rgba(7, 8, 16, 0.97) 100%),
+    url("/stadium/stadium-night.jpg");
+  background-size: auto, auto, auto, cover;
+  background-position: center, center, center, center 32%;
+  background-repeat: no-repeat;
 }
 
 .panel::before {
@@ -221,8 +232,8 @@ button.card:hover .foil::before {
 }
 
 .rating {
-  font-family: var(--font-display);
-  font-weight: 900;
+  font-family: var(--font-sport);
+  font-weight: 400;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.5px;
   line-height: 0.9;
@@ -304,8 +315,8 @@ button.card:hover .photo {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--font-display);
-  font-weight: 900;
+  font-family: var(--font-sport);
+  font-weight: 400;
   color: rgba(255, 255, 255, 0.45);
   text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
 }
@@ -324,20 +335,32 @@ button.card:hover .photo {
 .bgDEL { background: radial-gradient(circle, #ff9090 0%, #4d1919 100%); }
 
 /* ============================================================
-   INFO — nombre y equipo
+   INFO — footer de nombre y equipo: banda sólida propia en vez de
+   texto flotando directo sobre la foto/fondo (se leía mal encima
+   de fotos claras o del núcleo animado del legendario).
 ============================================================ */
 
 .info {
   position: absolute;
-  left: 8%;
-  right: 8%;
-  bottom: 8%;
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
+  justify-content: center;
+  gap: 1px;
   text-align: center;
+  padding: 8px 10px 9px;
+  /* Coloreado por rareza: --metal-rgb/--metal-dark vienen de .bronce/.plata/
+     .oro/.legendario en .card, así que este footer hereda el tono del rango. */
+  border-top: 1px solid rgba(var(--metal-rgb), 0.6);
+  background: linear-gradient(180deg, rgba(var(--metal-rgb), 0.32) 0%, var(--metal-dark) 55%, #05060a 100%);
+}
+
+.sm .info {
+  padding: 4px 6px 5px;
 }
 
 .name {
@@ -350,23 +373,21 @@ button.card:hover .photo {
   overflow: hidden;
   text-overflow: ellipsis;
   color: #fff;
-  text-shadow: 0 0 8px rgba(255, 255, 255, 0.3), 0 3px 8px rgba(0, 0, 0, 0.65);
 }
 
 .sm .name {
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .teamName {
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.5px;
-  color: #d7dce7;
+  color: #aab1c0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
-  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.65);
 }
 
 .sm .teamName {
@@ -378,9 +399,9 @@ button.card:hover .photo {
 ============================================================ */
 
 .sheen {
-  composes: shield;
   position: absolute;
   inset: 0;
+  border-radius: var(--r-carta);
   background: linear-gradient(120deg, transparent 30%, rgba(255, 255, 255, 0.85) 46%, rgba(255, 255, 255, 0.18) 52%, transparent 64%);
   transform: translateX(-180%) rotate(10deg);
   transition: transform 0.9s cubic-bezier(0.19, 1, 0.22, 1);
@@ -401,7 +422,7 @@ button.card:hover .sheen {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  clip-path: url(#futShield);
+  border-radius: var(--r-carta);
   background:
     radial-gradient(circle at 22% 20%, rgba(255, 255, 255, 0.65) 0 2px, transparent 3px),
     radial-gradient(circle at 78% 32%, rgba(255, 255, 255, 0.45) 0 2px, transparent 3px),
@@ -436,9 +457,9 @@ button.card:hover .sheen {
   display: flex;
   justify-content: center;
   align-items: center;
-  font-family: var(--font-display);
+  font-family: var(--font-sport);
   font-size: 14px;
-  font-weight: 900;
+  font-weight: 400;
   color: #2a1b00;
   background: radial-gradient(circle at 30% 30%, #fff7b5, #ffd343 60%, #b57900);
   box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.6), 0 0 10px rgba(255, 215, 90, 0.65), 0 4px 10px rgba(0, 0, 0, 0.45);

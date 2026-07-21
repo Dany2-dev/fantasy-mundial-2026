@@ -1,5 +1,12 @@
 # CI: se ejecuta en cada Pull Request y en cada push a develop.
 # Valida que el proyecto compila y que las imágenes Docker se construyen.
+#
+# Runner: los PRs (incluidos forks de cualquier desconocido, porque el repo es
+# público) corren en el runner de GitHub (ubuntu-latest) — aislado y desechable.
+# Los push a develop/main SOLO los pueden disparar los colaboradores con acceso
+# de escritura, así que esos sí corren en el self-hosted runner (esta laptop).
+# No metas self-hosted en el trigger de pull_request: cualquiera podría abrir
+# un PR con un workflow modificado y ejecutar código en esta máquina.
 name: CI
 
 on:
@@ -10,7 +17,7 @@ on:
 jobs:
   frontend:
     name: Frontend (typecheck + build)
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.event_name == 'push' && 'self-hosted' || 'ubuntu-latest' }}
     defaults:
       run:
         working-directory: frontend
@@ -27,7 +34,7 @@ jobs:
 
   backend:
     name: Backend (typecheck + build)
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.event_name == 'push' && 'self-hosted' || 'ubuntu-latest' }}
     defaults:
       run:
         working-directory: backend
@@ -44,7 +51,7 @@ jobs:
 
   docker:
     name: Imágenes Docker
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.event_name == 'push' && 'self-hosted' || 'ubuntu-latest' }}
     needs: [frontend, backend]
     steps:
       - uses: actions/checkout@v4
