@@ -2,6 +2,7 @@ import { motion } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import ElectricBorder from "../components/ElectricBorder";
+import Flag from "../components/Flag";
 import { IconCards } from "../components/icons";
 import PlayerCard from "../components/PlayerCard";
 import PlayerDetailModal from "../components/PlayerDetailModal";
@@ -43,6 +44,40 @@ const ELECTRIC: Record<Rarity, string> = {
   plata: "#7b8798",
   bronce: "#a9713c",
 };
+
+// Copa decorativa del hero. Dibujo propio (no es el trofeo oficial de la FIFA,
+// que está protegido): copa estilizada con el dorado de las cartas oro.
+function TrophyArt() {
+  return (
+    <svg viewBox="0 0 200 240" fill="none" aria-hidden="true" focusable="false">
+      <defs>
+        <linearGradient id="copaOro" x1="20%" y1="0%" x2="80%" y2="100%">
+          <stop offset="0%" stopColor="#fff3c4" />
+          <stop offset="35%" stopColor="#f0c24b" />
+          <stop offset="65%" stopColor="#d49a17" />
+          <stop offset="100%" stopColor="#8a6a1f" />
+        </linearGradient>
+      </defs>
+      <g fill="url(#copaOro)">
+        {/* Asas */}
+        <path d="M56 44c-18 0-30 12-30 30s14 30 32 33l4-15c-12-2-20-9-20-18s7-15 16-15z" />
+        <path d="M144 44c18 0 30 12 30 30s-14 30-32 33l-4-15c12-2 20-9 20-18s-7-15-16-15z" />
+        {/* Copa */}
+        <path d="M50 32h100v46c0 30-20 54-50 54S50 108 50 78z" />
+        {/* Tallo y base */}
+        <path d="M92 130h16v34H92z" />
+        <path d="M70 164h60v14H70z" />
+        <path d="M58 182h84v22H58z" />
+      </g>
+      {/* Globo grabado en la copa */}
+      <g stroke="#8a6a1f" strokeWidth="3" opacity="0.5" fill="none">
+        <circle cx="100" cy="76" r="24" />
+        <ellipse cx="100" cy="76" rx="10" ry="24" />
+        <path d="M77 68h46M77 85h46" />
+      </g>
+    </svg>
+  );
+}
 
 // Lupa local: icons.tsx es compartido con otras páginas, así que no lo tocamos.
 // Mismo trazo que el resto de iconos del proyecto.
@@ -108,6 +143,28 @@ export default function Collection() {
     return sorted;
   }, [base, filter, sort]);
 
+  // Las cartas se agrupan por selección. Los filtros y el orden ya se
+  // aplicaron arriba: aquí solo se reparten en bloques por equipo.
+  const groups = useMemo(() => {
+    const byTeam = new Map<string, { team: Player["team"]; players: Player[] }>();
+    for (const p of visible) {
+      const name = p.team?.name ?? "Sin selección";
+      const g = byTeam.get(name);
+      if (g) g.players.push(p);
+      else byTeam.set(name, { team: p.team, players: [p] });
+    }
+    return [...byTeam.entries()]
+      .map(([name, g]) => ({
+        name,
+        team: g.team,
+        players: g.players,
+        best: Math.max(...g.players.map((p) => p.rating)),
+      }))
+      // Primero las selecciones donde tienes más cartas; a igualdad, la que
+      // tenga mejor carta. Así tu bloque más fuerte queda arriba.
+      .sort((a, b) => b.players.length - a.players.length || b.best - a.best || a.name.localeCompare(b.name, "es"));
+  }, [visible]);
+
   const counts = (pos: Filter) => (pos === "Todos" ? base.length : base.filter((p) => p.position === pos).length);
   const rarityCount = (r: Rarity) => items.filter((p) => rarityOf(p.rating) === r).length;
 
@@ -145,8 +202,11 @@ export default function Collection() {
     <div className={styles.page}>
       {/* ===== Cabecera con estadísticas ===== */}
       <section className={styles.hero}>
-        <img src="/stadium/stadium-seats.jpg" alt="" className={styles.heroArt} aria-hidden="true" />
+        <img src="/brand/confetti.jpg" alt="" className={styles.heroArt} aria-hidden="true" />
         <span className={styles.heroWash} aria-hidden="true" />
+        <span className={styles.heroTrophy} aria-hidden="true">
+          <TrophyArt />
+        </span>
         <div className={styles.heroInner}>
           <div>
             <span className={styles.eyebrow}>Mi club</span>
@@ -260,35 +320,53 @@ export default function Collection() {
         </div>
       )}
 
-      <div className={styles.grid}>
-        {visible.map((p, i) => (
-          <motion.div
-            key={p.id}
-            layout
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{
-              // El escalonado es solo para la entrada; al recolocarse por un
-              // filtro la carta debe moverse ya, sin arrastrar ese retardo.
-              opacity: { duration: 0.22, delay: Math.min(i * 0.02, 0.3) },
-              y: { duration: 0.22, delay: Math.min(i * 0.02, 0.3) },
-              layout: { duration: 0.25 },
-            }}
-            onMouseEnter={() => setHoveredId(p.id)}
-            onMouseLeave={() => setHoveredId((cur) => (cur === p.id ? null : cur))}
-          >
-            <ElectricBorder
-              active={hoveredId === p.id}
-              color={ELECTRIC[rarityOf(p.rating)]}
-              borderRadius={16}
-              speed={1.1}
-              chaos={0.14}
-            >
-              <PlayerCard player={p} onClick={() => setOpenPlayerId(p.id)} />
-            </ElectricBorder>
-          </motion.div>
-        ))}
-      </div>
+      {groups.map((g) => (
+        <section key={g.name} className={styles.teamGroup}>
+          <header className={styles.teamHead}>
+            <span className={styles.teamCrest} aria-hidden="true">
+              <Flag team={g.team} size={26} />
+            </span>
+            <h2 className={styles.teamName}>{g.name}</h2>
+            <span className={styles.teamCount}>
+              {g.players.length} {g.players.length === 1 ? "carta" : "cartas"}
+            </span>
+            <span className={styles.teamRule} aria-hidden="true" />
+            <span className={styles.teamBest} title="Mejor media de esta selección">
+              {g.best}
+            </span>
+          </header>
+
+          <div className={styles.grid}>
+            {g.players.map((p, i) => (
+              <motion.div
+                key={p.id}
+                layout
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{
+                  // El escalonado es solo para la entrada; al recolocarse por un
+                  // filtro la carta debe moverse ya, sin arrastrar ese retardo.
+                  opacity: { duration: 0.22, delay: Math.min(i * 0.02, 0.3) },
+                  y: { duration: 0.22, delay: Math.min(i * 0.02, 0.3) },
+                  layout: { duration: 0.25 },
+                }}
+                onMouseEnter={() => setHoveredId(p.id)}
+                onMouseLeave={() => setHoveredId((cur) => (cur === p.id ? null : cur))}
+              >
+                <ElectricBorder
+                  active={hoveredId === p.id}
+                  color={ELECTRIC[rarityOf(p.rating)]}
+                  borderRadius={16}
+                  speed={1.1}
+                  chaos={0.14}
+                >
+                  <PlayerCard player={p} onClick={() => setOpenPlayerId(p.id)} />
+                </ElectricBorder>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+      ))}
 
       {openPlayerId != null && (
         <PlayerDetailModal
