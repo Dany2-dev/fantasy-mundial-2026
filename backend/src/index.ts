@@ -2,6 +2,7 @@ import compression from "compression";
 import cors from "cors";
 import express from "express";
 import { startScheduler } from "./scheduler";
+import adminRouter from "./routes/admin";
 import authRouter from "./routes/auth";
 import clauseRouter from "./routes/clause";
 import collectionRouter from "./routes/collection";
@@ -32,6 +33,7 @@ app.use("/api/trades", tradesRouter);
 app.use("/api/matches", matchesRouter);
 app.use("/api/clause", clauseRouter);
 app.use("/api/listings", listingsRouter);
+app.use("/api/admin", adminRouter);
 
 // Manejador de errores: nunca filtrar detalles internos al cliente
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
