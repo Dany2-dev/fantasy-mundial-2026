@@ -42,6 +42,14 @@
     flex-direction: column;
     gap: 2px;
     padding: 0 10px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    flex: 1;
+  }
+
+  .sidebarNav::-webkit-scrollbar {
+    width: 0px;
+    background: transparent;
   }
 
   .sidebarItem {
@@ -107,6 +115,7 @@
     color: var(--wc-oro-oscuro);
     font-weight: 700;
     white-space: nowrap;
+    text-decoration: none;
   }
 }
 
@@ -198,6 +207,7 @@
   font-weight: 700;
   color: var(--wc-oro-oscuro);
   white-space: nowrap;
+  text-decoration: none;
 }
 
 /* Jornada actual + media del club: a diferencia de .coins/.logoutBtn, estos

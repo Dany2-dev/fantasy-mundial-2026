@@ -3,6 +3,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { AuthRequest, requireAuth, signToken } from "../middleware/auth";
+import { claimDailyReward } from "../services/faucet";
 
 const router = Router();
 
@@ -52,6 +53,23 @@ router.get("/me", requireAuth, async (req, res) => {
   });
   if (!user) return res.status(404).json({ error: "Usuario no encontrado" });
   res.json({ user });
+});
+
+router.post("/daily-reward", requireAuth, async (req, res) => {
+  const userId = (req as AuthRequest).userId;
+  const leagueId = String(req.body.leagueId ?? "");
+  const weekKey = String(req.body.weekKey ?? "");
+
+  if (!leagueId || !weekKey) {
+    return res.status(400).json({ error: "leagueId y weekKey son obligatorios" });
+  }
+
+  const result = await claimDailyReward(userId, leagueId, weekKey);
+  if (!result.success) {
+    return res.status(400).json({ error: result.error });
+  }
+
+  res.json({ success: true, coinsGranted: result.coinsGranted });
 });
 
 export default router;

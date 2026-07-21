@@ -83,6 +83,17 @@ export function IconCoin(props: IconProps) {
   );
 }
 
+export function IconStore(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7" />
+      <path d="M4 12V22a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V12" />
+      <path d="M2 7h20" />
+      <path d="M10 12v4a2 2 0 0 0 4 0v-4" />
+    </svg>
+  );
+}
+
 export function IconLogOut(props: IconProps) {
   return (
     <svg {...base(props)}>

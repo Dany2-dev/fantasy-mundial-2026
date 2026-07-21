@@ -52,6 +52,11 @@ const authSlice = createSlice({
       state.status = "idle";
       state.error = null;
     },
+    setCoins(state, action: PayloadAction<number>) {
+      if (state.user) {
+        state.user.coins = action.payload;
+      }
+    },
   },
   extraReducers(builder) {
     for (const thunk of [login, register, fetchMe]) {
@@ -77,5 +82,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { logout } = authSlice.actions;
+export const { logout, setCoins } = authSlice.actions;
 export default authSlice.reducer;
