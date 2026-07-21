@@ -19,13 +19,15 @@
   box-shadow: 0 8px 24px -18px rgba(13, 17, 23, 0.5);
 }
 
+/* El patrón de banderas es mucho más cargado que una foto: va a baja opacidad
+   para que quede como textura y no compita con el texto ni con las stats. */
 .heroArt {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  opacity: 0.85;
+  opacity: 0.32;
 }
 
 .heroWash {
@@ -34,19 +36,43 @@
   background: linear-gradient(
     100deg,
     #fff 0%,
-    rgba(255, 255, 255, 0.94) 42%,
-    rgba(255, 255, 255, 0.6) 72%,
-    rgba(255, 255, 255, 0.25) 100%
+    rgba(255, 255, 255, 0.97) 40%,
+    rgba(255, 255, 255, 0.78) 68%,
+    rgba(255, 255, 255, 0.55) 100%
   );
+}
+
+/* Copa del Mundo: se apoya en la esquina derecha, sobresaliendo del recuadro */
+.heroTrophy {
+  position: absolute;
+  right: var(--sp-6);
+  bottom: -14px;
+  width: 150px;
+  z-index: 1;
+  pointer-events: none;
+  filter: drop-shadow(0 10px 22px rgba(212, 154, 23, 0.45));
+}
+
+.heroTrophy svg {
+  display: block;
+  width: 100%;
+  height: auto;
 }
 
 .heroInner {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   padding: var(--sp-5) var(--sp-5);
   display: flex;
   flex-direction: column;
   gap: var(--sp-4);
+}
+
+/* Sitio para la copa: sin esto, las stats se le encimarían */
+@media (min-width: 900px) {
+  .heroInner {
+    padding-right: 200px;
+  }
 }
 
 .eyebrow {
@@ -308,6 +334,61 @@
   color: #8a561f;
 }
 
+/* ---------- Bloque por selección ---------- */
+.teamGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.teamHead {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.teamCrest {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.teamName {
+  font-size: 19px;
+  font-weight: 800;
+  margin: 0;
+  color: var(--tinta);
+  white-space: nowrap;
+}
+
+.teamCount {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--tinta-media);
+  background: var(--superficie-alta);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-chip);
+  padding: 3px 11px;
+  white-space: nowrap;
+}
+
+/* Línea que rellena el espacio sobrante hasta la media */
+.teamRule {
+  flex: 1;
+  height: 1px;
+  background: var(--borde);
+  min-width: var(--sp-3);
+}
+
+.teamBest {
+  font-family: var(--font-sport);
+  font-size: 17px;
+  color: var(--tinta-media);
+  flex-shrink: 0;
+}
+
 /* ---------- Rejilla de cartas ---------- */
 .grid {
   display: grid;
@@ -351,6 +432,11 @@
   .heroInner {
     padding: var(--sp-4);
     gap: var(--sp-3);
+  }
+
+  /* En móvil no cabe sin estorbar al texto */
+  .heroTrophy {
+    display: none;
   }
 
   .sub {
@@ -405,5 +491,14 @@
   .grid {
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     gap: var(--sp-3);
+  }
+
+  .teamName {
+    font-size: 16px;
+  }
+
+  /* En pantallas chicas la media sobra: el nombre y el contador mandan */
+  .teamBest {
+    display: none;
   }
 }
