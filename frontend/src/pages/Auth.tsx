@@ -31,7 +31,7 @@ const DEMO_SQUAD: Player[] = [
     name: "Kylian Mbappé",
     position: "DEL",
     rating: 91,
-    basePrice: 10920,
+    basePrice: 180_000_000,
     photoUrl: "https://images.fotmob.com/image_resources/playerimages/701154.png",
     teamId: 0,
     team: { id: 0, name: "Francia", logoUrl: null, flag: "FR" },
@@ -41,7 +41,7 @@ const DEMO_SQUAD: Player[] = [
     name: "Pedri González",
     position: "MED",
     rating: 87,
-    basePrice: 8200,
+    basePrice: 100_000_000,
     photoUrl: "https://images.fotmob.com/image_resources/playerimages/1083323.png",
     teamId: 1,
     team: { id: 1, name: "España", logoUrl: null, flag: "ES" },
@@ -51,7 +51,7 @@ const DEMO_SQUAD: Player[] = [
     name: "Alphonso Davies",
     position: "DEF",
     rating: 81,
-    basePrice: 5100,
+    basePrice: 60_000_000,
     photoUrl: "https://images.fotmob.com/image_resources/playerimages/751202.png",
     teamId: 2,
     team: { id: 2, name: "Canadá", logoUrl: null, flag: "CA" },
@@ -61,7 +61,7 @@ const DEMO_SQUAD: Player[] = [
     name: "Carlos Acevedo",
     position: "POR",
     rating: 74,
-    basePrice: 2300,
+    basePrice: 4_000_000,
     photoUrl: "https://images.fotmob.com/image_resources/playerimages/751164.png",
     teamId: 3,
     team: { id: 3, name: "México", logoUrl: null, flag: "MX" },
@@ -398,12 +398,12 @@ export default function Auth() {
               Arma tu club <span className={styles.finalHighlight}>antes</span> que tus amigos
             </h2>
             <p className={styles.finalSubtitle}>
-              Recibe 15,000 monedas y 11 cartas gratis al unirte a tu primera liga. Elige entre 12
+              Recibe €50M de presupuesto y 11 cartas gratis en cada liga a la que entres. Elige entre 12
               competencias y ficha antes que el resto.
             </p>
             <div className={styles.finalStats}>
               <span className={styles.chip}>
-                <IconCoin size={16} /> 15,000 monedas
+                <IconCoin size={16} /> €50M por liga
               </span>
               <span className={styles.chip}>
                 <IconPack size={16} /> 11 cartas gratis

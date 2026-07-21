@@ -2,7 +2,6 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  coins: number;
 }
 
 export interface Team {
@@ -58,6 +57,7 @@ export interface League {
   competitionId?: number;
   competition?: { id: number; name: string; logoUrl: string | null; type?: string } | null;
   currentGameweek?: GameweekInfo | null;
+  myCoins?: number; // tu presupuesto DENTRO de esta liga (el dinero no cruza entre ligas)
 }
 
 export interface Standing {
