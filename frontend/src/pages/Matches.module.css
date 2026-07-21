@@ -674,6 +674,369 @@
   min-width: 0;
 }
 
+/* ---------- Forma (últimos 5) y próximo rival, estilo FotMob ---------- */
+.formHead {
+  text-align: left;
+}
+
+.formRow {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.formDot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--tinta);
+  background: var(--superficie-alta);
+  border: 1px solid var(--borde);
+}
+
+.formDot[data-res="G"] {
+  background: color-mix(in srgb, var(--wc-verde) 18%, transparent);
+  border-color: color-mix(in srgb, var(--wc-verde) 45%, var(--borde));
+}
+
+.formDot[data-res="P"] {
+  background: color-mix(in srgb, var(--wc-rojo) 14%, transparent);
+  border-color: color-mix(in srgb, var(--wc-rojo) 40%, var(--borde));
+}
+
+.nextCell {
+  text-align: center;
+}
+
+/* ---------- Agenda de la siguiente jornada ---------- */
+.agendaCard {
+  padding: var(--sp-2) var(--sp-3);
+}
+
+.agendaDay {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--tinta-media);
+  padding: var(--sp-2) 6px 4px;
+}
+
+.agendaRow {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--sp-2);
+  width: 100%;
+  padding: 8px 6px;
+  border: none;
+  border-radius: var(--r-input);
+  background: transparent;
+  font-family: inherit;
+  font-size: 13.5px;
+  color: var(--tinta);
+  cursor: pointer;
+}
+
+.agendaRow:hover {
+  background: var(--superficie-alta);
+  filter: none;
+}
+
+.agendaTeam {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+  min-width: 0;
+}
+
+.agendaAway {
+  justify-content: flex-start;
+}
+
+.agendaName {
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.agendaTime {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--tinta-media);
+  font-variant-numeric: tabular-nums;
+  padding: 2px 8px;
+  border-radius: var(--r-chip);
+  background: var(--superficie-alta);
+}
+
+/* ---------- Probabilidad según la forma (local/empate/visita) ---------- */
+.probLabels {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.probHome {
+  color: var(--wc-verde);
+}
+
+.probDraw {
+  color: var(--tinta-media);
+}
+
+.probAway {
+  color: var(--wc-azul-vivo);
+}
+
+.probBar {
+  display: flex;
+  gap: 2px;
+  height: 8px;
+  border-radius: var(--r-chip);
+  overflow: hidden;
+  margin-bottom: var(--sp-4);
+}
+
+.probSegHome {
+  background: var(--wc-verde);
+  border-radius: var(--r-chip) 0 0 var(--r-chip);
+}
+
+.probSegDraw {
+  background: color-mix(in srgb, var(--tinta-media) 45%, var(--superficie-alta));
+}
+
+.probSegAway {
+  background: var(--wc-azul-vivo);
+  border-radius: 0 var(--r-chip) var(--r-chip) 0;
+}
+
+/* ---------- Estadísticas bilaterales del partido ---------- */
+.statList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+
+.statNums {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  margin-bottom: 4px;
+}
+
+.statLabel {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--tinta-media);
+}
+
+.statHomeNum,
+.statAwayNum {
+  font-weight: 800;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  min-width: 34px;
+}
+
+.statHomeNum {
+  color: var(--wc-verde);
+}
+
+.statAwayNum {
+  color: var(--wc-azul-vivo);
+  text-align: right;
+}
+
+.statTrack {
+  display: flex;
+  gap: 2px;
+  height: 6px;
+  border-radius: var(--r-chip);
+  overflow: hidden;
+  background: var(--superficie-alta);
+}
+
+.statFillHome {
+  background: var(--wc-verde);
+  border-radius: var(--r-chip) 0 0 var(--r-chip);
+}
+
+.statFillAway {
+  background: var(--wc-azul-vivo);
+  border-radius: 0 var(--r-chip) var(--r-chip) 0;
+  margin-left: auto;
+}
+
+/* ---------- Comparativa de racha en el modal ---------- */
+.formCompare {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-4);
+}
+
+.formStrip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+
+.formStripName {
+  font-weight: 700;
+  font-size: 13.5px;
+}
+
+/* ---------- Jornadas/grupos desplegables ---------- */
+.roundHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  width: 100%;
+  padding: 10px 12px;
+  margin-bottom: var(--sp-3);
+  background: var(--superficie-alta);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-input);
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.roundHeader:hover {
+  filter: none;
+  border-color: color-mix(in srgb, var(--tinta) 18%, var(--borde));
+}
+
+.roundTitle {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--tinta);
+}
+
+.roundMeta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--tinta-media);
+}
+
+.chevron {
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--tinta-media);
+  border-bottom: 2px solid var(--tinta-media);
+  transform: rotate(45deg);
+  transition: transform 200ms ease;
+}
+
+.chevron[data-open="true"] {
+  transform: rotate(225deg);
+}
+
+/* ---------- Comparativa local/visita (estilo BeSoccer) ---------- */
+.compareBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: var(--sp-3);
+}
+
+.compareRow {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: baseline;
+  gap: var(--sp-2);
+}
+
+.compareVal {
+  font-weight: 800;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  color: var(--tinta-media);
+}
+
+.compareValAway {
+  text-align: right;
+}
+
+.compareLabel {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--tinta-media);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ---------- Matriz de resultados exactos ---------- */
+.matrixWrap {
+  margin-bottom: var(--sp-4);
+  overflow-x: auto;
+}
+
+.matrix {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 2px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.matrix th {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--tinta-media);
+  padding: 2px 4px;
+  text-align: center;
+}
+
+.matrixCorner {
+  min-width: 18px;
+}
+
+.matrixCell {
+  text-align: center;
+  padding: 6px 4px;
+  border-radius: 6px;
+  font-weight: 700;
+  color: var(--tinta);
+  background: var(--superficie-alta);
+}
+
+.matrixCell[data-zone="home"] {
+  background: color-mix(in srgb, var(--wc-verde) var(--cell-alpha, 0%), var(--superficie-alta));
+}
+
+.matrixCell[data-zone="away"] {
+  background: color-mix(in srgb, var(--wc-azul-vivo) calc(var(--cell-alpha, 0%) * 0.8), var(--superficie-alta));
+}
+
+.matrixCell[data-zone="draw"] {
+  background: color-mix(in srgb, var(--tinta-media) calc(var(--cell-alpha, 0%) * 0.6), var(--superficie-alta));
+}
+
+.matrixHint {
+  margin: 6px 0 0;
+  text-align: center;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .skel::after {
     animation: none;

@@ -117,6 +117,15 @@ export interface Match {
   liveMinute?: string | null;
 }
 
+// Estadística bilateral de un partido (posesión, tiros...). El endpoint
+// GET /matches/:id/stats aún no existe en el back; la UI la oculta mientras tanto.
+export interface MatchStatRow {
+  label: string;
+  home: number;
+  away: number;
+  unit?: string | null;
+}
+
 // Evento del minuto a minuto de un partido. El endpoint GET /matches/:id/events
 // aún no existe en el back; la UI muestra fallback "llega pronto" mientras tanto.
 export interface MatchEvent {
