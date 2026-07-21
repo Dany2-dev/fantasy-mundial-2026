@@ -58,36 +58,162 @@
   min-width: 140px;
 }
 
-/* ---- Cancha en perspectiva ----
-   El alto se fija con vh (no con el ancho de la página) para que toda la
-   sección quepa en pantalla sin obligar a bajar mucho; el ancho se deriva
-   de ese alto. */
+.dragHint {
+  margin: 0 0 var(--sp-3);
+}
+
+/* ---- Anuncios (bloqueo por deadline, guardado, aviso de jornada en
+   curso) ---- antes eran <p> sueltos con las clases globales .error-text/
+   .ok-text/.caption (texto de color plano, sin jerarquía visual). Esta es
+   una familia de "banner" propia de esta página — no se tocan esas clases
+   globales porque las usan otras páginas del equipo. Ícono + fondo tenue +
+   borde en el color semántico, pero el texto en tinta normal: un párrafo
+   entero en rojo/verde saturado se lee peor que uno en tinta con un buen
+   acento de color al lado. */
+.banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  margin: 0 0 var(--sp-3);
+  border-radius: var(--r-card);
+  border: 1px solid transparent;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--tinta);
+  animation: bannerIn 0.22s ease both;
+}
+
+.bannerIcon {
+  flex: none;
+  margin-top: 1px;
+}
+
+.bannerError {
+  background: rgba(230, 29, 37, 0.07);
+  border-color: rgba(230, 29, 37, 0.22);
+}
+
+.bannerError .bannerIcon {
+  color: var(--wc-rojo);
+}
+
+.bannerSuccess {
+  background: rgba(47, 168, 79, 0.08);
+  border-color: rgba(47, 168, 79, 0.22);
+}
+
+.bannerSuccess .bannerIcon {
+  color: var(--wc-verde);
+}
+
+.bannerInfo {
+  background: rgba(240, 194, 75, 0.12);
+  border-color: rgba(240, 194, 75, 0.3);
+}
+
+.bannerInfo .bannerIcon {
+  color: var(--wc-oro-oscuro);
+}
+
+@keyframes bannerIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .banner {
+    animation: none;
+  }
+}
+
+/* ---- Área de trabajo: cancha a la izquierda, banca a la derecha ----
+   --pitch-h vive aquí (no en .pitch) para que .roster pueda igualar su
+   altura. La fórmula resta el espacio que ya ocupan el header/título/
+   controles arriba, para que la cancha quepa completa sin scroll en
+   ventanas de escritorio normales. Medí en el navegador: ese espacio
+   reservado ronda 246px (~267px con el mensaje de error del capitán
+   visible), así que 340px ya deja colchón de sobra sin regalar tanta
+   altura como el margen original (400px). Piso y techo subieron de nuevo
+   (antes 440/760): con 4 filas de cartas de distinto tamaño (SCALE_TOP a
+   SCALE_BOTTOM), una cancha más alta le da a rowCenterYs() más margen real
+   en píxeles para separarlas sin pisarse. */
+.workspace {
+  --pitch-h: max(540px, min(calc(100vh - 340px), 820px));
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: var(--sp-4);
+  align-items: start;
+}
+
+@media (max-width: 1100px) {
+  .workspace {
+    grid-template-columns: minmax(0, 1fr) 300px;
+  }
+}
+
+@media (max-width: 900px) {
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---- Cancha ----
+   .pitch no pinta nada propio (sin fondo, sin overflow): fuera del
+   trapecio de la cancha no debe verse nada, ni verde ni blanco. */
 .pitch {
-  --pitch-h: min(80vh, 800px);
   position: relative;
   height: var(--pitch-h);
   width: min(100%, calc(var(--pitch-h) * 1.05));
   margin: 0 auto;
-  perspective: 900px;
-  border-radius: var(--r-card);
-  /* Sin overflow:hidden aquí: así la insignia de capitán de PlayerCard (que
-     a propósito sobresale un poco arriba de la carta) nunca se corta. Las
-     esquinas redondeadas las da .pitchTilt directamente sobre la foto. */
-  box-shadow: 0 20px 40px -22px rgba(13, 17, 23, 0.6);
 }
 
-/* Fondo: foto real de cancha (frontend/public/pitch/campo.jpg), inclinada en
-   3D. No contiene jugadores: así ellos no heredan la deformación de la
-   inclinación y se ven "de pie". */
+/* Pasto pintado con CSS (sin foto): un degradado/patrón siempre rellena el
+   100% de la forma que se le pida, sin depender de que una imagen cargue
+   ni de que "cubra" bien un área recortada — así queda garantizado que la
+   cancha se vea completa. Se mantiene el mismo trapecio (clip-path) que
+   ya tenía, con los mismos insets (7%/93% arriba, 1%/99% abajo) que
+   coinciden con TOP_INSET/BOTTOM_INSET en Squad.tsx, para que el borde de
+   la cancha siga coincidiendo con dónde se paran las cartas. No contiene
+   jugadores: así ellos no heredan ninguna deformación y se ven "de pie". */
 .pitchTilt {
   position: absolute;
   inset: 0;
-  border-radius: var(--r-card);
-  overflow: hidden;
-  background: url("/pitch/campo.jpg") center / cover no-repeat;
-  transform: rotateX(24deg);
-  transform-origin: 50% 100%;
-  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.14);
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.05), transparent 40%),
+    repeating-linear-gradient(0deg, #1d7a42 0 36px, #166534 36px 72px);
+  clip-path: polygon(7% 0%, 93% 0%, 99% 100%, 1% 100%);
+  filter: drop-shadow(0 16px 28px rgba(13, 17, 23, 0.5));
+}
+
+/* Líneas reglamentarias (banda/meta, medio campo, círculo central, áreas) —
+   mismo clip-path trapezoidal que .pitchTilt como colchón de seguridad,
+   aunque la geometría (calculada con insetAtY en Squad.tsx) ya cae dentro. */
+.pitchLines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  clip-path: polygon(7% 0%, 93% 0%, 99% 100%, 1% 100%);
+}
+
+.lineShape {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.8);
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.lineDot {
+  fill: rgba(255, 255, 255, 0.8);
 }
 
 .connectors {
@@ -105,14 +231,36 @@
   vector-effect: non-scaling-stroke;
 }
 
+/* 84px (antes 95px): con formaciones de 5 en una fila (3-5-2) y el
+   aspect-ratio 5:7 de la carta, achicar un poco el ancho base le da más
+   aire horizontal Y vertical a rowCenterYs() sin necesitar una cancha
+   absurdamente alta para que ninguna fila se pise. */
 .slotWrap {
   position: absolute;
-  width: 95px;
+  width: 84px;
   z-index: 2;
+}
+
+/* Resalta el slot cuando lo que se arrastra encaja por posición */
+.dropTarget .emptySlot {
+  border-color: var(--pasto);
+  color: var(--pasto);
+  background: rgba(62, 207, 122, 0.18);
+}
+
+.dropTarget .filledSlot {
+  outline: 2px dashed var(--pasto);
+  outline-offset: 4px;
+  border-radius: var(--r-carta);
 }
 
 .filledSlot {
   position: relative;
+  cursor: grab;
+}
+
+.filledSlot:active {
+  cursor: grabbing;
 }
 
 .removeBtn {
@@ -141,11 +289,115 @@
   background: rgba(11, 18, 32, 0.35);
   color: rgba(255, 255, 255, 0.75);
   font-weight: 700;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
 }
 
 .emptySlot:hover {
   border-color: var(--oro);
   color: var(--oro);
+}
+
+/* ---- Banca: resto de la colección que no está en el once ---- */
+.roster {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-card);
+  padding: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  transition: outline-color 0.15s ease, background 0.15s ease;
+  outline: 2px dashed transparent;
+  outline-offset: -4px;
+}
+
+@media (min-width: 901px) {
+  .roster {
+    max-height: var(--pitch-h);
+    overflow-y: auto;
+  }
+}
+
+/* Resalta la banca cuando arrastras a alguien DESDE la cancha (para quitarlo) */
+.rosterDropTarget {
+  outline-color: var(--rojo);
+  background: rgba(255, 107, 122, 0.08);
+}
+
+.rosterHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+
+.rosterHeader h3 {
+  margin: 0;
+}
+
+/* Filtro de banca por posición — pegado arriba del panel scrolleable para
+   que cambiar de posición nunca requiera volver a subir con el scroll. */
+.rosterTabs {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  background: var(--superficie);
+  padding-bottom: 2px;
+}
+
+.rosterTab {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  border: 1px solid var(--borde);
+  border-radius: var(--r-chip);
+  background: var(--superficie-alta);
+  color: var(--tinta-media);
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.rosterTab:hover {
+  border-color: var(--oro);
+  color: var(--tinta);
+}
+
+.rosterTabActive {
+  background: rgba(240, 194, 75, 0.16);
+  border-color: var(--oro);
+  color: var(--wc-oro-oscuro);
+}
+
+.rosterTabCount {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.7;
+}
+
+.rosterGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: var(--sp-3);
+}
+
+.benchCard {
+  cursor: grab;
+  border-radius: var(--r-carta);
+  transition: transform 0.15s ease;
+}
+
+.benchCard:hover {
+  transform: translateY(-2px);
+}
+
+.benchCard:active {
+  cursor: grabbing;
 }
 
 .picker {
@@ -169,8 +421,8 @@
 }
 
 @media (max-width: 480px) {
-  .pitch {
-    --pitch-h: min(66vh, 600px);
+  .workspace {
+    --pitch-h: max(440px, min(calc(100vh - 340px), 520px));
   }
 
   .slotWrap {
