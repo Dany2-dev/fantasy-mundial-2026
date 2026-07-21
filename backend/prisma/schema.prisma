@@ -17,6 +17,7 @@ model User {
 
   owned          OwnedPlayer[]
   squads         FantasySquad[]
+  squadHistory   FantasySquadHistory[]
   memberships    LeagueMembership[]
   ownedLeagues   League[]
   scores         UserGameweekScore[]
@@ -101,6 +102,7 @@ model League {
   members      LeagueMembership[]
   ownedPlayers OwnedPlayer[]
   squads       FantasySquad[]
+  squadHistory FantasySquadHistory[]
   scores       UserGameweekScore[]
   trades       TradeOffer[]
   listings     PlayerListing[]
@@ -163,6 +165,26 @@ model FantasySquad {
   league    League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
 
   @@unique([userId, leagueId])
+}
+
+// Una fila por cada vez que se guarda un once (a diferencia de FantasySquad,
+// que solo tiene la versión actual). Sirve para saber, jornada por jornada,
+// qué alineación estaba vigente al momento del deadline de esa jornada: si
+// se edita mientras la jornada ya está en juego, ese cambio queda en el
+// historial pero no puede "viajar al pasado" a puntuar una jornada que ya
+// arrancó (ver recomputeScores en services/sync.ts).
+model FantasySquadHistory {
+  id        String   @id @default(cuid())
+  userId    String
+  leagueId  String
+  formation String
+  playerIds String // ids separados por coma, en orden de slot
+  captainId Int?
+  savedAt   DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  league    League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+
+  @@index([userId, leagueId, savedAt])
 }
 
 model TradeOffer {
