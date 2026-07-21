@@ -117,6 +117,16 @@ export interface Match {
   liveMinute?: string | null;
 }
 
+// Evento del minuto a minuto de un partido. El endpoint GET /matches/:id/events
+// aún no existe en el back; la UI muestra fallback "llega pronto" mientras tanto.
+export interface MatchEvent {
+  minute: string;
+  type: "goal" | "yellow" | "red" | "sub" | "half" | "start" | "end";
+  team: "home" | "away" | null;
+  player: string | null;
+  detail: string | null;
+}
+
 export interface StandingRow {
   teamId: number;
   name: string;

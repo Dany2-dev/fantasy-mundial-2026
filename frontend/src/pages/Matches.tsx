@@ -2,9 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import Flag from "../components/Flag";
-import { IconBall, IconClock, IconTrophy } from "../components/icons";
+import { IconBall, IconClock, IconClose, IconTrophy } from "../components/icons";
+import { stadiumPhotoFor } from "../lib/stadiumPhotos";
 import { useAppSelector } from "../store/store";
-import { Match, ScorerRow, StandingsGroup } from "../types";
+import { Match, MatchEvent, ScorerRow, StandingsGroup } from "../types";
 import styles from "./Matches.module.css";
 
 type Filter = "todos" | "vivo" | "hoy" | "proximos" | "resultados";
@@ -25,8 +26,12 @@ const EMPTY_BY_FILTER: Record<Filter, string> = {
   resultados: "Aún no hay resultados para mostrar.",
 };
 
+// Etiqueta de sección: grupos A-L en el Mundial, jornadas en ligas de clubes,
+// y "Eliminatorias" como último recurso.
 function groupOf(m: Match): string {
-  return m.group && /^[A-L]$/.test(m.group) ? m.group : "Eliminatorias";
+  if (m.group && /^[A-L]$/.test(m.group)) return `Grupo ${m.group}`;
+  if (m.roundLabel) return m.roundLabel;
+  return "Eliminatorias";
 }
 
 function isToday(iso: string | null): boolean {
@@ -57,6 +62,60 @@ function kickoff(iso: string | null): string {
     : "Por definir";
 }
 
+// Cuenta regresiva viva hacia el arranque del próximo partido.
+function Countdown({ target }: { target: string }) {
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const iv = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(iv);
+  }, []);
+
+  const diff = Math.max(0, new Date(target).getTime() - now);
+  const d = Math.floor(diff / 86400000);
+  const h = Math.floor((diff % 86400000) / 3600000);
+  const min = Math.floor((diff % 3600000) / 60000);
+  const s = Math.floor((diff % 60000) / 1000);
+  const pad = (n: number) => String(n).padStart(2, "0");
+
+  return (
+    <div className={styles.countdown} role="timer" aria-label="Tiempo para el arranque">
+      {d > 0 && (
+        <span className={styles.countBlock}>
+          {d}
+          <small>d</small>
+        </span>
+      )}
+      <span className={styles.countBlock}>
+        {pad(h)}
+        <small>h</small>
+      </span>
+      <span className={styles.countBlock}>
+        {pad(min)}
+        <small>m</small>
+      </span>
+      <span className={styles.countBlock}>
+        {pad(s)}
+        <small>s</small>
+      </span>
+    </div>
+  );
+}
+
+// Esqueleto de carga con shimmer: silueta del hero + cards mientras llega /matches.
+function MatchesSkeleton() {
+  return (
+    <div aria-hidden="true">
+      <div className={`${styles.skel} ${styles.skelHero}`} />
+      <div className={styles.grid} style={{ marginTop: "var(--sp-4)" }}>
+        {[0, 1, 2].map((i) => (
+          <div key={i} className={`${styles.skel} ${styles.skelCard}`} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // Juan trabaja el diseño de esta página. Los partidos jugados/en vivo/próximos
 // ya vienen de datos reales de FotMob (GET /matches); tabla general y
 // goleadores se conectan después. La franja "En vivo" se auto-refresca cada 60s
@@ -67,6 +126,7 @@ export default function Matches() {
   const [loading, setLoading] = useState(true);
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
   const [filter, setFilter] = useState<Filter>("todos");
+  const [openMatch, setOpenMatch] = useState<Match | null>(null);
 
   const competitionId = activeLeague?.competitionId;
 
@@ -123,7 +183,7 @@ export default function Matches() {
       (map.get(g) ?? map.set(g, []).get(g)!).push(m);
     }
     const order = [...map.keys()].sort((a, b) =>
-      a === "Eliminatorias" ? 1 : b === "Eliminatorias" ? -1 : a.localeCompare(b)
+      a === "Eliminatorias" ? 1 : b === "Eliminatorias" ? -1 : a.localeCompare(b, "es", { numeric: true })
     );
     for (const g of order) map.get(g)!.sort((a, b) => (a.utcTime ?? "").localeCompare(b.utcTime ?? ""));
     return { map, order };
@@ -160,7 +220,7 @@ export default function Matches() {
         </div>
       </div>
 
-      {loading && matches.length === 0 && <p className="muted">Cargando…</p>}
+      {loading && matches.length === 0 && <MatchesSkeleton />}
 
       {/* ---- Franja destacada: en vivo ahora, o próximo partido ---- */}
       {live.length > 0 ? (
@@ -177,7 +237,7 @@ export default function Matches() {
           </div>
           <div className={styles.heroGrid}>
             {live.map((m) => (
-              <HeroMatch key={m.id} m={m} />
+              <HeroMatch key={m.id} m={m} onOpen={() => setOpenMatch(m)} />
             ))}
           </div>
         </section>
@@ -188,7 +248,7 @@ export default function Matches() {
               <h2 className={styles.heroTitle}>Próximo partido</h2>
             </div>
             <div className={styles.heroGrid}>
-              <HeroMatch m={nextMatch} upcoming />
+              <HeroMatch m={nextMatch} upcoming onOpen={() => setOpenMatch(nextMatch)} />
             </div>
           </section>
         )
@@ -217,10 +277,10 @@ export default function Matches() {
 
       {groups.order.map((g) => (
         <section key={g} className={styles.groupSection}>
-          <h2 className={styles.groupTitle}>{g === "Eliminatorias" ? g : `Grupo ${g}`}</h2>
+          <h2 className={styles.groupTitle}>{g}</h2>
           <div className={styles.grid}>
-            {groups.map.get(g)!.map((m) => (
-              <MatchCard key={m.id} m={m} />
+            {groups.map.get(g)!.map((m, i) => (
+              <MatchCard key={m.id} m={m} index={i} onOpen={() => setOpenMatch(m)} />
             ))}
           </div>
         </section>
@@ -235,6 +295,114 @@ export default function Matches() {
       ) : (
         <p className={`caption ${styles.comingSoon}`}>Tabla general y goleadores llegan pronto.</p>
       )}
+
+      {openMatch && <MatchDetailModal m={openMatch} onClose={() => setOpenMatch(null)} />}
+    </div>
+  );
+}
+
+// Modal minuto a minuto: timeline de eventos del partido. Consume
+// GET /matches/:id/events (contrato futuro del back); si no existe, cae al
+// caption "llega pronto" sin romper nada.
+function MatchDetailModal({ m, onClose }: { m: Match; onClose: () => void }) {
+  const [events, setEvents] = useState<MatchEvent[] | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    api<{ events: MatchEvent[] }>(`/matches/${m.id}/events`)
+      .then((d) => alive && setEvents(d.events))
+      .catch(() => alive && setFailed(true));
+    return () => {
+      alive = false;
+    };
+  }, [m.id]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  const show = m.status !== "scheduled";
+
+  return (
+    <div className={styles.modalOverlay} onClick={onClose}>
+      <div
+        className={styles.modal}
+        role="dialog"
+        aria-modal="true"
+        aria-label={`${m.home.name} contra ${m.away.name}, minuto a minuto`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div
+          className={styles.modalHero}
+          style={{
+            backgroundImage: `linear-gradient(180deg, rgba(9,13,24,0.8), rgba(9,13,24,0.94)), url("${stadiumPhotoFor(m.home.name, m.utcTime)}")`,
+          }}
+        >
+          <button className={styles.modalClose} onClick={onClose} aria-label="Cerrar">
+            <IconClose size={18} />
+          </button>
+          <span className={styles.heroGroup}>{m.roundLabel ?? (m.group ? `Grupo ${m.group}` : "Partido")}</span>
+          <div className={styles.heroMatch}>
+            <div className={styles.heroSide}>
+              <Flag team={{ id: 0, name: m.home.name, flag: m.home.flag, logoUrl: m.home.logoUrl }} size={44} />
+              <span className={styles.heroSideName}>{m.home.name}</span>
+            </div>
+            <div className={styles.heroScore}>
+              {show ? (
+                <>
+                  {m.homeScore ?? 0}
+                  <span className={styles.heroDash}>-</span>
+                  {m.awayScore ?? 0}
+                </>
+              ) : (
+                <span className={styles.heroVs}>VS</span>
+              )}
+            </div>
+            <div className={styles.heroSide}>
+              <Flag team={{ id: 0, name: m.away.name, flag: m.away.flag, logoUrl: m.away.logoUrl }} size={44} />
+              <span className={styles.heroSideName}>{m.away.name}</span>
+            </div>
+          </div>
+          {m.status === "live" && (
+            <span className={styles.statusLive}>
+              <span className={styles.pulseDot} /> {m.liveMinute ?? "EN VIVO"}
+            </span>
+          )}
+        </div>
+
+        <div className={styles.modalBody}>
+          <h3 className={styles.timelineTitle}>Minuto a minuto</h3>
+          {failed && <p className={`caption ${styles.comingSoon}`}>El minuto a minuto llega pronto.</p>}
+          {!failed && events === null && <p className="muted">Cargando eventos…</p>}
+          {events && events.length === 0 && <p className="muted">Sin eventos todavía.</p>}
+          {events && events.length > 0 && (
+            <ol className={styles.timeline}>
+              {events.map((ev, i) => (
+                <li key={i} className={`${styles.timelineRow} ${ev.team === "away" ? styles.timelineAway : ""}`}>
+                  <span className={styles.timelineMinute}>{ev.minute}</span>
+                  <span className={styles.timelineIcon} data-type={ev.type} aria-hidden="true">
+                    {ev.type === "goal" ? (
+                      <IconBall size={15} />
+                    ) : ev.type === "yellow" || ev.type === "red" ? (
+                      <span className={ev.type === "yellow" ? styles.cardYellow : styles.cardRed} />
+                    ) : (
+                      <IconClock size={14} />
+                    )}
+                  </span>
+                  <span className={styles.timelineText}>
+                    {ev.player && <strong>{ev.player}</strong>}
+                    {ev.player && ev.detail && " · "}
+                    {ev.detail}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -378,11 +546,23 @@ function PlayerPhoto({ photoUrl, name }: { photoUrl: string | null; name: string
 }
 
 // Tarjeta destacada (en vivo o próximo) con marcador grande y centrado tipo ESPN.
-function HeroMatch({ m, upcoming }: { m: Match; upcoming?: boolean }) {
+// Fondo de estadio real (mismo asset que Historial) con wash oscuro; el marcador
+// re-monta con key cuando cambia el score para disparar la animación de pop.
+function HeroMatch({ m, upcoming, onOpen }: { m: Match; upcoming?: boolean; onOpen?: () => void }) {
   const homeWin = m.status === "finished" && (m.homeScore ?? 0) > (m.awayScore ?? 0);
   const awayWin = m.status === "finished" && (m.awayScore ?? 0) > (m.homeScore ?? 0);
+  const isUpcoming = upcoming || m.status === "scheduled";
   return (
-    <div className={`${styles.heroCard} ${m.status === "live" ? styles.cardLive : styles.heroUpcoming}`}>
+    <div
+      className={`${styles.heroCard} ${styles.heroStadium} ${m.status === "live" ? styles.heroLive : ""} ${onOpen ? styles.clickable : ""}`}
+      style={{
+        backgroundImage: `linear-gradient(180deg, rgba(9,13,24,0.82), rgba(9,13,24,0.94)), url("${stadiumPhotoFor(m.home.name, m.utcTime)}")`,
+      }}
+      role={onOpen ? "button" : undefined}
+      tabIndex={onOpen ? 0 : undefined}
+      onClick={onOpen}
+      onKeyDown={(e) => onOpen && (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onOpen())}
+    >
       <div className={styles.heroTop}>
         <span className={styles.heroGroup}>{m.roundLabel ?? (m.group ? `Grupo ${m.group}` : "Partido")}</span>
         {m.status === "live" ? (
@@ -397,11 +577,11 @@ function HeroMatch({ m, upcoming }: { m: Match; upcoming?: boolean }) {
       </div>
       <div className={styles.heroMatch}>
         <div className={`${styles.heroSide} ${awayWin ? styles.dim : ""}`}>
-          <Flag team={{ id: 0, name: m.home.name, flag: m.home.flag, logoUrl: m.home.logoUrl }} size={40} />
+          <Flag team={{ id: 0, name: m.home.name, flag: m.home.flag, logoUrl: m.home.logoUrl }} size={44} />
           <span className={styles.heroSideName}>{m.home.name}</span>
         </div>
-        <div className={styles.heroScore}>
-          {upcoming || m.status === "scheduled" ? (
+        <div className={styles.heroScore} key={`${m.homeScore}-${m.awayScore}`}>
+          {isUpcoming ? (
             <span className={styles.heroVs}>VS</span>
           ) : (
             <>
@@ -412,21 +592,29 @@ function HeroMatch({ m, upcoming }: { m: Match; upcoming?: boolean }) {
           )}
         </div>
         <div className={`${styles.heroSide} ${homeWin ? styles.dim : ""}`}>
-          <Flag team={{ id: 0, name: m.away.name, flag: m.away.flag, logoUrl: m.away.logoUrl }} size={40} />
+          <Flag team={{ id: 0, name: m.away.name, flag: m.away.flag, logoUrl: m.away.logoUrl }} size={44} />
           <span className={styles.heroSideName}>{m.away.name}</span>
         </div>
       </div>
+      {isUpcoming && m.utcTime && <Countdown target={m.utcTime} />}
     </div>
   );
 }
 
-// Tarjeta de la lista agrupada.
-function MatchCard({ m }: { m: Match }) {
+// Tarjeta de la lista agrupada. Entra con stagger y abre el minuto a minuto al clic.
+function MatchCard({ m, index = 0, onOpen }: { m: Match; index?: number; onOpen?: () => void }) {
   const show = m.status !== "scheduled";
   const homeWin = m.status === "finished" && (m.homeScore ?? 0) > (m.awayScore ?? 0);
   const awayWin = m.status === "finished" && (m.awayScore ?? 0) > (m.homeScore ?? 0);
   return (
-    <div className={`${styles.card} ${m.status === "live" ? styles.cardLive : ""}`}>
+    <div
+      className={`${styles.card} ${m.status === "live" ? styles.cardLive : ""} ${styles.cardEnter} ${onOpen ? styles.clickable : ""}`}
+      style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}
+      role={onOpen ? "button" : undefined}
+      tabIndex={onOpen ? 0 : undefined}
+      onClick={onOpen}
+      onKeyDown={(e) => onOpen && (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onOpen())}
+    >
       <div className={styles.statusLine}>
         {m.status === "finished" ? (
           <span className={styles.statusFinished}>Finalizado</span>
