@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import AnimatedList from "../components/AnimatedList";
 import { IconCoin, IconExchange } from "../components/icons";
+import { formatMoney } from "../lib/money";
 import { useAppSelector } from "../store/store";
 import { GameweekScore, Trade } from "../types";
 import styles from "./History.module.css";
@@ -111,7 +112,7 @@ export default function History() {
                   {e.trade.coins > 0 && (
                     <>
                       {" "}
-                      +{e.trade.coins} <IconCoin size={11} />
+                      +{formatMoney(e.trade.coins)} <IconCoin size={11} />
                     </>
                   )}
                 </span>

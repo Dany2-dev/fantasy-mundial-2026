@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { AuthRequest, requireAuth } from "../middleware/auth";
+import { getWallet, transfer } from "../services/wallet";
 
 const router = Router();
 router.use(requireAuth);
@@ -51,14 +52,15 @@ router.post("/", async (req, res) => {
 
   if (toUserId === userId) return res.status(400).json({ error: "No puedes ofertarte a ti mismo" });
 
-  const [mine, theirs, me] = await Promise.all([
+  const [mine, theirs, myWallet] = await Promise.all([
     prisma.ownedPlayer.findUnique({ where: { leagueId_playerId: { leagueId, playerId: offeredPlayerId } } }),
     prisma.ownedPlayer.findUnique({ where: { leagueId_playerId: { leagueId, playerId: requestedPlayerId } } }),
-    prisma.user.findUniqueOrThrow({ where: { id: userId } }),
+    getWallet(prisma, userId, leagueId),
   ]);
+  if (!myWallet) return res.status(403).json({ error: "No eres miembro de esta liga" });
   if (!mine || mine.userId !== userId) return res.status(400).json({ error: "Esa carta no es tuya en esta liga" });
   if (!theirs || theirs.userId !== toUserId) return res.status(400).json({ error: "El otro mánager ya no tiene esa carta" });
-  if (me.coins < coins) return res.status(400).json({ error: "No tienes esas monedas" });
+  if (myWallet.coins < coins) return res.status(400).json({ error: "No te alcanza el presupuesto de esta liga" });
 
   const trade = await prisma.tradeOffer.create({
     data: { leagueId, fromUserId: userId, toUserId, offeredPlayerId, requestedPlayerId, coins },
@@ -83,23 +85,28 @@ router.post("/:id/respond", async (req, res) => {
 
   try {
     await prisma.$transaction(async (tx) => {
-      const [offered, requested, fromUser] = await Promise.all([
+      const [offered, requested, fromWallet] = await Promise.all([
         tx.ownedPlayer.findUnique({ where: { leagueId_playerId: { leagueId: trade.leagueId, playerId: trade.offeredPlayerId } } }),
         tx.ownedPlayer.findUnique({ where: { leagueId_playerId: { leagueId: trade.leagueId, playerId: trade.requestedPlayerId } } }),
-        tx.user.findUniqueOrThrow({ where: { id: trade.fromUserId } }),
+        getWallet(tx, trade.fromUserId, trade.leagueId),
       ]);
       if (!offered || offered.userId !== trade.fromUserId) throw new Error("La carta ofrecida cambió de dueño");
       if (!requested || requested.userId !== trade.toUserId) throw new Error("Tu carta cambió de dueño");
-      if (fromUser.coins < trade.coins) throw new Error("El oferente ya no tiene esas monedas");
+      if (!fromWallet) throw new Error("El oferente ya no es miembro de la liga");
+      if (fromWallet.coins < trade.coins) throw new Error("Al oferente ya no le alcanza el presupuesto");
 
       // Intercambio de cartas
       await tx.ownedPlayer.update({ where: { id: offered.id }, data: { userId: trade.toUserId } });
       await tx.ownedPlayer.update({ where: { id: requested.id }, data: { userId: trade.fromUserId } });
 
-      // Transferencia de monedas
+      // Transferencia de euros dentro de la liga
       if (trade.coins > 0) {
-        await tx.user.update({ where: { id: trade.fromUserId }, data: { coins: { decrement: trade.coins } } });
-        await tx.user.update({ where: { id: trade.toUserId }, data: { coins: { increment: trade.coins } } });
+        await transfer(tx, {
+          leagueId: trade.leagueId,
+          fromUserId: trade.fromUserId,
+          toUserId: trade.toUserId,
+          amount: trade.coins,
+        });
       }
 
       // Sacar las cartas intercambiadas de los onces de ambos

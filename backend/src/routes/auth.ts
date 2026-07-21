@@ -12,7 +12,8 @@ const registerSchema = z.object({
   password: z.string().min(6, "La contraseña necesita al menos 6 caracteres"),
 });
 
-const publicUser = { id: true, name: true, email: true, coins: true } as const;
+// El presupuesto ya no vive en User: es por liga (LeagueMembership.coins).
+const publicUser = { id: true, name: true, email: true } as const;
 
 router.post("/register", async (req, res) => {
   const parsed = registerSchema.safeParse(req.body);
@@ -41,7 +42,7 @@ router.post("/login", async (req, res) => {
     return res.status(401).json({ error: "Email o contraseña incorrectos" });
   }
   const { password: _omit, ...safe } = user;
-  res.json({ token: signToken(user.id), user: { id: safe.id, name: safe.name, email: safe.email, coins: safe.coins } });
+  res.json({ token: signToken(user.id), user: { id: safe.id, name: safe.name, email: safe.email } });
 });
 
 router.get("/me", requireAuth, async (req, res) => {
