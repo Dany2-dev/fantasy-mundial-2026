@@ -205,6 +205,7 @@
 
 .heroCard {
   position: relative;
+  isolation: isolate;
   overflow: hidden;
   background: var(--superficie);
   border: 1px solid var(--borde);
@@ -215,6 +216,7 @@
   gap: var(--sp-3);
 }
 
+/* Variantes originales del hero (siguen disponibles; heroStadium se suma encima) */
 .heroCard.cardLive {
   border-color: var(--wc-rojo);
   background:
@@ -226,6 +228,49 @@
   background:
     radial-gradient(120% 100% at 50% 0%, color-mix(in srgb, var(--wc-azul-vivo) 6%, transparent), transparent 70%),
     var(--superficie);
+}
+
+/* Fondo de estadio real (mismo asset que Historial) con wash oscuro para
+   contraste; el texto de la card pasa a claro. */
+.heroStadium {
+  border-color: rgba(255, 255, 255, 0.14);
+  color: #f4f6fb;
+  background-image:
+    linear-gradient(180deg, rgba(9, 13, 24, 0.82) 0%, rgba(9, 13, 24, 0.94) 100%),
+    url("/brand/estadio-bn.avif");
+  background-size: cover;
+  background-position: center 30%;
+}
+
+.heroStadium .heroGroup,
+.heroStadium .heroDash,
+.heroStadium .heroVs,
+.heroStadium .updated {
+  color: rgba(244, 246, 251, 0.72);
+}
+
+/* Chips con más luz para que contrasten sobre el estadio oscuro */
+.heroStadium .statusScheduled {
+  background: rgba(255, 255, 255, 0.14);
+  color: #dfe6ff;
+}
+
+.heroStadium .statusLive {
+  background: color-mix(in srgb, var(--league-cta, var(--wc-rojo)) 28%, transparent);
+  color: #ffe1e3;
+}
+
+.heroLive {
+  border-color: color-mix(in srgb, var(--league-cta, var(--wc-rojo)) 70%, transparent);
+  animation: pulseBorder 2s ease-in-out infinite;
+}
+
+.heroLive::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 3px;
+  background: var(--league-cta, var(--wc-rojo));
 }
 
 .heroTop {
@@ -270,10 +315,24 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  font-family: var(--font-sport, var(--font-display));
   font-weight: 900;
-  font-size: 32px;
+  font-size: 38px;
   font-variant-numeric: tabular-nums;
   padding: 0 var(--sp-2);
+  animation: scorePop 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes scorePop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.18);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .heroDash {
@@ -347,6 +406,657 @@
 .emptyFiltered {
   text-align: center;
   padding: var(--sp-6) var(--sp-4);
+}
+
+/* ---------- Cuenta regresiva al próximo partido ---------- */
+.countdown {
+  display: flex;
+  justify-content: center;
+  gap: var(--sp-3);
+  padding-top: var(--sp-2);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.countBlock {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  font-family: var(--font-sport, var(--font-display));
+  font-weight: 800;
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+}
+
+.countBlock small {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(244, 246, 251, 0.6);
+}
+
+/* ---------- Skeletons de carga ---------- */
+.skel {
+  position: relative;
+  overflow: hidden;
+  background: var(--superficie-alta);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-card);
+}
+
+.skel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.65), transparent);
+  transform: translateX(-100%);
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+.skelHero {
+  height: 148px;
+  border-radius: var(--r-carta);
+  margin-top: var(--sp-5);
+}
+
+.skelCard {
+  height: 118px;
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* ---------- Interacción: cards clickeables + entrada con stagger ---------- */
+.clickable {
+  cursor: pointer;
+  transition: transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 240ms ease, border-color 200ms ease;
+}
+
+.clickable:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 32px -24px rgba(9, 15, 28, 0.55);
+}
+
+.clickable:active {
+  transform: translateY(-1px) scale(0.99);
+}
+
+.cardEnter {
+  animation: cardIn 360ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+@keyframes cardIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---------- Modal minuto a minuto ---------- */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-4);
+  background: rgba(9, 13, 24, 0.55);
+  backdrop-filter: blur(3px);
+  animation: overlayIn 200ms ease;
+}
+
+@keyframes overlayIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal {
+  width: min(560px, 100%);
+  max-height: min(82vh, 720px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-carta);
+  box-shadow: 0 32px 80px -32px rgba(9, 15, 28, 0.7);
+  animation: modalIn 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes modalIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modalHero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-5) var(--sp-4);
+  color: #f4f6fb;
+  background-size: cover;
+  background-position: center 30%;
+}
+
+.modalHero .heroGroup,
+.modalHero .heroDash,
+.modalHero .heroVs {
+  color: rgba(244, 246, 251, 0.72);
+}
+
+.modalHero .statusLive {
+  background: color-mix(in srgb, var(--league-cta, var(--wc-rojo)) 28%, transparent);
+  color: #ffe1e3;
+}
+
+.modalHero .heroMatch {
+  width: 100%;
+}
+
+.modalClose {
+  position: absolute;
+  top: var(--sp-3);
+  right: var(--sp-3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  color: #f4f6fb;
+  border: none;
+}
+
+.modalBody {
+  padding: var(--sp-4);
+  overflow-y: auto;
+}
+
+.timelineTitle {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--tinta-media);
+  margin: 0 0 var(--sp-3);
+}
+
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.timelineRow {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 6px 10px;
+  border-radius: var(--r-input);
+  background: var(--superficie-alta);
+}
+
+.timelineAway {
+  flex-direction: row-reverse;
+  text-align: right;
+}
+
+.timelineMinute {
+  font-weight: 800;
+  font-size: 13px;
+  min-width: 34px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  color: var(--tinta-media);
+}
+
+.timelineIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  flex-shrink: 0;
+}
+
+.timelineIcon[data-type="goal"] {
+  color: var(--wc-verde);
+  border-color: color-mix(in srgb, var(--wc-verde) 40%, var(--borde));
+}
+
+.cardYellow,
+.cardRed {
+  display: inline-block;
+  width: 9px;
+  height: 13px;
+  border-radius: 2px;
+}
+
+.cardYellow {
+  background: var(--wc-oro);
+}
+
+.cardRed {
+  background: var(--wc-rojo);
+}
+
+.timelineText {
+  font-size: 13.5px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* ---------- Forma (últimos 5) y próximo rival, estilo FotMob ---------- */
+.formHead {
+  text-align: left;
+}
+
+.formRow {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.formDot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--tinta);
+  background: var(--superficie-alta);
+  border: 1px solid var(--borde);
+}
+
+.formDot[data-res="G"] {
+  background: color-mix(in srgb, var(--wc-verde) 18%, transparent);
+  border-color: color-mix(in srgb, var(--wc-verde) 45%, var(--borde));
+}
+
+.formDot[data-res="P"] {
+  background: color-mix(in srgb, var(--wc-rojo) 14%, transparent);
+  border-color: color-mix(in srgb, var(--wc-rojo) 40%, var(--borde));
+}
+
+.nextCell {
+  text-align: center;
+}
+
+/* ---------- Agenda de la siguiente jornada ---------- */
+.agendaCard {
+  padding: var(--sp-2) var(--sp-3);
+}
+
+.agendaDay {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--tinta-media);
+  padding: var(--sp-2) 6px 4px;
+}
+
+.agendaRow {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--sp-2);
+  width: 100%;
+  padding: 8px 6px;
+  border: none;
+  border-radius: var(--r-input);
+  background: transparent;
+  font-family: inherit;
+  font-size: 13.5px;
+  color: var(--tinta);
+  cursor: pointer;
+}
+
+.agendaRow:hover {
+  background: var(--superficie-alta);
+  filter: none;
+}
+
+.agendaTeam {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+  min-width: 0;
+}
+
+.agendaAway {
+  justify-content: flex-start;
+}
+
+.agendaName {
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.agendaTime {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--tinta-media);
+  font-variant-numeric: tabular-nums;
+  padding: 2px 8px;
+  border-radius: var(--r-chip);
+  background: var(--superficie-alta);
+}
+
+/* ---------- Probabilidad según la forma (local/empate/visita) ---------- */
+.probLabels {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.probHome {
+  color: var(--wc-verde);
+}
+
+.probDraw {
+  color: var(--tinta-media);
+}
+
+.probAway {
+  color: var(--wc-azul-vivo);
+}
+
+.probBar {
+  display: flex;
+  gap: 2px;
+  height: 8px;
+  border-radius: var(--r-chip);
+  overflow: hidden;
+  margin-bottom: var(--sp-4);
+}
+
+.probSegHome {
+  background: var(--wc-verde);
+  border-radius: var(--r-chip) 0 0 var(--r-chip);
+}
+
+.probSegDraw {
+  background: color-mix(in srgb, var(--tinta-media) 45%, var(--superficie-alta));
+}
+
+.probSegAway {
+  background: var(--wc-azul-vivo);
+  border-radius: 0 var(--r-chip) var(--r-chip) 0;
+}
+
+/* ---------- Estadísticas bilaterales del partido ---------- */
+.statList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+
+.statNums {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  margin-bottom: 4px;
+}
+
+.statLabel {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--tinta-media);
+}
+
+.statHomeNum,
+.statAwayNum {
+  font-weight: 800;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  min-width: 34px;
+}
+
+.statHomeNum {
+  color: var(--wc-verde);
+}
+
+.statAwayNum {
+  color: var(--wc-azul-vivo);
+  text-align: right;
+}
+
+.statTrack {
+  display: flex;
+  gap: 2px;
+  height: 6px;
+  border-radius: var(--r-chip);
+  overflow: hidden;
+  background: var(--superficie-alta);
+}
+
+.statFillHome {
+  background: var(--wc-verde);
+  border-radius: var(--r-chip) 0 0 var(--r-chip);
+}
+
+.statFillAway {
+  background: var(--wc-azul-vivo);
+  border-radius: 0 var(--r-chip) var(--r-chip) 0;
+  margin-left: auto;
+}
+
+/* ---------- Comparativa de racha en el modal ---------- */
+.formCompare {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-4);
+}
+
+.formStrip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+
+.formStripName {
+  font-weight: 700;
+  font-size: 13.5px;
+}
+
+/* ---------- Jornadas/grupos desplegables ---------- */
+.roundHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  width: 100%;
+  padding: 10px 12px;
+  margin-bottom: var(--sp-3);
+  background: var(--superficie-alta);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-input);
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.roundHeader:hover {
+  filter: none;
+  border-color: color-mix(in srgb, var(--tinta) 18%, var(--borde));
+}
+
+.roundTitle {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--tinta);
+}
+
+.roundMeta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--tinta-media);
+}
+
+.chevron {
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--tinta-media);
+  border-bottom: 2px solid var(--tinta-media);
+  transform: rotate(45deg);
+  transition: transform 200ms ease;
+}
+
+.chevron[data-open="true"] {
+  transform: rotate(225deg);
+}
+
+/* ---------- Comparativa local/visita (estilo BeSoccer) ---------- */
+.compareBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: var(--sp-3);
+}
+
+.compareRow {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: baseline;
+  gap: var(--sp-2);
+}
+
+.compareVal {
+  font-weight: 800;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  color: var(--tinta-media);
+}
+
+.compareValAway {
+  text-align: right;
+}
+
+.compareLabel {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--tinta-media);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ---------- Matriz de resultados exactos ---------- */
+.matrixWrap {
+  margin-bottom: var(--sp-4);
+  overflow-x: auto;
+}
+
+.matrix {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 2px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.matrix th {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--tinta-media);
+  padding: 2px 4px;
+  text-align: center;
+}
+
+.matrixCorner {
+  min-width: 18px;
+}
+
+.matrixCell {
+  text-align: center;
+  padding: 6px 4px;
+  border-radius: 6px;
+  font-weight: 700;
+  color: var(--tinta);
+  background: var(--superficie-alta);
+}
+
+.matrixCell[data-zone="home"] {
+  background: color-mix(in srgb, var(--wc-verde) var(--cell-alpha, 0%), var(--superficie-alta));
+}
+
+.matrixCell[data-zone="away"] {
+  background: color-mix(in srgb, var(--wc-azul-vivo) calc(var(--cell-alpha, 0%) * 0.8), var(--superficie-alta));
+}
+
+.matrixCell[data-zone="draw"] {
+  background: color-mix(in srgb, var(--tinta-media) calc(var(--cell-alpha, 0%) * 0.6), var(--superficie-alta));
+}
+
+.matrixHint {
+  margin: 6px 0 0;
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skel::after {
+    animation: none;
+  }
+
+  .heroScore {
+    animation: none;
+  }
+
+  .cardEnter,
+  .modal,
+  .modalOverlay {
+    animation: none;
+  }
+
+  .clickable,
+  .clickable:hover,
+  .clickable:active {
+    transform: none;
+  }
 }
 
 /* ---------- Tabla general + Goleadores ---------- */
