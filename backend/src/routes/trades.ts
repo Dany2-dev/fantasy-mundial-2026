@@ -70,58 +70,141 @@ router.post("/", async (req, res) => {
 router.post("/:id/respond", async (req, res) => {
   const userId = (req as AuthRequest).userId;
   const accept = Boolean(req.body?.accept);
+  const tradeId = req.params.id;
 
-  const trade = await prisma.tradeOffer.findUnique({ where: { id: req.params.id } });
-  if (!trade) return res.status(404).json({ error: "Oferta no encontrada" });
-  if (trade.toUserId !== userId) return res.status(403).json({ error: "Esta oferta no es para ti" });
-  if (trade.status !== "pending") return res.status(409).json({ error: "La oferta ya fue respondida" });
+  const initialTrade = await prisma.tradeOffer.findUnique({ where: { id: tradeId } });
+  if (!initialTrade) return res.status(404).json({ error: "Oferta no encontrada" });
+  if (initialTrade.toUserId !== userId) return res.status(403).json({ error: "Esta oferta no es para ti" });
+  if (initialTrade.status !== "pending") return res.status(409).json({ error: "La oferta ya fue respondida" });
 
   if (!accept) {
-    await prisma.tradeOffer.update({ where: { id: trade.id }, data: { status: "rejected" } });
+    await prisma.tradeOffer.update({ where: { id: tradeId }, data: { status: "rejected" } });
     return res.json({ ok: true, status: "rejected" });
   }
 
   try {
     await prisma.$transaction(async (tx) => {
-      const [offered, requested, fromUser] = await Promise.all([
-        tx.ownedPlayer.findUnique({ where: { leagueId_playerId: { leagueId: trade.leagueId, playerId: trade.offeredPlayerId } } }),
-        tx.ownedPlayer.findUnique({ where: { leagueId_playerId: { leagueId: trade.leagueId, playerId: trade.requestedPlayerId } } }),
-        tx.user.findUniqueOrThrow({ where: { id: trade.fromUserId } }),
-      ]);
-      if (!offered || offered.userId !== trade.fromUserId) throw new Error("La carta ofrecida cambió de dueño");
-      if (!requested || requested.userId !== trade.toUserId) throw new Error("Tu carta cambió de dueño");
-      if (fromUser.coins < trade.coins) throw new Error("El oferente ya no tiene esas monedas");
-
-      // Intercambio de cartas
-      await tx.ownedPlayer.update({ where: { id: offered.id }, data: { userId: trade.toUserId } });
-      await tx.ownedPlayer.update({ where: { id: requested.id }, data: { userId: trade.fromUserId } });
-
-      // Transferencia de monedas
-      if (trade.coins > 0) {
-        await tx.user.update({ where: { id: trade.fromUserId }, data: { coins: { decrement: trade.coins } } });
-        await tx.user.update({ where: { id: trade.toUserId }, data: { coins: { increment: trade.coins } } });
+      // REGLA DE LOCKING 1: Bloquear Users de forma ordenada alfabéticamente
+      const sortedUserIds = [initialTrade.fromUserId, initialTrade.toUserId].sort();
+      for (const uid of sortedUserIds) {
+        await tx.$queryRaw`
+          SELECT id, coins FROM "User" WHERE id = ${uid} FOR UPDATE
+        `;
       }
 
-      // Sacar las cartas intercambiadas de los onces de ambos
+      // REGLA DE LOCKING 2: Bloquear OwnedPlayers (O antes que T).
+      // Se ordenan los IDs de jugadores numéricamente (playerId es Int) para evitar deadlocks físicos.
+      const playerIdsToLock = [initialTrade.offeredPlayerId, initialTrade.requestedPlayerId].sort((a, b) => a - b);
+      
+      const ownedRows = await tx.$queryRaw<any[]>`
+        SELECT id, "userId", "playerId" FROM "OwnedPlayer" 
+        WHERE "leagueId" = ${initialTrade.leagueId} 
+          AND "playerId" IN (${playerIdsToLock[0]}, ${playerIdsToLock[1]})
+        ORDER BY "playerId" ASC
+        FOR UPDATE
+      `;
+
+      const lockedOffered = ownedRows.find(r => r.playerId === initialTrade.offeredPlayerId);
+      const lockedRequested = ownedRows.find(r => r.playerId === initialTrade.requestedPlayerId);
+
+      // Re-verificar la propiedad legítima de las cartas bajo lock
+      if (!lockedOffered || lockedOffered.userId !== initialTrade.fromUserId) {
+        await tx.tradeOffer.update({ where: { id: tradeId }, data: { status: "rejected" } });
+        throw new Error("El proponente ya no posee la carta ofrecida. Intercambio cancelado.");
+      }
+
+      if (!lockedRequested || lockedRequested.userId !== initialTrade.toUserId) {
+        await tx.tradeOffer.update({ where: { id: tradeId }, data: { status: "rejected" } });
+        throw new Error("Ya no posees la carta solicitada. Intercambio cancelado.");
+      }
+
+      // REGLA DE LOCKING 3: Bloquear y leer TradeOffer (T después de O)
+      const trades = await tx.$queryRaw<any[]>`
+        SELECT id, status, coins, "offeredPlayerId", "requestedPlayerId", "fromUserId", "toUserId", "leagueId"
+        FROM "TradeOffer" WHERE id = ${tradeId} FOR UPDATE
+      `;
+      const lockedTrade = trades[0];
+      if (!lockedTrade || lockedTrade.status !== "pending") {
+        throw new Error("La oferta cambió de estado.");
+      }
+
+      // 1. Transferencia de monedas (Si hay monedas de por medio)
+      if (lockedTrade.coins > 0) {
+        const offerer = await tx.user.findUnique({ where: { id: lockedTrade.fromUserId }, select: { coins: true } });
+        if (!offerer || offerer.coins < lockedTrade.coins) {
+          throw new Error("El proponente ya no cuenta con monedas suficientes.");
+        }
+
+        // Registrar transacciones contables en el Ledger
+        await tx.coinTransaction.create({
+          data: { userId: lockedTrade.fromUserId, amount: -lockedTrade.coins, type: "TRANSFER", referenceId: tradeId },
+        });
+        await tx.coinTransaction.create({
+          data: { userId: lockedTrade.toUserId, amount: lockedTrade.coins, type: "TRANSFER", referenceId: tradeId },
+        });
+
+        // Actualizar cachés de saldo
+        await tx.user.update({
+          where: { id: lockedTrade.fromUserId },
+          data: { coins: { decrement: lockedTrade.coins } },
+        });
+        await tx.user.update({
+          where: { id: lockedTrade.toUserId },
+          data: { coins: { increment: lockedTrade.coins } },
+        });
+      }
+
+      // 2. Transferir la propiedad de las cartas en OwnedPlayer
+      await tx.ownedPlayer.update({
+        where: { id: lockedOffered.id },
+        data: { userId: lockedTrade.toUserId }
+      });
+
+      await tx.ownedPlayer.update({
+        where: { id: lockedRequested.id },
+        data: { userId: lockedTrade.fromUserId }
+      });
+
+      // 3. Confirmar la aceptación de la oferta
+      await tx.tradeOffer.update({
+        where: { id: tradeId },
+        data: { status: "accepted" }
+      });
+
+      // 4. Cancelar/Rechazar de forma automática cualquier otra oferta pendiente que involucre a cualquiera de estas cartas
+      await tx.tradeOffer.updateMany({
+        where: {
+          id: { not: tradeId },
+          leagueId: lockedTrade.leagueId,
+          status: "pending",
+          OR: [
+            { offeredPlayerId: lockedTrade.offeredPlayerId },
+            { offeredPlayerId: lockedTrade.requestedPlayerId },
+            { requestedPlayerId: lockedTrade.offeredPlayerId },
+            { requestedPlayerId: lockedTrade.requestedPlayerId }
+          ]
+        },
+        data: { status: "rejected" }
+      });
+
+      // 5. Remover las cartas intercambiadas de las alineaciones de ambos managers
       const squads = await tx.fantasySquad.findMany({
-        where: { leagueId: trade.leagueId, userId: { in: [trade.fromUserId, trade.toUserId] } },
+        where: { leagueId: lockedTrade.leagueId, userId: { in: [lockedTrade.fromUserId, lockedTrade.toUserId] } },
       });
       for (const squad of squads) {
         const ids = squad.playerIds ? squad.playerIds.split(",").map(Number) : [];
-        const cleaned = ids.filter((id) => id !== trade.offeredPlayerId && id !== trade.requestedPlayerId);
+        const cleaned = ids.filter((id) => id !== lockedTrade.offeredPlayerId && id !== lockedTrade.requestedPlayerId);
         if (cleaned.length !== ids.length) {
-          const captainOut = squad.captainId === trade.offeredPlayerId || squad.captainId === trade.requestedPlayerId;
+          const captainOut = squad.captainId === lockedTrade.offeredPlayerId || squad.captainId === lockedTrade.requestedPlayerId;
           await tx.fantasySquad.update({
             where: { id: squad.id },
             data: { playerIds: cleaned.join(","), ...(captainOut ? { captainId: null } : {}) },
           });
         }
       }
-
-      await tx.tradeOffer.update({ where: { id: trade.id }, data: { status: "accepted" } });
     });
-  } catch (e) {
-    return res.status(409).json({ error: e instanceof Error ? e.message : "No se pudo completar el intercambio" });
+  } catch (e: any) {
+    return res.status(409).json({ error: e.message || "No se pudo completar el intercambio" });
   }
 
   res.json({ ok: true, status: "accepted" });

@@ -57,49 +57,142 @@ router.delete("/:id", async (req, res) => {
 
 router.post("/:id/buy", async (req, res) => {
   const userId = (req as AuthRequest).userId;
-  const listing = await prisma.playerListing.findUnique({ where: { id: req.params.id } });
-  if (!listing) return res.status(404).json({ error: "Publicación no encontrada" });
-  if (listing.sellerId === userId) return res.status(400).json({ error: "No puedes comprarte tu propia carta" });
-
-  const buyer = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
-  if (buyer.coins < listing.price) return res.status(400).json({ error: "No tienes esas monedas" });
+  const listingId = req.params.id;
 
   try {
     await prisma.$transaction(async (tx) => {
-      const fresh = await tx.playerListing.findUnique({ where: { id: listing.id } });
-      if (!fresh) throw new Error("Esa publicación ya no existe");
-      const owned = await tx.ownedPlayer.findUnique({
-        where: { leagueId_playerId: { leagueId: fresh.leagueId, playerId: fresh.playerId } },
+      // 1. Obtener la publicación del jugador (solo lectura preliminar)
+      const initialListing = await tx.playerListing.findUnique({
+        where: { id: listingId },
+        select: { sellerId: true, playerId: true, leagueId: true }
       });
-      if (!owned || owned.userId !== fresh.sellerId) throw new Error("El jugador ya cambió de dueño");
 
-      await tx.user.update({ where: { id: userId }, data: { coins: { decrement: fresh.price } } });
-      await tx.user.update({ where: { id: fresh.sellerId }, data: { coins: { increment: fresh.price } } });
+      if (!initialListing) {
+        throw new Error("La publicación ya no está disponible.");
+      }
+
+      if (initialListing.sellerId === userId) {
+        throw new Error("No puedes comprar tu propio jugador.");
+      }
+
+      // REGLA DE LOCKING 1: Bloquear Users de forma ordenada alfabéticamente
+      const sortedUserIds = [userId, initialListing.sellerId].sort();
+      for (const uid of sortedUserIds) {
+        await tx.$queryRaw`
+          SELECT id, coins FROM "User" WHERE id = ${uid} FOR UPDATE
+        `;
+      }
+
+      // REGLA DE LOCKING 2: Bloquear fila en OwnedPlayer (O antes que P)
+      const ownedRows = await tx.$queryRaw<any[]>`
+        SELECT id, "userId" FROM "OwnedPlayer" 
+        WHERE "leagueId" = ${initialListing.leagueId} AND "playerId" = ${initialListing.playerId} 
+        FOR UPDATE
+      `;
+      const ownedRecord = ownedRows[0];
+      
+      // Confirmar que el vendedor actual sigue siendo el poseedor legítimo de la carta
+      if (!ownedRecord || ownedRecord.userId !== initialListing.sellerId) {
+        await tx.playerListing.deleteMany({ where: { id: listingId } });
+        throw new Error("El vendedor ya no posee esta carta. Listado cancelado.");
+      }
+
+      // REGLA DE LOCKING 3: Bloquear y leer fila completa de PlayerListing (PL después de O)
+      const listings = await tx.$queryRaw<any[]>`
+        SELECT id, "sellerId", "playerId", price, "leagueId" 
+        FROM "PlayerListing" WHERE id = ${listingId} FOR UPDATE
+      `;
+      const lockedListing = listings[0];
+      if (!lockedListing) {
+        throw new Error("El listado ya fue vendido o removido.");
+      }
+
+      // REGLA DE LOCKING 4: Bloquear SystemAccount (S después de P)
+      const systemAccounts = await tx.$queryRaw<any[]>`
+        SELECT id, balance FROM "SystemAccount" WHERE id = 'SYSTEM_TAX' FOR UPDATE
+      `;
+      if (!systemAccounts[0]) {
+        throw new Error("SYSTEM_TAX no inicializado.");
+      }
+
+      // Validar saldo del comprador con datos bloqueados
+      const buyer = await tx.user.findUnique({ where: { id: userId }, select: { coins: true } });
+      if (!buyer || buyer.coins < lockedListing.price) {
+        throw new Error("Saldo de monedas insuficiente para la compra.");
+      }
+
+      // Consultar umbrales para tasa variable
+      const activeStats = await tx.leagueStats.findFirst({
+        where: { leagueId: lockedListing.leagueId },
+        orderBy: { calculatedAt: "desc" }
+      });
+
+      const seller = await tx.user.findUnique({ where: { id: lockedListing.sellerId }, select: { coins: true } });
+      let taxPercentage = 0.05; // 5% base
+
+      if (activeStats && activeStats.giniIndex > 0.45 && seller && seller.coins > activeStats.top25PercentileCoinsThreshold) {
+        taxPercentage = 0.075; // 7.5% progresivo
+      }
+
+      const taxAmount = Math.round(lockedListing.price * taxPercentage);
+      const sellerNetReceived = lockedListing.price - taxAmount;
+
+      // 2. Registrar partida doble en Ledger
+      await tx.coinTransaction.create({
+        data: { userId, amount: -lockedListing.price, type: "TRANSFER", referenceId: listingId },
+      });
+      await tx.coinTransaction.create({
+        data: { userId: lockedListing.sellerId, amount: sellerNetReceived, type: "TRANSFER", referenceId: listingId },
+      });
+      await tx.coinTransaction.create({
+        data: { systemAccountId: "SYSTEM_TAX", amount: taxAmount, type: "MARKET_TAX", referenceId: listingId },
+      });
+
+      // 3. Actualizar cachés de saldo
+      await tx.user.update({
+        where: { id: userId },
+        data: { coins: { decrement: lockedListing.price } },
+      });
+
+      await tx.user.update({
+        where: { id: lockedListing.sellerId },
+        data: { coins: { increment: sellerNetReceived } },
+      });
+
+      await tx.systemAccount.update({
+        where: { id: "SYSTEM_TAX" },
+        data: { balance: { increment: taxAmount } },
+      });
+
+      // 4. Transferir la propiedad de la carta
       await tx.ownedPlayer.update({
-        where: { id: owned.id },
-        data: { userId, clause: Math.round(fresh.price * 1.2), protectedUntil: protectionExpiry() },
+        where: { id: ownedRecord.id },
+        data: { userId, clause: Math.round(lockedListing.price * 1.2), protectedUntil: protectionExpiry() }
       });
-      await tx.playerListing.delete({ where: { id: fresh.id } });
 
+      // 5. Eliminar publicación del mercado
+      await tx.playerListing.delete({ where: { id: listingId } });
+
+      // 6. Remover de la alineación del vendedor
       const squad = await tx.fantasySquad.findUnique({
-        where: { userId_leagueId: { userId: fresh.sellerId, leagueId: fresh.leagueId } },
+        where: { userId_leagueId: { userId: lockedListing.sellerId, leagueId: lockedListing.leagueId } },
       });
       if (squad) {
         const ids = squad.playerIds ? squad.playerIds.split(",").map(Number) : [];
-        const cleaned = ids.filter((id) => id !== fresh.playerId);
+        const cleaned = ids.filter((id) => id !== lockedListing.playerId);
         if (cleaned.length !== ids.length) {
           await tx.fantasySquad.update({
             where: { id: squad.id },
-            data: { playerIds: cleaned.join(","), ...(squad.captainId === fresh.playerId ? { captainId: null } : {}) },
+            data: { playerIds: cleaned.join(","), ...(squad.captainId === lockedListing.playerId ? { captainId: null } : {}) },
           });
         }
       }
     });
-  } catch (e) {
-    return res.status(409).json({ error: e instanceof Error ? e.message : "No se pudo completar la compra" });
-  }
 
-  res.json({ ok: true });
+    res.json({ ok: true });
+  } catch (e: any) {
+    return res.status(409).json({ error: e.message || "No se pudo completar la compra" });
+  }
 });
 
 export default router;

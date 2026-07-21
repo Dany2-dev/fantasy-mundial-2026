@@ -23,6 +23,10 @@ model User {
   tradesSent     TradeOffer[]        @relation("TradeFrom")
   tradesReceived TradeOffer[]        @relation("TradeTo")
   listings       PlayerListing[]
+  
+  coinTransactions CoinTransaction[]
+  paymentOrders    PaymentOrder[]
+  faucetLimits     FaucetLimit[]
 }
 
 // Competencia real de FotMob: liga doméstica (LaLiga, Liga MX…), copa o el Mundial.
@@ -246,4 +250,115 @@ model Match {
 
   @@index([competitionId, status])
   @@index([competitionId, round])
+}
+
+model SystemAccount {
+  id               String            @id // ej. "SYSTEM_EMISSION", "SYSTEM_TAX", "SYSTEM_SINK"
+  balance          Int               @default(0)
+  updatedAt        DateTime          @updatedAt
+  
+  coinTransactions CoinTransaction[]
+}
+
+model CoinTransaction {
+  id              String              @id @default(cuid())
+  userId          String?             // Nullable por GDPR o baneo
+  systemAccountId String?             // Nullable si es transferencia directa entre usuarios
+  amount          Int
+  type            CoinTransactionType
+  referenceId     String?             // Clave de idempotencia o entidad relacionada (ej. 'daily-login-YYYY-MM-DD')
+  status          TransactionStatus   @default(COMPLETED)
+  description     String?
+  createdAt       DateTime            @default(now())
+
+  user            User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
+  systemAccount   SystemAccount?      @relation(fields: [systemAccountId], references: [id])
+
+  @@index([userId])
+  @@index([systemAccountId])
+  @@index([referenceId])
+  @@index([createdAt])
+}
+
+model FaucetLimit {
+  id         String   @id @default(cuid())
+  userId     String?  // Nullable por GDPR
+  periodKey  String   // Formato: "YYYY-Www" (ej. "2026-W28")
+  amount     Int      @default(0) // Acumulado semanal global
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, periodKey])
+}
+
+model LeagueStats {
+  id                             String   @id @default(cuid())
+  leagueId                       String
+  gameweekId                     Int
+  giniIndex                      Float
+  top25PercentileCoinsThreshold  Int
+  bottom25PercentileCoinsThreshold Int
+  calculatedAt                   DateTime @default(now())
+
+  @@unique([leagueId, gameweekId])
+}
+
+model PaymentOrder {
+  id               String        @id @default(cuid())
+  userId           String?
+  stripeSessionId  String        @unique
+  amountPaidCents  Int
+  currency         String        @default("usd")
+  coinsAmount      Int
+  status           PaymentStatus @default(PENDING)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  user             User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([stripeSessionId])
+}
+
+model RefundJob {
+  id               String        @id @default(cuid())
+  stripeSessionId  String        @unique
+  paymentIntentId  String?
+  amountPaidCents  Int
+  attempts         Int           @default(0)
+  status           RefundStatus  @default(PENDING)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+}
+
+enum RefundStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  NEEDS_MANUAL_REVIEW
+  FAILED
+}
+
+enum CoinTransactionType {
+  BUY
+  TRANSFER
+  REWARD
+  PACK_PURCHASE
+  QUICK_SELL
+  MARKET_TAX
+  CLAUSE_BUY
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
 }

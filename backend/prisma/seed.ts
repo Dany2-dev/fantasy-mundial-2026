@@ -61,7 +61,7 @@ const DATA: { name: string; flag: string; group: string; players: SeedPlayer[] }
     ],
   },
   {
-    name: "Portugal", flag: "🇵🇹", group: "G",
+    name: "Po22al", flag: "🇵🇹", group: "G",
     players: [
       ["Diogo Costa", "POR", 85], ["Rúben Dias", "DEF", 87], ["João Cancelo", "DEF", 83],
       ["Nuno Mendes", "DEF", 84], ["Vitinha", "MED", 85], ["Bruno Fernandes", "MED", 86],
@@ -83,6 +83,17 @@ const DATA: { name: string; flag: string; group: string; players: SeedPlayer[] }
 // Seed OFFLINE de respaldo (sin red): una sola competencia con 8 selecciones.
 // El seed real multi-competencia está en seed-competitions.ts (npm run db:seed:fotmob).
 async function main() {
+  // Sembrar cuentas del sistema
+  const systemAccounts = ['SYSTEM_EMISSION', 'SYSTEM_TAX', 'SYSTEM_SINK'];
+  for (const accountId of systemAccounts) {
+    await prisma.systemAccount.upsert({
+      where: { id: accountId },
+      update: {},
+      create: { id: accountId, balance: 0 },
+    });
+  }
+  console.log('✔ Cuentas del sistema sembradas.');
+
   const count = await prisma.player.count();
   if (count > 0) {
     console.log(`La base ya tiene ${count} jugadores, no se vuelve a sembrar.`);
@@ -126,7 +137,7 @@ async function main() {
     create: { competitionId: competition.id, number: 1, deadline: new Date("2026-06-11T18:00:00Z"), status: "upcoming" },
   });
 
-  console.log("Seed offline completo 🎉");
+  console.log("Seed offline completo");
 }
 
 main()

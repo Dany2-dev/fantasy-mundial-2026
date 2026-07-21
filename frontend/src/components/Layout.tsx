@@ -21,6 +21,7 @@ import {
   IconLogOut,
   IconMore,
   IconPack,
+  IconStore,
   IconTrophy,
   IconUsers,
 } from "./icons";
@@ -42,6 +43,7 @@ const MORE_NAV = [
   { to: "/rivales", label: "Rivales", Icon: IconUsers },
   { to: "/historial", label: "Historial", Icon: IconClock },
   { to: "/jugar", label: "Jugar", Icon: IconGamepad },
+  { to: "/shop", label: "Tienda", Icon: IconStore },
 ];
 const NAV = [...PRIMARY_NAV, ...MORE_NAV];
 
@@ -103,10 +105,10 @@ export default function Layout() {
         </nav>
 
         <div className={styles.sidebarFooter}>
-          <span className={styles.sidebarCoins} title="Tus monedas">
+          <Link to="/shop" className={styles.sidebarCoins} title="Comprar monedas / Reclamar recompensa">
             <IconCoin size={20} className={styles.sidebarIcon} />
             <span className={styles.sidebarLabel}>{user?.coins.toLocaleString("es-MX")}</span>
-          </span>
+          </Link>
           <button className={styles.sidebarItem} onClick={handleLogout}>
             <IconLogOut size={20} aria-hidden="true" className={styles.sidebarIcon} />
             <span className={styles.sidebarLabel}>Salir</span>
@@ -152,10 +154,10 @@ export default function Layout() {
             )}
 
             <div className={styles.right}>
-              <span className={`${styles.coins} tabular`} title="Tus monedas">
+              <Link to="/shop" className={`${styles.coins} tabular`} title="Comprar monedas / Reclamar recompensa">
                 <IconCoin size={17} />
                 {user?.coins.toLocaleString("es-MX")}
-              </span>
+              </Link>
               <button className={styles.logoutBtn} onClick={handleLogout} title="Cerrar sesión">
                 <IconLogOut size={16} />
                 <span className={styles.logoutLabel}>Salir</span>
