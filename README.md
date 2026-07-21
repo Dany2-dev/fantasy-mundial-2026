@@ -78,3 +78,6 @@ Frontend en <http://localhost:8080> (nginx sirve el build y hace proxy de `/api`
    amigo ya tiene a Mbappé en tu liga, no te puede salir en un sobre.
 4. Armar tu once con formación y capitán.
 5. Proponer intercambios (carta + monedas) a otros mánagers de la liga.
+
+<!-- verificaci�n de pipeline CI/CD -->
+<!-- trigger ci -->
