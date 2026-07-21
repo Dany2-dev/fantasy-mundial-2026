@@ -1,3 +1,4 @@
+import { Player as RemotionPlayer } from "@remotion/player";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { FormEvent, useLayoutEffect, useRef, useState } from "react";
@@ -12,6 +13,7 @@ import TrueFocus from "../components/landing/TrueFocus";
 import PlayerCard from "../components/PlayerCard";
 import SpotlightField from "../components/SpotlightField";
 import StaggeredMenu from "../components/StaggeredMenu";
+import PackTeaser, { PACK_TEASER_FPS, PACK_TEASER_HEIGHT, PACK_TEASER_WIDTH, PACK_TEASER_DURATION } from "../remotion/PackTeaser";
 import { login, register } from "../store/authSlice";
 import { useAppDispatch, useAppSelector } from "../store/store";
 import { Player } from "../types";
@@ -29,7 +31,7 @@ const DEMO_SQUAD: Player[] = [
     name: "Kylian Mbappé",
     position: "DEL",
     rating: 91,
-    basePrice: 10920,
+    basePrice: 180_000_000,
     photoUrl: "https://images.fotmob.com/image_resources/playerimages/701154.png",
     teamId: 0,
     team: { id: 0, name: "Francia", logoUrl: null, flag: "FR" },
@@ -39,7 +41,7 @@ const DEMO_SQUAD: Player[] = [
     name: "Pedri González",
     position: "MED",
     rating: 87,
-    basePrice: 8200,
+    basePrice: 100_000_000,
     photoUrl: "https://images.fotmob.com/image_resources/playerimages/1083323.png",
     teamId: 1,
     team: { id: 1, name: "España", logoUrl: null, flag: "ES" },
@@ -49,7 +51,7 @@ const DEMO_SQUAD: Player[] = [
     name: "Alphonso Davies",
     position: "DEF",
     rating: 81,
-    basePrice: 5100,
+    basePrice: 60_000_000,
     photoUrl: "https://images.fotmob.com/image_resources/playerimages/751202.png",
     teamId: 2,
     team: { id: 2, name: "Canadá", logoUrl: null, flag: "CA" },
@@ -59,7 +61,7 @@ const DEMO_SQUAD: Player[] = [
     name: "Carlos Acevedo",
     position: "POR",
     rating: 74,
-    basePrice: 2300,
+    basePrice: 4_000_000,
     photoUrl: "https://images.fotmob.com/image_resources/playerimages/751164.png",
     teamId: 3,
     team: { id: 3, name: "México", logoUrl: null, flag: "MX" },
@@ -106,7 +108,7 @@ const PRODUCT_CARDS = [
   {
     Icon: IconCards,
     title: "Tu historia, jugada a jugada",
-    description: "Jornadas y tratos: cada movimiento que cambió el rumbo de tu club queda registrado.",
+    description: "Jornadas y tratos: cada fichaje y cada punto quedan en tu historial.",
   },
 ];
 
@@ -224,8 +226,8 @@ export default function Auth() {
             />
           </h1>
           <p className={styles.subtitle}>
-            Aquí los cracks no se repiten: cada carta tiene un solo dueño por liga. ¿Quieres a
-            Mbappé? Toca negociar… o pagar su cláusula.
+            Los cracks no se repiten: cada carta tiene un solo dueño por liga. ¿Quieres a Mbappé?
+            Toca negociar… o paga su cláusula.
           </p>
           <div className={styles.heroActions}>
             <a href="#acceso" className={styles.ctaPrimary}>
@@ -289,7 +291,20 @@ export default function Auth() {
           description="Abre un sobre Bronce, Plata u Oro y descubre qué jugadores se suman a tu club. Cada moneda puede cambiar tu once."
           visual={
             <div className={styles.packVisual}>
-              <img src="/packs/oro.png" alt="" />
+              <RemotionPlayer
+                component={PackTeaser}
+                inputProps={{ packArt: "/packs/oro.png", card: DEMO_SQUAD[0] }}
+                durationInFrames={PACK_TEASER_DURATION}
+                fps={PACK_TEASER_FPS}
+                compositionWidth={PACK_TEASER_WIDTH}
+                compositionHeight={PACK_TEASER_HEIGHT}
+                style={{ width: "100%" }}
+                controls={false}
+                clickToPlay={false}
+                initiallyMuted
+                loop
+                autoPlay
+              />
             </div>
           }
         />
@@ -313,7 +328,7 @@ export default function Auth() {
         <FeatureBlock
           eyebrow="Mercado"
           title="El mercado no espera"
-          description="Pon precio, escucha ofertas o ve directo al clausulazo. Cada movimiento pone tus monedas —y tu estrategia— en juego."
+          description="Pon precio, escucha ofertas o ve directo al clausulazo. Cada movimiento pone en juego tus monedas y tu estrategia."
           visual={
             <div className={styles.tradeVisual}>
               <PlayerCard player={DEMO_SQUAD[1]} size="sm" />
@@ -383,12 +398,12 @@ export default function Auth() {
               Arma tu club <span className={styles.finalHighlight}>antes</span> que tus amigos
             </h2>
             <p className={styles.finalSubtitle}>
-              Recibe 15,000 monedas y 11 cartas gratis al unirte a tu primera liga. Elige entre 12
+              Recibe €50M de presupuesto y 11 cartas gratis en cada liga a la que entres. Elige entre 12
               competencias y ficha antes que el resto.
             </p>
             <div className={styles.finalStats}>
               <span className={styles.chip}>
-                <IconCoin size={16} /> 15,000 monedas
+                <IconCoin size={16} /> €50M por liga
               </span>
               <span className={styles.chip}>
                 <IconPack size={16} /> 11 cartas gratis
@@ -542,7 +557,7 @@ export default function Auth() {
           </div>
         </div>
         <div className={styles.footerBottom}>
-          <span>© 2026 Fantasy Mundial 2026 — proyecto escolar, no afiliado a la FIFA.</span>
+          <span>© 2026 Fantasy Mundial 2026. Proyecto escolar, no afiliado a la FIFA.</span>
         </div>
       </footer>
     </div>

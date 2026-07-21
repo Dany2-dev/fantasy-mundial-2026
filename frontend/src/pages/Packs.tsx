@@ -1,41 +1,36 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
-import ColorBends from "../components/ColorBends";
-import FlipReveal from "../components/FlipReveal";
+import { formatMoney } from "../lib/money";
 import Galaxy from "../components/Galaxy";
 import { IconCoin } from "../components/icons";
+import PackOpeningModal from "../components/PackOpeningModal";
 import TiltCard from "../components/TiltCard";
-import { setCoins } from "../store/authSlice";
+import { setLeagueCoins } from "../store/leagueSlice";
 import { fetchCollection } from "../store/collectionSlice";
 import { useAppDispatch, useAppSelector } from "../store/store";
 import { Player } from "../types";
 import styles from "./Packs.module.css";
 
+// Costos espejo de backend/src/routes/packs.ts (en €; el backend valida el real).
 const PACKS = [
-  { tier: "bronce", label: "Sobre Bronce", cost: 2500, desc: "3 cartas para empezar a armar tu club." },
-  { tier: "plata", label: "Sobre Plata", cost: 5000, desc: "3 cartas con mejores opciones de encontrar una figura." },
-  { tier: "oro", label: "Sobre Oro", cost: 9000, desc: "3 cartas; incluye una figura de élite si aún queda disponible." },
-  { tier: "legendario", label: "Sobre Legendario", cost: 16000, desc: "3 cartas; la mejor probabilidad de encontrar una leyenda del pool." },
+  { tier: "bronce", label: "Sobre Bronce", cost: 8_000_000, desc: "3 cartas para empezar a armar tu club." },
+  { tier: "plata", label: "Sobre Plata", cost: 15_000_000, desc: "3 cartas con mejores opciones de encontrar una figura." },
+  { tier: "oro", label: "Sobre Oro", cost: 30_000_000, desc: "3 cartas; incluye una figura de élite si aún queda disponible." },
+  { tier: "legendario", label: "Sobre Legendario", cost: 60_000_000, desc: "3 cartas; la mejor probabilidad de encontrar una leyenda del pool." },
 ] as const;
-
-// Paleta del fondo animado del revelado, por tier (mismos tonos que --foil-*
-// en variables.css, para que combine con el badge/franja/destello ya
-// existentes). Legendario lleva más colores: se siente más "vivo".
-const REVEAL_COLORS: Record<string, string[]> = {
-  bronce: ["#4a2f18", "#b0713a", "#e8b380"],
-  plata: ["#49535f", "#aab6c5", "#eef2f7"],
-  oro: ["#6e5418", "#f0c24b", "#fff3c4"],
-  legendario: ["#2d0b57", "#7b2fff", "#d9a6ff", "#ffd76f"],
-};
 
 export default function Packs() {
   const dispatch = useAppDispatch();
-  const user = useAppSelector((s) => s.auth.user);
   const activeLeagueId = useAppSelector((s) => s.leagues.activeLeagueId);
+  // Presupuesto de la liga activa (el dinero es por liga).
+  const budget = useAppSelector(
+    (s) => s.leagues.leagues.find((l) => l.id === s.leagues.activeLeagueId)?.myCoins ?? 0
+  );
   const [opening, setOpening] = useState<string | null>(null);
-  const [revealTier, setRevealTier] = useState<string | null>(null);
   const [result, setResult] = useState<Player[] | null>(null);
+  const [resultTier, setResultTier] = useState<string | null>(null);
+  const [revealIndex, setRevealIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
   // El fondo animado usa WebGL: se omite si el usuario prefiere menos
   // movimiento (accesibilidad), cayendo en el fondo plano de siempre.
@@ -45,19 +40,19 @@ export default function Packs() {
   async function openPack(tier: string) {
     if (!activeLeagueId) return;
     setOpening(tier);
-    setRevealTier(tier); // se queda hasta cerrar el reveal: el overlay lo usa para tomar el color del tier
     setError(null);
     try {
       const data = await api<{ players: Player[]; coins: number }>("/packs/open", {
         method: "POST",
         body: JSON.stringify({ leagueId: activeLeagueId, tier }),
       });
-      dispatch(setCoins(data.coins));
+      dispatch(setLeagueCoins({ leagueId: activeLeagueId, coins: data.coins }));
       dispatch(fetchCollection(activeLeagueId));
       setResult(data.players);
+      setResultTier(tier);
+      setRevealIndex(0);
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo abrir el sobre");
-      setRevealTier(null);
     } finally {
       setOpening(null);
     }
@@ -65,7 +60,8 @@ export default function Packs() {
 
   function closeReveal() {
     setResult(null);
-    setRevealTier(null);
+    setResultTier(null);
+    setRevealIndex(0);
   }
 
   if (!activeLeagueId) {
@@ -131,7 +127,7 @@ export default function Packs() {
               <p className={styles.packDesc}>{p.desc}</p>
               <button
                 className={`primary ${styles.openBtn} ${opening === p.tier ? styles.opening : ""}`}
-                disabled={opening !== null || (user?.coins ?? 0) < p.cost}
+                disabled={opening !== null || budget < p.cost}
                 onClick={() => openPack(p.tier)}
               >
                 {opening === p.tier ? (
@@ -141,13 +137,13 @@ export default function Packs() {
                   </span>
                 ) : (
                   <span className={styles.costLabel}>
-                    Abrir por {p.cost.toLocaleString("es-MX")} <IconCoin size={15} />
+                    Abrir por {formatMoney(p.cost)} <IconCoin size={15} />
                   </span>
                 )}
               </button>
-              {(user?.coins ?? 0) < p.cost && (
+              {budget < p.cost && (
                 <span className={`caption ${styles.missing}`}>
-                  Te faltan {(p.cost - (user?.coins ?? 0)).toLocaleString("es-MX")} <IconCoin size={12} />
+                  Te faltan {formatMoney(p.cost - budget)} <IconCoin size={12} />
                 </span>
               )}
             </TiltCard>
@@ -157,44 +153,17 @@ export default function Packs() {
 
       {error && <p className="error-text">{error}</p>}
 
-      {result && (
-        <div
-          className={`${styles.overlay} ${revealTier ? styles[revealTier] : ""}`}
-          role="dialog"
-          aria-label="Cartas obtenidas"
-        >
-          {!prefersReducedMotion && (
-            <ColorBends
-              className={styles.bendsBg}
-              colors={REVEAL_COLORS[revealTier ?? "oro"]}
-              rotation={90}
-              speed={0.15}
-              scale={1.2}
-              frequency={1}
-              warpStrength={1}
-              mouseInfluence={0.6}
-              parallax={0.3}
-              noise={0.08}
-              iterations={2}
-              intensity={1.3}
-              bandWidth={6}
-              transparent
-            />
-          )}
-          <span className={styles.burst} aria-hidden="true" />
-          <div className={styles.overlayContent}>
-            <h2 className={styles.overlayTitle}>¡Llegaron refuerzos!</h2>
-            <p className={styles.overlaySub}>Toca cada carta y descubre quién se suma al club.</p>
-            <div className={styles.reveal}>
-              {result.map((p, i) => (
-                <FlipReveal key={p.id} player={p} delay={500 + i * 650} />
-              ))}
-            </div>
-            <button className="primary" onClick={closeReveal}>
-              Seguir con mi club
-            </button>
-          </div>
-        </div>
+      {result && activeLeagueId && (
+        <PackOpeningModal
+          key={result[revealIndex].id}
+          card={result[revealIndex]}
+          packArt={`/packs/${resultTier}.png`}
+          leagueId={activeLeagueId}
+          index={revealIndex}
+          total={result.length}
+          onNext={() => setRevealIndex((i) => Math.min(i + 1, result.length - 1))}
+          onClose={closeReveal}
+        />
       )}
       </div>
     </div>

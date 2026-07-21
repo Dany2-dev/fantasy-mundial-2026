@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { AuthRequest, requireAuth } from "../middleware/auth";
 import { protectionExpiry } from "../services/economy";
+import { getWallet, transfer } from "../services/wallet";
 
 const router = Router();
 router.use(requireAuth);
@@ -61,8 +62,12 @@ router.post("/:id/buy", async (req, res) => {
   if (!listing) return res.status(404).json({ error: "Publicación no encontrada" });
   if (listing.sellerId === userId) return res.status(400).json({ error: "No puedes comprarte tu propia carta" });
 
-  const buyer = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
-  if (buyer.coins < listing.price) return res.status(400).json({ error: "No tienes esas monedas" });
+  // Valida que el comprador sea miembro de la liga y tenga saldo AHÍ.
+  const buyerWallet = await getWallet(prisma, userId, listing.leagueId);
+  if (!buyerWallet) return res.status(403).json({ error: "No eres miembro de esta liga" });
+  if (buyerWallet.coins < listing.price) {
+    return res.status(400).json({ error: "No te alcanza el presupuesto de esta liga" });
+  }
 
   try {
     await prisma.$transaction(async (tx) => {
@@ -73,8 +78,7 @@ router.post("/:id/buy", async (req, res) => {
       });
       if (!owned || owned.userId !== fresh.sellerId) throw new Error("El jugador ya cambió de dueño");
 
-      await tx.user.update({ where: { id: userId }, data: { coins: { decrement: fresh.price } } });
-      await tx.user.update({ where: { id: fresh.sellerId }, data: { coins: { increment: fresh.price } } });
+      await transfer(tx, { leagueId: fresh.leagueId, fromUserId: userId, toUserId: fresh.sellerId, amount: fresh.price });
       await tx.ownedPlayer.update({
         where: { id: owned.id },
         data: { userId, clause: Math.round(fresh.price * 1.2), protectedUntil: protectionExpiry() },

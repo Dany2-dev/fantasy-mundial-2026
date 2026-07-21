@@ -4,6 +4,7 @@ import { api } from "../api/client";
 import CardSelect from "../components/CardSelect";
 import { IconArrowRight, IconCheck, IconClock, IconClose } from "../components/icons";
 import PlayerCard from "../components/PlayerCard";
+import { FORMATIONS } from "../lib/formations";
 import { fetchCollection } from "../store/collectionSlice";
 import { useAppDispatch, useAppSelector } from "../store/store";
 import { League, Player } from "../types";
@@ -15,12 +16,6 @@ import styles from "./Squad.module.css";
 // autoridad real (rechaza el PUT); esto solo evita el viaje redondo inútil
 // y explica por qué el botón está apagado.
 const LOCK_WINDOW_MS = 60 * 60 * 1000;
-
-const FORMATIONS: Record<string, ["POR", number, number, number]> = {
-  "4-4-2": ["POR", 4, 4, 2],
-  "4-3-3": ["POR", 4, 3, 3],
-  "3-5-2": ["POR", 3, 5, 2],
-};
 
 const POSITIONS: Player["position"][] = ["POR", "DEF", "MED", "DEL"];
 const POS_LABEL: Record<Player["position"], string> = {

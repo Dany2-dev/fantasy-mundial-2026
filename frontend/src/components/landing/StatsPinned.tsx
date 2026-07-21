@@ -18,7 +18,7 @@ const STATS: Stat[] = [
   { value: 8894, label: "jugadores reales" },
   { value: 3700, label: "partidos" },
   { value: 94, label: "rating máximo" },
-  { value: 15000, label: "monedas de bienvenida" },
+  { value: 50, label: "millones de € por liga" },
   { value: 4, label: "rangos de carta" },
   { value: 7, label: "días de protección tras clausular" },
 ];

@@ -7,11 +7,12 @@ import { eliteThreshold } from "../services/rarity";
 const router = Router();
 router.use(requireAuth);
 
+// Costos en € (misma escala que el valor de mercado de los jugadores).
 export const PACKS = {
-  bronce: { cost: 2500, count: 3, label: "Sobre Bronce" },
-  plata: { cost: 5000, count: 3, label: "Sobre Plata" },
-  oro: { cost: 9000, count: 3, label: "Sobre Oro" },
-  legendario: { cost: 16000, count: 3, label: "Sobre Legendario" },
+  bronce: { cost: 8_000_000, count: 3, label: "Sobre Bronce" },
+  plata: { cost: 15_000_000, count: 3, label: "Sobre Plata" },
+  oro: { cost: 30_000_000, count: 3, label: "Sobre Oro" },
+  legendario: { cost: 60_000_000, count: 3, label: "Sobre Legendario" },
 } as const;
 
 type Tier = keyof typeof PACKS;
@@ -56,9 +57,8 @@ router.post("/open", async (req, res) => {
   });
   if (!membership) return res.status(403).json({ error: "No eres miembro de esta liga" });
 
-  const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
-  if (user.coins < pack.cost) {
-    return res.status(400).json({ error: `Te faltan ${pack.cost - user.coins} monedas` });
+  if (membership.coins < pack.cost) {
+    return res.status(400).json({ error: "No te alcanza el presupuesto de esta liga para este sobre" });
   }
 
   // Exclusividad por liga: solo jugadores de ESTA competencia SIN dueño en esta liga.
@@ -100,8 +100,8 @@ router.post("/open", async (req, res) => {
   }
 
   const [updated] = await prisma.$transaction([
-    prisma.user.update({
-      where: { id: userId },
+    prisma.leagueMembership.update({
+      where: { id: membership.id },
       data: { coins: { decrement: pack.cost } },
       select: { coins: true },
     }),

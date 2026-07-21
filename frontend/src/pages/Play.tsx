@@ -13,8 +13,8 @@ interface Game {
 // futbol-11.com para ganar monedas y abrir sobres — la lógica de cada
 // juego se conecta después; por ahora las tarjetas ya tienen contenido real.
 const GAMES: Game[] = [
-  { slug: "quiz", title: "¿Quién es?", emoji: "⚡", desc: "Reconoce al jugador por su foto. Mientras más rápido respondas, más monedas te llevas.", reward: "Hasta 500" },
-  { slug: "predicciones", title: "Predicciones del día", emoji: "📅", desc: "Pronostica los partidos de hoy y gana monedas por cada acierto.", reward: "100 / acierto" },
+  { slug: "quiz", title: "¿Quién es?", emoji: "⚡", desc: "Reconoce al jugador por su foto. Mientras más rápido respondas, más monedas te llevas.", reward: "Hasta €500K" },
+  { slug: "predicciones", title: "Predicciones del día", emoji: "📅", desc: "Pronostica los partidos de hoy y gana monedas por cada acierto.", reward: "€100K / acierto" },
   { slug: "adivina-rating", title: "Adivina el rating", emoji: "⭐", desc: "Calcula el rating de cada carta. Mientras más te acerques, mayor será el premio.", reward: "Hasta 1,600" },
   { slug: "bandera", title: "¿De qué selección?", emoji: "🌍", desc: "Une a cada jugador con su selección o club.", reward: "Hasta 400" },
   { slug: "cara-o-cruz", title: "¿Quién tiene más rating?", emoji: "🆚", desc: "Dos jugadores, un duelo: elige quién tiene mejor rating.", reward: "Hasta 1,200" },

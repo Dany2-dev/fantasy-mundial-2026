@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "motion/react";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, MouseEvent, useEffect, useState } from "react";
 import { api } from "../api/client";
 import FlipReveal from "../components/FlipReveal";
 import { IconCheck, IconShield, IconTrophy, IconUsers } from "../components/icons";
@@ -10,6 +10,16 @@ import { Competition, League, Player, Standing } from "../types";
 import styles from "./Leagues.module.css";
 
 const MEDALS = ["🥇", "🥈", "🥉"];
+
+// Foco radial que sigue al cursor sobre la tarjeta del podio (técnica de
+// ChromaGrid). Se escribe la posición en variables CSS y el degradado vive en
+// el CSS, así no re-renderiza React ni hace falta gsap.
+function trackPointer(e: MouseEvent<HTMLDivElement>) {
+  const card = e.currentTarget;
+  const rect = card.getBoundingClientRect();
+  card.style.setProperty("--mouse-x", `${e.clientX - rect.left}px`);
+  card.style.setProperty("--mouse-y", `${e.clientY - rect.top}px`);
+}
 
 export default function Leagues() {
   const dispatch = useAppDispatch();
@@ -181,6 +191,21 @@ export default function Leagues() {
 
       {msg && <p className={msg.kind === "ok" ? "ok-text" : "error-text"}>{msg.text}</p>}
 
+      {leagues.length === 0 && (
+        <section className={styles.noLeagues}>
+          <span className={styles.noLeaguesBadge} aria-hidden="true">
+            <IconShield size={26} />
+          </span>
+          <div>
+            <strong className={styles.noLeaguesTitle}>Todavía no estás en ninguna liga</strong>
+            <p className={styles.noLeaguesText}>
+              Crea la tuya aquí arriba y comparte el código con tus amigos, o únete a una con el código que te
+              pasen. En cuanto entres te regalamos 11 cartas.
+            </p>
+          </div>
+        </section>
+      )}
+
       {leagues.length > 0 && (
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>Mis ligas</h2>
@@ -250,19 +275,34 @@ export default function Leagues() {
             </button>
           </div>
 
-          {podium.length > 0 && (
+          {/* Podio real: 2º a la izquierda, 1º al centro (más alto), 3º a la derecha.
+              Con menos de 3 mánagers no hay podio que enseñar, basta la tabla. */}
+          {podium.length === 3 && (
             <div className={styles.podium}>
               {podium.map((s, i) => (
-                <div key={s.userId} className={styles.podiumCard} data-rank={i + 1}>
-                  <span className={styles.podiumMedal} aria-hidden="true">
-                    {MEDALS[i]}
-                  </span>
-                  <span className={`${styles.podiumName} ${s.userId === user?.id ? styles.podiumMe : ""}`}>
-                    {s.name}
-                    {s.userId === user?.id ? " (tú)" : ""}
-                  </span>
-                  <span className={styles.podiumPts}>{s.points.toLocaleString("es-MX")} pts</span>
-                </div>
+                <motion.div
+                  key={s.userId}
+                  className={styles.podiumSlot}
+                  data-rank={i + 1}
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.12 * (3 - i) }}
+                >
+                  <div className={styles.podiumCard} onMouseMove={trackPointer}>
+                    <span className={styles.podiumSheen} aria-hidden="true" />
+                    <span className={styles.podiumMedal} aria-hidden="true">
+                      {MEDALS[i]}
+                    </span>
+                    <span className={`${styles.podiumName} ${s.userId === user?.id ? styles.podiumMe : ""}`}>
+                      {s.name}
+                      {s.userId === user?.id ? " (tú)" : ""}
+                    </span>
+                    <span className={styles.podiumPts}>{s.points.toLocaleString("es-MX")} pts</span>
+                  </div>
+                  <div className={styles.podiumStep} aria-hidden="true">
+                    {i + 1}
+                  </div>
+                </motion.div>
               ))}
             </div>
           )}
@@ -280,18 +320,30 @@ export default function Leagues() {
               </thead>
               <tbody>
                 {standings.map((s, i) => (
-                  <tr key={s.userId} className={s.userId === user?.id ? styles.me : ""}>
-                    <td className={`${styles.rankCell} tabular`}>
+                  <motion.tr
+                    key={s.userId}
+                    className={s.userId === user?.id ? styles.me : ""}
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.22, delay: Math.min(i * 0.04, 0.4) }}
+                  >
+                    <td className={`${styles.rankCell} tabular`} data-label="Puesto">
                       {i === 0 ? <IconTrophy size={17} className={styles.trophyIcon} /> : `${i + 1}`}
                     </td>
-                    <td>
+                    <td data-label="Mánager">
                       {s.name}
                       {s.userId === user?.id && <span className={styles.youTag}> (tú)</span>}
                     </td>
-                    <td className={`${styles.num} tabular`}>{s.points.toLocaleString("es-MX")}</td>
-                    <td className={`${styles.num} tabular`}>{s.cardCount}</td>
-                    <td className={`${styles.num} tabular`}>{s.teamValue.toLocaleString("es-MX")}</td>
-                  </tr>
+                    <td className={`${styles.num} tabular`} data-label="Puntos">
+                      {s.points.toLocaleString("es-MX")}
+                    </td>
+                    <td className={`${styles.num} tabular`} data-label="Cartas">
+                      {s.cardCount}
+                    </td>
+                    <td className={`${styles.num} tabular`} data-label="Valor">
+                      {s.teamValue.toLocaleString("es-MX")}
+                    </td>
+                  </motion.tr>
                 ))}
               </tbody>
             </table>

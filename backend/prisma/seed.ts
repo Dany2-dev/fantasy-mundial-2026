@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { valueFromOverall } from "../src/services/economy";
 
 const prisma = new PrismaClient();
 
@@ -114,7 +115,7 @@ async function main() {
         name,
         position,
         rating,
-        basePrice: rating * 120,
+        basePrice: valueFromOverall(rating),
       })),
     });
     console.log(`✔ ${c.flag} ${c.name}: ${c.players.length} jugadores`);

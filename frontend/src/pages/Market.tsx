@@ -4,8 +4,9 @@ import { api } from "../api/client";
 import { IconCoin } from "../components/icons";
 import PlayerCard from "../components/PlayerCard";
 import PlayerDetailModal from "../components/PlayerDetailModal";
+import { formatMoney } from "../lib/money";
 import { fetchCollection } from "../store/collectionSlice";
-import { fetchMe } from "../store/authSlice";
+import { fetchLeagues } from "../store/leagueSlice";
 import { useAppDispatch, useAppSelector } from "../store/store";
 import { Listing, MarketCard, Trade } from "../types";
 import styles from "./Market.module.css";
@@ -16,6 +17,10 @@ export default function Market() {
   const dispatch = useAppDispatch();
   const user = useAppSelector((s) => s.auth.user);
   const activeLeagueId = useAppSelector((s) => s.leagues.activeLeagueId);
+  // Presupuesto de la liga activa (el dinero es por liga, no global).
+  const budget = useAppSelector(
+    (s) => s.leagues.leagues.find((l) => l.id === s.leagues.activeLeagueId)?.myCoins ?? 0
+  );
   const myCards = useAppSelector((s) => s.collection.items);
 
   const [tab, setTab] = useState<Tab>("cartas");
@@ -75,7 +80,7 @@ export default function Market() {
       await api(`/trades/${tradeId}/respond`, { method: "POST", body: JSON.stringify({ accept }) });
       setMsg({ kind: "ok", text: accept ? "¡Trato cerrado!" : "Oferta rechazada" });
       refresh();
-      dispatch(fetchMe());
+      dispatch(fetchLeagues()); // refresca el presupuesto de la liga
     } catch (e) {
       setMsg({ kind: "error", text: e instanceof Error ? e.message : "No se pudo responder" });
     }
@@ -87,7 +92,7 @@ export default function Market() {
       await api(`/listings/${id}/buy`, { method: "POST" });
       setMsg({ kind: "ok", text: "¡Fichaje cerrado!" });
       refresh();
-      dispatch(fetchMe());
+      dispatch(fetchLeagues()); // refresca el presupuesto de la liga
     } catch (e) {
       setMsg({ kind: "error", text: e instanceof Error ? e.message : "No se pudo comprar" });
     }
@@ -167,7 +172,7 @@ export default function Market() {
             <div key={l.id} className={styles.trade}>
               <p>
                 <strong>{l.player.name}</strong> ({l.player.rating}) de <strong>{l.seller.name}</strong> —{" "}
-                {l.price.toLocaleString("es-MX")} <IconCoin size={14} className={styles.inlineIcon} />
+                {formatMoney(l.price)} <IconCoin size={14} className={styles.inlineIcon} />
               </p>
               {l.sellerId === user?.id ? (
                 <span className="caption">Es tu publicación</span>
@@ -192,7 +197,7 @@ export default function Market() {
                 {t.coins > 0 && (
                   <>
                     {" "}
-                    + {t.coins.toLocaleString("es-MX")} <IconCoin size={14} className={styles.inlineIcon} />
+                    + {formatMoney(t.coins)} <IconCoin size={14} className={styles.inlineIcon} />
                   </>
                 )}{" "}
                 por tu <strong>{t.requestedPlayer?.name}</strong>
@@ -220,7 +225,7 @@ export default function Market() {
                 {t.coins > 0 && (
                   <>
                     {" "}
-                    + {t.coins.toLocaleString("es-MX")} <IconCoin size={14} className={styles.inlineIcon} />
+                    + {formatMoney(t.coins)} <IconCoin size={14} className={styles.inlineIcon} />
                   </>
                 )}{" "}
                 a <strong>{t.toUser.name}</strong> por <strong>{t.requestedPlayer?.name}</strong>
@@ -263,11 +268,11 @@ export default function Market() {
               </select>
             </label>
             <label className={styles.field}>
-              <span className="caption">Monedas extra (opcional) — tienes {user?.coins.toLocaleString("es-MX")}</span>
+              <span className="caption">Euros extra (opcional) — tienes {formatMoney(budget)} en esta liga</span>
               <input
                 type="number"
                 min={0}
-                max={user?.coins ?? 0}
+                max={budget}
                 value={coins}
                 onChange={(e) => setCoinsOffer(Math.max(0, Number(e.target.value)))}
               />

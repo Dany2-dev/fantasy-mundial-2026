@@ -48,6 +48,10 @@ const leagueSlice = createSlice({
       state.activeLeagueId = action.payload;
       localStorage.setItem(ACTIVE_KEY, action.payload);
     },
+    setLeagueCoins(state, action: PayloadAction<{ leagueId: string; coins: number }>) {
+      const league = state.leagues.find((l) => l.id === action.payload.leagueId);
+      if (league) league.myCoins = action.payload.coins;
+    },
     clearLeagues(state) {
       state.leagues = [];
       state.activeLeagueId = null;
@@ -82,5 +86,5 @@ const leagueSlice = createSlice({
   },
 });
 
-export const { setActiveLeague, clearLeagues } = leagueSlice.actions;
+export const { setActiveLeague, setLeagueCoins, clearLeagues } = leagueSlice.actions;
 export default leagueSlice.reducer;
