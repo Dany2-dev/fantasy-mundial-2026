@@ -16,6 +16,8 @@ syncResults({ force, limit: force ? 200 : 60, competitionId })
     console.log(`   partidos con detalle ingerido:    ${r.matchesSynced}`);
     console.log(`   stats de jugador upsert:          ${r.statsUpserted}`);
     console.log(`   puntuaciones de mánager recalc.:  ${r.scoresUpdated}`);
+    console.log(`   jornadas cerradas:                ${r.gameweeksClosed}`);
+    console.log(`   premios de jornada pagados:       ${r.rewardsPaid}`);
     process.exit(0);
   })
   .catch((e) => {

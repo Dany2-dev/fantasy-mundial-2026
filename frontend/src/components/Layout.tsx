@@ -2,6 +2,7 @@ import { motion } from "motion/react";
 import { CSSProperties, useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { api } from "../api/client";
+import { formatMoney } from "../lib/money";
 import { useScrollHidden } from "../hooks/useScrollHidden";
 import { competitionTheme, Theme } from "../lib/competitionTheme";
 import { logout } from "../store/authSlice";
@@ -97,6 +98,8 @@ export default function Layout() {
     ? Math.round(collection.reduce((s, p) => s + p.rating, 0) / collection.length)
     : 0;
   const avatarInitial = user?.name?.trim()?.[0]?.toUpperCase() ?? "?";
+  // Presupuesto de la liga activa: el dinero es por liga, no global.
+  const budget = activeLeague?.myCoins ?? 0;
 
   function handleLogout() {
     dispatch(logout());
@@ -163,9 +166,9 @@ export default function Layout() {
         </nav>
 
         <div className={styles.sidebarFooter}>
-          <span className={styles.sidebarCoins} title="Tus monedas">
+          <span className={styles.sidebarCoins} title="Tu presupuesto en esta liga">
             <IconCoin size={20} className={styles.sidebarIcon} />
-            <span className={styles.sidebarLabel}>{user?.coins.toLocaleString("es-MX")}</span>
+            <span className={styles.sidebarLabel}>{formatMoney(budget)}</span>
           </span>
           <button className={styles.sidebarItem} onClick={handleLogout}>
             <IconLogOut size={20} aria-hidden="true" className={styles.sidebarIcon} />
@@ -180,7 +183,7 @@ export default function Layout() {
             <span>
               <strong>{offer.fromUser.name}</strong> quiere fichar a tu <strong>{offer.requestedPlayer?.name}</strong>{" "}
               a cambio de {offer.offeredPlayer?.name}
-              {offer.coins > 0 ? ` + ${offer.coins.toLocaleString("es-MX")} monedas` : ""}.
+              {offer.coins > 0 ? ` + ${formatMoney(offer.coins)}` : ""}.
             </span>
             <Link to="/mercado">Ver oferta</Link>
           </StickyBanner>
@@ -233,9 +236,9 @@ export default function Layout() {
               <span className={styles.avatar} title={user?.name} aria-hidden="true">
                 {avatarInitial}
               </span>
-              <span className={`${styles.coins} tabular`} title="Tus monedas">
+              <span className={`${styles.coins} tabular`} title="Tu presupuesto en esta liga">
                 <IconCoin size={17} />
-                {user?.coins.toLocaleString("es-MX")}
+                {formatMoney(budget)}
               </span>
               <button className={styles.logoutBtn} onClick={handleLogout} title="Cerrar sesión">
                 <IconLogOut size={16} />

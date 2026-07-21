@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { AuthRequest, requireAuth } from "../middleware/auth";
 import { protectionExpiry } from "../services/economy";
+import { getWallet, spend, transfer, WalletError } from "../services/wallet";
 
 const router = Router();
 router.use(requireAuth);
@@ -23,15 +24,16 @@ router.post("/raise", async (req, res) => {
   const owned = await prisma.ownedPlayer.findUnique({ where: { leagueId_playerId: { leagueId, playerId } } });
   if (!owned || owned.userId !== userId) return res.status(400).json({ error: "Esa carta no es tuya en esta liga" });
 
-  const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
-  if (user.coins < amount) return res.status(400).json({ error: "No tienes esas monedas" });
-
-  const [, updatedOwned] = await prisma.$transaction([
-    prisma.user.update({ where: { id: userId }, data: { coins: { decrement: amount } } }),
-    prisma.ownedPlayer.update({ where: { id: owned.id }, data: { clause: { increment: amount } } }),
-  ]);
-
-  res.json({ clause: updatedOwned.clause });
+  try {
+    const updatedOwned = await prisma.$transaction(async (tx) => {
+      await spend(tx, userId, leagueId, amount); // valida membresía y saldo de ESTA liga
+      return tx.ownedPlayer.update({ where: { id: owned.id }, data: { clause: { increment: amount } } });
+    });
+    res.json({ clause: updatedOwned.clause });
+  } catch (e) {
+    if (e instanceof WalletError) return res.status(400).json({ error: e.message });
+    throw e;
+  }
 });
 
 // Clausulazo: pagas la cláusula completa y te llevas al jugador de inmediato,
@@ -56,8 +58,12 @@ router.post("/pay", async (req, res) => {
     });
   }
 
-  const buyer = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
-  if (buyer.coins < owned.clause) return res.status(400).json({ error: "No tienes esas monedas" });
+  // Valida que el comprador sea miembro de la liga y tenga saldo AHÍ.
+  const buyerWallet = await getWallet(prisma, userId, leagueId);
+  if (!buyerWallet) return res.status(403).json({ error: "No eres miembro de esta liga" });
+  if (buyerWallet.coins < owned.clause) {
+    return res.status(400).json({ error: "No te alcanza el presupuesto de esta liga" });
+  }
 
   const sellerId = owned.userId;
   const clausePaid = owned.clause;
@@ -68,8 +74,7 @@ router.post("/pay", async (req, res) => {
       if (!fresh || fresh.userId !== sellerId) throw new Error("Ese jugador ya cambió de dueño");
       if (fresh.protectedUntil && fresh.protectedUntil > new Date()) throw new Error("Ese jugador ya está protegido");
 
-      await tx.user.update({ where: { id: userId }, data: { coins: { decrement: clausePaid } } });
-      await tx.user.update({ where: { id: sellerId }, data: { coins: { increment: clausePaid } } });
+      await transfer(tx, { leagueId, fromUserId: userId, toUserId: sellerId, amount: clausePaid });
       await tx.ownedPlayer.update({
         where: { id: owned.id },
         data: {

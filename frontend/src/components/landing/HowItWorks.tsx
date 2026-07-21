@@ -7,7 +7,7 @@ const STEPS = [
     Icon: IconCoin,
     step: "01",
     title: "Funda tu club",
-    description: "Crea tu cuenta y recibe 15,000 monedas para empezar a fichar.",
+    description: "Crea tu cuenta y recibe €50M de presupuesto en cada liga para empezar a fichar.",
   },
   {
     Icon: IconPack,

@@ -9,6 +9,7 @@
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
     "db:seed:fotmob": "tsx prisma/seed-competitions.ts",
+    "db:reprice": "tsx src/scripts/reprice.ts",
     "sync": "tsx src/scripts/sync.ts",
     "recompute": "tsx src/scripts/recompute.ts",
     "db:studio": "prisma studio"

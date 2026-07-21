@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
-import { fetchMe } from "../store/authSlice";
+import { formatMoney } from "../lib/money";
+import { fetchLeagues } from "../store/leagueSlice";
 import { useAppDispatch, useAppSelector } from "../store/store";
 import { PlayerDetail } from "../types";
 import Flag from "./Flag";
@@ -23,13 +24,16 @@ function formatDate(iso: string | null) {
 
 export default function PlayerDetailModal({ playerId, leagueId, onClose, onChanged, onProposeTrade }: Props) {
   const dispatch = useAppDispatch();
-  const coins = useAppSelector((s) => s.auth.user?.coins ?? 0);
+  // Presupuesto del usuario EN ESTA LIGA (el dinero es por liga, no global).
+  const coins = useAppSelector(
+    (s) => s.leagues.leagues.find((l) => l.id === leagueId)?.myCoins ?? 0
+  );
 
   const [detail, setDetail] = useState<PlayerDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
-  const [raiseAmount, setRaiseAmount] = useState(500);
+  const [raiseAmount, setRaiseAmount] = useState(1_000_000);
   const [sellPrice, setSellPrice] = useState(0);
 
   function load() {
@@ -52,7 +56,7 @@ export default function PlayerDetailModal({ playerId, leagueId, onClose, onChang
       await action();
       setMsg({ kind: "ok", text: okText });
       load();
-      dispatch(fetchMe());
+      dispatch(fetchLeagues()); // refresca el presupuesto de la liga
       onChanged?.();
     } catch (e) {
       setMsg({ kind: "error", text: e instanceof Error ? e.message : "Algo falló" });
@@ -64,7 +68,7 @@ export default function PlayerDetailModal({ playerId, leagueId, onClose, onChang
   const raise = () =>
     run(
       () => api("/clause/raise", { method: "POST", body: JSON.stringify({ leagueId, playerId, amount: raiseAmount }) }),
-      `¡Crack blindado! Sumaste ${raiseAmount.toLocaleString("es-MX")} a su cláusula.`
+      `¡Crack blindado! Sumaste ${formatMoney(raiseAmount)} a su cláusula.`
     );
 
   const clausulazo = () =>
@@ -112,7 +116,7 @@ export default function PlayerDetailModal({ playerId, leagueId, onClose, onChang
                       {detail.ownership.isMine ? "Es tuyo" : `Dueño: ${detail.ownership.owner.name}`}
                     </span>
                     <span className={styles.clauseTag}>
-                      <IconCoin size={14} /> Cláusula {detail.ownership.clause.toLocaleString("es-MX")}
+                      <IconCoin size={14} /> Cláusula {formatMoney(detail.ownership.clause)}
                     </span>
                     {detail.ownership.protected && (
                       <span className={styles.protectedTag}>
@@ -121,7 +125,7 @@ export default function PlayerDetailModal({ playerId, leagueId, onClose, onChang
                     )}
                     {detail.listing && (
                       <span className={styles.listedTag}>
-                        En venta por {detail.listing.price.toLocaleString("es-MX")}
+                        En venta por {formatMoney(detail.listing.price)}
                       </span>
                     )}
                   </div>
@@ -137,7 +141,7 @@ export default function PlayerDetailModal({ playerId, leagueId, onClose, onChang
               <div className={styles.actions}>
                 <div className={styles.actionRow}>
                   <label className={styles.field}>
-                    <span className="caption">Subir tu cláusula (tienes {coins.toLocaleString("es-MX")})</span>
+                    <span className="caption">Subir tu cláusula (tienes {formatMoney(coins)})</span>
                     <div className={styles.inputBtn}>
                       <input
                         type="number"
@@ -155,7 +159,7 @@ export default function PlayerDetailModal({ playerId, leagueId, onClose, onChang
                 <div className={styles.actionRow}>
                   {detail.listing ? (
                     <button className="danger" onClick={cancelSale} disabled={busy}>
-                      Quitar de venta ({detail.listing.price.toLocaleString("es-MX")})
+                      Quitar de venta ({formatMoney(detail.listing.price)})
                     </button>
                   ) : (
                     <label className={styles.field}>
@@ -185,7 +189,7 @@ export default function PlayerDetailModal({ playerId, leagueId, onClose, onChang
                   disabled={busy || detail.ownership.protected || coins < detail.ownership.clause}
                   title={detail.ownership.protected ? "Este jugador está protegido" : undefined}
                 >
-                  Clausulazo por {detail.ownership.clause.toLocaleString("es-MX")}
+                  Clausulazo por {formatMoney(detail.ownership.clause)}
                 </button>
                 {onProposeTrade && (
                   <button

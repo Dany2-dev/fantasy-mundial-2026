@@ -6,6 +6,7 @@ import CompareModal, { SquadOption } from "../components/CompareModal";
 import PlayerCard from "../components/PlayerCard";
 import PlayerDetailModal from "../components/PlayerDetailModal";
 import { pickEleven } from "../lib/formation";
+import { formatMoney } from "../lib/money";
 import { useAppSelector } from "../store/store";
 import { MarketCard, Player, Standing, Trade } from "../types";
 import styles from "./Rivals.module.css";
@@ -20,10 +21,8 @@ interface RivalGroup {
 // jugador ahora mismo) y, si no viene, se estima como basePrice x3.
 const cardValue = (c: MarketCard) => c.clause ?? c.basePrice * 3;
 
-// El valor del equipo se guarda en la misma unidad que basePrice/clause;
-// lo mostramos como millones de euros (÷1000) para que se lea como en un
-// mercado real de fútbol.
-const formatValueM = (v: number) => `€${(v / 1000).toFixed(1)}M`;
+// basePrice/clause ya están en euros (valor de mercado real de FotMob);
+// formatMoney los muestra al estilo FotMob (€853K, €23.9M).
 
 // Naoki trabaja el diseño de esta página. Los mánagers de tu liga y sus
 // cartas ya son datos reales (GET /collection/market); los puntos y el valor
@@ -160,7 +159,7 @@ export default function Rivals() {
                       <div>
                         <h2 className={styles.rivalName}>{r.owner.name}</h2>
                         <span className="caption tabular">
-                          {r.cards.length} cartas · {pointsFor(r.owner.id)} pts · valor {formatValueM(r.value)}
+                          {r.cards.length} cartas · {pointsFor(r.owner.id)} pts · valor {formatMoney(r.value)}
                         </span>
                       </div>
                       {pc > 0 && (
@@ -182,7 +181,7 @@ export default function Rivals() {
                     <h2 className={styles.rivalName}>{selectedRival.owner.name}</h2>
                     <span className="caption tabular">
                       {selectedRival.cards.length} cartas · {pointsFor(selectedRival.owner.id)} pts · valor{" "}
-                      {formatValueM(selectedRival.value)}
+                      {formatMoney(selectedRival.value)}
                     </span>
                   </div>
                   {pendingFor(selectedRival.owner.id) > 0 && (

@@ -5,6 +5,7 @@ import ElectricBorder from "../components/ElectricBorder";
 import { IconCards } from "../components/icons";
 import PlayerCard from "../components/PlayerCard";
 import PlayerDetailModal from "../components/PlayerDetailModal";
+import { formatMoney } from "../lib/money";
 import { fetchCollection } from "../store/collectionSlice";
 import { useAppDispatch, useAppSelector } from "../store/store";
 import { Player, Rarity, rarityOf } from "../types";
@@ -111,7 +112,7 @@ export default function Collection() {
   const rarityCount = (r: Rarity) => items.filter((p) => rarityOf(p.rating) === r).length;
 
   const avgRating = items.length ? Math.round(items.reduce((s, p) => s + p.rating, 0) / items.length) : 0;
-  const totalValue = items.reduce((s, p) => s + p.rating, 0);
+  const totalValue = items.reduce((s, p) => s + p.basePrice, 0);
   const goldCount = items.filter((p) => {
     const r = rarityOf(p.rating);
     return r === "oro" || r === "legendario";
@@ -167,7 +168,7 @@ export default function Collection() {
               <span className={styles.statLabel}>Oro o mejor</span>
             </div>
             <div className={styles.statCard}>
-              <span className={styles.statValue}>{totalValue.toLocaleString("es-MX")}</span>
+              <span className={styles.statValue}>{formatMoney(totalValue)}</span>
               <span className={styles.statLabel}>Valor</span>
             </div>
           </div>
