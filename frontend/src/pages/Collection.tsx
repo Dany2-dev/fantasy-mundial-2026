@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import ElectricBorder from "../components/ElectricBorder";
 import Flag from "../components/Flag";
-import { IconCards } from "../components/icons";
+import { IconArrowRight, IconCards } from "../components/icons";
 import PlayerCard from "../components/PlayerCard";
 import PlayerDetailModal from "../components/PlayerDetailModal";
 import { formatMoney } from "../lib/money";
@@ -100,6 +100,27 @@ function IconSearch({ size = 20 }: { size?: number }) {
   );
 }
 
+// Flecha para el botón "volver al álbum". IconArrowRight ya existe en el
+// componente compartido, pero espejarlo por CSS ensuciaría su uso en otras
+// páginas; más simple tener la propia, igual que la lupa de arriba.
+function IconArrowLeft({ size = 20 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M19.5 12H5M11 6l-6 6 6 6" />
+    </svg>
+  );
+}
+
 // "Martínez" y "martinez" deben encontrarse igual.
 const normalize = (s: string) =>
   s
@@ -118,9 +139,13 @@ export default function Collection() {
   const [openPlayerId, setOpenPlayerId] = useState<number | null>(null);
   // Solo la carta con el cursor encima anima su borde eléctrico.
   const [hoveredId, setHoveredId] = useState<number | null>(null);
+  // Vista álbum: null = portadas de selecciones; con nombre = dentro de esa
+  // selección viendo sus cartas.
+  const [openTeam, setOpenTeam] = useState<string | null>(null);
 
   useEffect(() => {
     if (activeLeagueId) dispatch(fetchCollection(activeLeagueId));
+    setOpenTeam(null);
   }, [dispatch, activeLeagueId]);
 
   // Base = todo lo que pasa búsqueda + rareza. Los contadores de posición se
@@ -164,6 +189,14 @@ export default function Collection() {
       // tenga mejor carta. Así tu bloque más fuerte queda arriba.
       .sort((a, b) => b.players.length - a.players.length || b.best - a.best || a.name.localeCompare(b.name, "es"));
   }, [visible]);
+
+  // Si cambias un filtro y la selección abierta se queda sin cartas, se
+  // vuelve sola al álbum en vez de dejarte viendo una página vacía.
+  useEffect(() => {
+    if (openTeam && !groups.some((g) => g.name === openTeam)) setOpenTeam(null);
+  }, [groups, openTeam]);
+
+  const openGroup = openTeam ? groups.find((g) => g.name === openTeam) ?? null : null;
 
   const counts = (pos: Filter) => (pos === "Todos" ? base.length : base.filter((p) => p.position === pos).length);
   const rarityCount = (r: Rarity) => items.filter((p) => rarityOf(p.rating) === r).length;
@@ -320,53 +353,94 @@ export default function Collection() {
         </div>
       )}
 
-      {groups.map((g) => (
-        <section key={g.name} className={styles.teamGroup}>
-          <header className={styles.teamHead}>
-            <span className={styles.teamCrest} aria-hidden="true">
-              <Flag team={g.team} size={26} />
-            </span>
-            <h2 className={styles.teamName}>{g.name}</h2>
-            <span className={styles.teamCount}>
-              {g.players.length} {g.players.length === 1 ? "carta" : "cartas"}
-            </span>
-            <span className={styles.teamRule} aria-hidden="true" />
-            <span className={styles.teamBest} title="Mejor media de esta selección">
-              {g.best}
-            </span>
-          </header>
+      {/* ===== Álbum: portadas por selección → clic entra a sus cartas =====
+          Sin AnimatePresence a propósito: en esta versión de motion, combinada
+          con StrictMode (activo en main.tsx), el nodo que sale de escena se
+          queda montado con opacity:0 para siempre — un hueco fantasma del
+          tamaño del álbum. Con animación de solo entrada alcanza y no tiene
+          ese bug. */}
+      {!openGroup ? (
+        <motion.div
+          key="album"
+          className={styles.albumGrid}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.15 }}
+        >
+          {groups.map((g) => (
+            <button key={g.name} className={styles.albumCard} onClick={() => setOpenTeam(g.name)}>
+              <span className={styles.albumCrest} aria-hidden="true">
+                <Flag team={g.team} size={40} />
+              </span>
+              <span className={styles.albumName}>{g.name}</span>
+              <span className={styles.albumMeta}>
+                <span className={styles.teamCount}>
+                  {g.players.length} {g.players.length === 1 ? "carta" : "cartas"}
+                </span>
+                <span className={styles.albumBest} title="Mejor media de esta selección">
+                  {g.best}
+                </span>
+              </span>
+              <IconArrowRight size={16} className={styles.albumArrow} />
+            </button>
+          ))}
+        </motion.div>
+      ) : (
+        <motion.section
+          key={openGroup.name}
+          className={styles.teamGroup}
+          initial={{ opacity: 0, x: 16 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+            <header className={styles.teamHead}>
+              <button className={`ghost ${styles.backBtn}`} onClick={() => setOpenTeam(null)}>
+                <IconArrowLeft size={16} /> Álbum
+              </button>
+              <span className={styles.teamCrest} aria-hidden="true">
+                <Flag team={openGroup.team} size={26} />
+              </span>
+              <h2 className={styles.teamName}>{openGroup.name}</h2>
+              <span className={styles.teamCount}>
+                {openGroup.players.length} {openGroup.players.length === 1 ? "carta" : "cartas"}
+              </span>
+              <span className={styles.teamRule} aria-hidden="true" />
+              <span className={styles.teamBest} title="Mejor media de esta selección">
+                {openGroup.best}
+              </span>
+            </header>
 
-          <div className={styles.grid}>
-            {g.players.map((p, i) => (
-              <motion.div
-                key={p.id}
-                layout
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{
-                  // El escalonado es solo para la entrada; al recolocarse por un
-                  // filtro la carta debe moverse ya, sin arrastrar ese retardo.
-                  opacity: { duration: 0.22, delay: Math.min(i * 0.02, 0.3) },
-                  y: { duration: 0.22, delay: Math.min(i * 0.02, 0.3) },
-                  layout: { duration: 0.25 },
-                }}
-                onMouseEnter={() => setHoveredId(p.id)}
-                onMouseLeave={() => setHoveredId((cur) => (cur === p.id ? null : cur))}
-              >
-                <ElectricBorder
-                  active={hoveredId === p.id}
-                  color={ELECTRIC[rarityOf(p.rating)]}
-                  borderRadius={16}
-                  speed={1.1}
-                  chaos={0.14}
+            <div className={styles.grid}>
+              {openGroup.players.map((p, i) => (
+                <motion.div
+                  key={p.id}
+                  layout
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{
+                    // El escalonado es solo para la entrada; al recolocarse por
+                    // un filtro la carta debe moverse ya, sin arrastrar retardo.
+                    opacity: { duration: 0.22, delay: Math.min(i * 0.02, 0.3) },
+                    y: { duration: 0.22, delay: Math.min(i * 0.02, 0.3) },
+                    layout: { duration: 0.25 },
+                  }}
+                  onMouseEnter={() => setHoveredId(p.id)}
+                  onMouseLeave={() => setHoveredId((cur) => (cur === p.id ? null : cur))}
                 >
-                  <PlayerCard player={p} onClick={() => setOpenPlayerId(p.id)} />
-                </ElectricBorder>
-              </motion.div>
-            ))}
-          </div>
-        </section>
-      ))}
+                  <ElectricBorder
+                    active={hoveredId === p.id}
+                    color={ELECTRIC[rarityOf(p.rating)]}
+                    borderRadius={16}
+                    speed={1.1}
+                    chaos={0.14}
+                  >
+                    <PlayerCard player={p} onClick={() => setOpenPlayerId(p.id)} />
+                  </ElectricBorder>
+                </motion.div>
+              ))}
+            </div>
+          </motion.section>
+        )}
 
       {openPlayerId != null && (
         <PlayerDetailModal

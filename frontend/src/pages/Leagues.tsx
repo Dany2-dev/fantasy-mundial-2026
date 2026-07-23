@@ -109,6 +109,77 @@ export default function Leagues() {
 
   const podium = standings.slice(0, 3);
 
+  // Mismo bloque de formularios en dos posibles posiciones (arriba si no
+  // tienes ligas, hasta abajo si ya tienes): se define una vez para no
+  // duplicar el JSX.
+  const formsSection = (
+    <div className={styles.forms}>
+      <form onSubmit={handleCreate} className={styles.formCard}>
+        <div className={styles.formHead}>
+          <span className={styles.formIcon} data-accent="red" aria-hidden="true">
+            <IconTrophy size={22} />
+          </span>
+          <h3>Crear liga</h3>
+        </div>
+        <input
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
+          placeholder="Nombre de tu liga"
+          minLength={3}
+          required
+        />
+        <select
+          value={competitionId}
+          onChange={(e) => setCompetitionId(e.target.value ? Number(e.target.value) : "")}
+          required
+        >
+          <option value="" disabled>
+            Elige una competencia
+          </option>
+          {competitions.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+              {c.isCurrent ? " (en curso)" : ""}
+              {!c.hasStarted ? " — aún no empieza" : ""}
+            </option>
+          ))}
+        </select>
+        {selectedCompetition && !selectedCompetition.hasStarted && (
+          <p className={styles.notStarted}>
+            ⚠️ {selectedCompetition.name} todavía no empieza esta temporada. Podrás jugar (sobres, cambios,
+            cláusulas), pero no habrá partidos ni puntos hasta que arranque.
+          </p>
+        )}
+        <button className="primary" type="submit">
+          Crear mi liga
+        </button>
+      </form>
+
+      <form onSubmit={handleJoin} className={styles.formCard}>
+        <div className={styles.formHead}>
+          <span className={styles.formIcon} data-accent="blue" aria-hidden="true">
+            <IconUsers size={22} />
+          </span>
+          <h3>Unirme con código</h3>
+        </div>
+        <p className={styles.formHint}>Pídele el código de 6 letras al mánager que creó la liga.</p>
+        <input
+          value={code}
+          onChange={(e) => setCode(e.target.value.toUpperCase())}
+          placeholder="ABX4T9"
+          maxLength={6}
+          className={styles.codeInput}
+          required
+        />
+        <button className="primary" type="submit">
+          Entrar a la liga
+        </button>
+      </form>
+    </div>
+  );
+
+  const msgBanner = msg && <p className={msg.kind === "ok" ? "ok-text" : "error-text"}>{msg.text}</p>;
+
   return (
     <div className={styles.page}>
       {/* ===== Cabecera ===== */}
@@ -124,72 +195,17 @@ export default function Leagues() {
         </div>
       </section>
 
-      {/* ===== Formularios ===== */}
-      <div className={styles.forms}>
-        <form onSubmit={handleCreate} className={styles.formCard}>
-          <div className={styles.formHead}>
-            <span className={styles.formIcon} data-accent="red" aria-hidden="true">
-              <IconTrophy size={22} />
-            </span>
-            <h3>Crear liga</h3>
-          </div>
-          <input
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            placeholder="Nombre de tu liga"
-            minLength={3}
-            required
-          />
-          <select
-            value={competitionId}
-            onChange={(e) => setCompetitionId(e.target.value ? Number(e.target.value) : "")}
-            required
-          >
-            <option value="" disabled>
-              Elige una competencia
-            </option>
-            {competitions.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-                {c.isCurrent ? " (en curso)" : ""}
-                {!c.hasStarted ? " — aún no empieza" : ""}
-              </option>
-            ))}
-          </select>
-          {selectedCompetition && !selectedCompetition.hasStarted && (
-            <p className={styles.notStarted}>
-              ⚠️ {selectedCompetition.name} todavía no empieza esta temporada. Podrás jugar (sobres, cambios,
-              cláusulas), pero no habrá partidos ni puntos hasta que arranque.
-            </p>
-          )}
-          <button className="primary" type="submit">
-            Crear mi liga
-          </button>
-        </form>
-
-        <form onSubmit={handleJoin} className={styles.formCard}>
-          <div className={styles.formHead}>
-            <span className={styles.formIcon} data-accent="blue" aria-hidden="true">
-              <IconUsers size={22} />
-            </span>
-            <h3>Unirme con código</h3>
-          </div>
-          <p className={styles.formHint}>Pídele el código de 6 letras al mánager que creó la liga.</p>
-          <input
-            value={code}
-            onChange={(e) => setCode(e.target.value.toUpperCase())}
-            placeholder="ABX4T9"
-            maxLength={6}
-            className={styles.codeInput}
-            required
-          />
-          <button className="primary" type="submit">
-            Entrar a la liga
-          </button>
-        </form>
-      </div>
-
-      {msg && <p className={msg.kind === "ok" ? "ok-text" : "error-text"}>{msg.text}</p>}
+      {/* ===== Formularios =====
+          Si ya tienes ligas, crear/unirse deja de ser la acción principal:
+          se mandan hasta abajo, después de la clasificación. Sin ligas
+          todavía, se quedan aquí arriba porque son lo primero que hay que
+          hacer. */}
+      {leagues.length === 0 && (
+        <>
+          {formsSection}
+          {msgBanner}
+        </>
+      )}
 
       {leagues.length === 0 && (
         <section className={styles.noLeagues}>
@@ -351,6 +367,16 @@ export default function Leagues() {
           <p className={`caption ${styles.foot}`}>
             Valor = suma de medias de tus cartas. Los puntos llegarán con las jornadas del torneo.
           </p>
+        </section>
+      )}
+
+      {/* Ya con ligas, crear una nueva o unirte a otra pasa a un segundo
+          plano: se ofrece hasta abajo, después de ver tu clasificación. */}
+      {leagues.length > 0 && (
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>¿Otra liga?</h2>
+          {formsSection}
+          {msgBanner}
         </section>
       )}
 
