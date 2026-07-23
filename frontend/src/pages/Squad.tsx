@@ -4,6 +4,7 @@ import { api } from "../api/client";
 import CardSelect from "../components/CardSelect";
 import { IconArrowRight, IconCheck, IconClock, IconClose } from "../components/icons";
 import PlayerCard from "../components/PlayerCard";
+import PlayerDetailModal from "../components/PlayerDetailModal";
 import { FORMATIONS } from "../lib/formations";
 import { fetchCollection } from "../store/collectionSlice";
 import { useAppDispatch, useAppSelector } from "../store/store";
@@ -137,6 +138,7 @@ export default function Squad() {
   const [league, setLeague] = useState<League | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [benchFilter, setBenchFilter] = useState<Player["position"]>("POR");
+  const [openPlayerId, setOpenPlayerId] = useState<number | null>(null);
 
   const byId = useMemo(() => new Map(collection.map((p) => [p.id, p])), [collection]);
 
@@ -483,7 +485,12 @@ export default function Squad() {
                       onDragStart={() => setDragPlayer({ playerId: player.id, position: player.position, fromSlot: slotIndex })}
                       onDragEnd={() => setDragPlayer(null)}
                     >
-                      <PlayerCard player={player} size="sm" captain={captainId === player.id} />
+                      <PlayerCard
+                        player={player}
+                        size="sm"
+                        captain={captainId === player.id}
+                        onClick={() => setOpenPlayerId(player.id)}
+                      />
                       <button className={styles.removeBtn} onClick={() => clearSlot(slotIndex)} title="Quitar">
                         <IconClose size={13} />
                       </button>
@@ -557,7 +564,7 @@ export default function Squad() {
                       onDragStart={() => setDragPlayer({ playerId: p.id, position: p.position, fromSlot: null })}
                       onDragEnd={() => setDragPlayer(null)}
                     >
-                      <PlayerCard player={p} size="sm" />
+                      <PlayerCard player={p} size="sm" onClick={() => setOpenPlayerId(p.id)} />
                     </div>
                   ))}
                 </div>
@@ -585,6 +592,15 @@ export default function Squad() {
             </p>
           )}
         </div>
+      )}
+
+      {openPlayerId != null && (
+        <PlayerDetailModal
+          playerId={openPlayerId}
+          leagueId={activeLeagueId}
+          onClose={() => setOpenPlayerId(null)}
+          onChanged={() => dispatch(fetchCollection(activeLeagueId))}
+        />
       )}
     </div>
   );
