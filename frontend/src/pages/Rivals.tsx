@@ -16,6 +16,61 @@ interface RivalGroup {
   value: number;
 }
 
+// ---- Perspectiva de la cancha (mismo cálculo que "Mi Once") ----
+// Las filas se acomodan en un trapecio (más angosto arriba, donde están los
+// delanteros; más ancho abajo, junto al arquero) y las cartas se escalan por
+// fila para sugerir profundidad. El fondo (pasto) se recorta con el mismo
+// trapecio; las cartas se quedan "de pie" y solo cambian de tamaño.
+const TOP_INSET = 7;
+const BOTTOM_INSET = 1;
+const SCALE_TOP = 0.72;
+const SCALE_BOTTOM = 1.08;
+const ROW_Y_MARGIN = 7;
+function insetAtY(y: number) {
+  return TOP_INSET + ((BOTTOM_INSET - TOP_INSET) * y) / 100;
+}
+function scaleForRow(rowIndex: number, totalRows: number) {
+  const t = totalRows > 1 ? rowIndex / (totalRows - 1) : 0;
+  return SCALE_TOP + t * (SCALE_BOTTOM - SCALE_TOP);
+}
+function rowCenterYs(totalRows: number): number[] {
+  if (totalRows <= 1) return [50];
+  const weights = Array.from({ length: totalRows }, (_, r) => scaleForRow(r, totalRows));
+  const totalWeight = weights.reduce((a, b) => a + b, 0);
+  const band = 100 - 2 * ROW_Y_MARGIN;
+  const ys: number[] = [];
+  let cursor = ROW_Y_MARGIN;
+  for (const w of weights) {
+    const segment = (w / totalWeight) * band;
+    ys.push(cursor + segment / 2);
+    cursor += segment;
+  }
+  return ys;
+}
+
+// Líneas reglamentarias de la cancha, sobre el mismo trapecio de perspectiva.
+function edgeX(y: number, margin = 0): [number, number] {
+  const inset = insetAtY(y) + margin;
+  return [inset, 100 - inset];
+}
+function boxPoints(goalY: number, lineY: number, margin: number) {
+  const [lg, rg] = edgeX(goalY, margin);
+  const [lb, rb] = edgeX(lineY, margin);
+  return `${lg},${goalY} ${lb},${lineY} ${rb},${lineY} ${rg},${goalY}`;
+}
+const [PITCH_TL, PITCH_TR] = edgeX(0);
+const [PITCH_BL, PITCH_BR] = edgeX(100);
+const PITCH_OUTLINE = `${PITCH_TL},0 ${PITCH_TR},0 ${PITCH_BR},100 ${PITCH_BL},100`;
+const [HALFWAY_L, HALFWAY_R] = edgeX(50);
+const BOX_MARGIN = 20;
+const SIX_MARGIN = 36;
+const NEAR_BOX = boxPoints(100, 84, BOX_MARGIN);
+const NEAR_SIX = boxPoints(100, 94.5, SIX_MARGIN);
+const FAR_BOX = boxPoints(0, 16, BOX_MARGIN);
+const FAR_SIX = boxPoints(0, 5.5, SIX_MARGIN);
+
+type Point = { x: number; y: number };
+
 // Valor de mercado de una carta: su cláusula (lo que costaría fichar al
 // jugador ahora mismo) y, si no viene, se estima como basePrice x3.
 const cardValue = (c: MarketCard) => c.clause ?? c.basePrice * 3;
@@ -105,6 +160,43 @@ export default function Rivals() {
   const selectedRival = rivals.find((r) => r.owner.id === selectedOwnerId) ?? rivals[0] ?? null;
   const eleven = selectedRival ? pickEleven(selectedRival.cards) : { starters: [], bench: [] };
 
+  // Filas del once por posición (delanteros arriba, arquero abajo) y sus
+  // coordenadas dentro del trapecio de perspectiva + líneas de conexión.
+  const displayRows = (["DEL", "MED", "DEF", "POR"] as const).map((pos) =>
+    eleven.starters.filter((c) => c.position === pos)
+  );
+  const rowYs = rowCenterYs(displayRows.length);
+  const rowPoints: Point[][] = displayRows.map((row, rowIndex) => {
+    const y = rowYs[rowIndex];
+    const inset = insetAtY(y);
+    const n = row.length;
+    return row.map((_, i) => ({
+      x: inset + ((i + 0.5) / n) * (100 - 2 * inset),
+      y,
+    }));
+  });
+  const connections: [Point, Point][] = [];
+  for (const row of rowPoints) {
+    for (let i = 0; i < row.length - 1; i++) connections.push([row[i], row[i + 1]]);
+  }
+  for (let r = 0; r < rowPoints.length - 1; r++) {
+    const from = rowPoints[r];
+    const to = rowPoints[r + 1];
+    for (const a of from) {
+      if (to.length === 0) continue;
+      let best = to[0];
+      let bestDist = Math.abs(a.x - to[0].x);
+      for (const b of to) {
+        const d = Math.abs(a.x - b.x);
+        if (d < bestDist) {
+          best = b;
+          bestDist = d;
+        }
+      }
+      connections.push([a, best]);
+    }
+  }
+
   // Plantillas disponibles para comparar: la tuya + la de cada rival.
   const squads: SquadOption[] = [
     ...(userId ? [{ id: userId, name: `${user?.name ?? "Tú"} (tú)`, cards: myCollection }] : []),
@@ -112,7 +204,7 @@ export default function Rivals() {
   ];
 
   return (
-    <div>
+    <div className={styles.page}>
       <div className={styles.headerRow}>
         <div>
           <h1>Rivales</h1>
@@ -194,19 +286,46 @@ export default function Rivals() {
                   )}
                 </div>
                 <div className={styles.pitch}>
-                  {(["DEL", "MED", "DEF", "POR"] as const).map((pos) => {
-                    const line = eleven.starters.filter((c) => c.position === pos);
-                    if (line.length === 0) return null;
-                    return (
-                      <div key={pos} className={styles.pitchRow}>
-                        {line.map((c) => (
-                          <div key={c.id} className={styles.pitchSlot}>
-                            <PlayerCard player={c} size="sm" onClick={() => setOpenPlayerId(c.id)} />
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  })}
+                  {/* Fondo: pasto pintado con CSS, recortado en trapecio. */}
+                  <div className={styles.pitchTilt} aria-hidden="true" />
+
+                  {/* Líneas reglamentarias de la cancha. */}
+                  <svg className={styles.pitchLines} viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                    <polygon points={PITCH_OUTLINE} className={styles.lineShape} />
+                    <line x1={HALFWAY_L} y1={50} x2={HALFWAY_R} y2={50} className={styles.lineShape} />
+                    <circle cx={50} cy={50} r={9} className={styles.lineShape} />
+                    <circle cx={50} cy={50} r={0.7} className={styles.lineDot} />
+                    <polyline points={NEAR_BOX} className={styles.lineShape} />
+                    <polyline points={NEAR_SIX} className={styles.lineShape} />
+                    <circle cx={50} cy={89.5} r={0.7} className={styles.lineDot} />
+                    <polyline points={FAR_BOX} className={styles.lineShape} />
+                    <polyline points={FAR_SIX} className={styles.lineShape} />
+                    <circle cx={50} cy={10.5} r={0.7} className={styles.lineDot} />
+                  </svg>
+
+                  {/* Líneas de conexión decorativas entre jugadores. */}
+                  <svg className={styles.connectors} viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                    {connections.map(([a, b], i) => (
+                      <line key={i} x1={a.x} y1={a.y} x2={b.x} y2={b.y} className={styles.pitchConnector} />
+                    ))}
+                  </svg>
+
+                  {/* Cartas: capa plana, siempre "de pie", escaladas por fila. */}
+                  {displayRows.map((row, rowIndex) =>
+                    row.map((c, i) => {
+                      const { x, y } = rowPoints[rowIndex][i];
+                      const scale = scaleForRow(rowIndex, displayRows.length);
+                      return (
+                        <div
+                          key={c.id}
+                          className={styles.slotWrap}
+                          style={{ left: `${x}%`, top: `${y}%`, transform: `translate(-50%, -50%) scale(${scale})` }}
+                        >
+                          <PlayerCard player={c} size="sm" onClick={() => setOpenPlayerId(c.id)} />
+                        </div>
+                      );
+                    })
+                  )}
                   {selectedRival.cards.length === 0 && (
                     <p className={styles.pitchEmpty}>Este mánager aún no tiene cartas.</p>
                   )}
