@@ -334,7 +334,81 @@
   color: #8a561f;
 }
 
-/* ---------- Bloque por selección ---------- */
+/* ---------- Álbum: portadas por selección ----------
+   Tarjeta clicable por selección; al pulsarla se entra a ver solo sus
+   cartas (ver .teamGroup más abajo). */
+.albumGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: var(--sp-4);
+}
+
+.albumCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  padding-bottom: var(--sp-6);
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-card);
+  text-align: left;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.albumCard:hover {
+  transform: translateY(-3px);
+  border-color: var(--wc-rojo);
+  box-shadow: 0 14px 30px -20px rgba(13, 17, 23, 0.5);
+}
+
+.albumCrest {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  border-radius: 14px;
+  background: var(--superficie-alta);
+  border: 1px solid var(--borde);
+}
+
+.albumName {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--tinta);
+}
+
+.albumMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  width: 100%;
+}
+
+.albumBest {
+  font-family: var(--font-sport);
+  font-size: 16px;
+  color: var(--wc-oro-oscuro);
+  margin-left: auto;
+}
+
+.albumArrow {
+  position: absolute;
+  right: var(--sp-3);
+  bottom: var(--sp-3);
+  color: var(--tinta-media);
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.albumCard:hover .albumArrow {
+  transform: translateX(3px);
+  color: var(--wc-rojo);
+}
+
+/* ---------- Dentro de una selección ---------- */
 .teamGroup {
   display: flex;
   flex-direction: column;
@@ -345,6 +419,15 @@
   display: flex;
   align-items: center;
   gap: var(--sp-3);
+}
+
+.backBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-size: 13px;
+  flex-shrink: 0;
 }
 
 .teamCrest {
@@ -493,6 +576,11 @@
     gap: var(--sp-3);
   }
 
+  .albumGrid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: var(--sp-3);
+  }
+
   .teamName {
     font-size: 16px;
   }
@@ -500,5 +588,16 @@
   /* En pantallas chicas la media sobra: el nombre y el contador mandan */
   .teamBest {
     display: none;
+  }
+
+  /* El botón "Álbum" ocupa su propia línea arriba del escudo y el nombre */
+  .teamHead {
+    flex-wrap: wrap;
+    row-gap: var(--sp-2);
+  }
+
+  .backBtn {
+    order: -1;
+    width: 100%;
   }
 }
