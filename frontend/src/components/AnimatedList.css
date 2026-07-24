@@ -45,7 +45,7 @@
   transition: box-shadow 0.15s ease;
 }
 .item.selected {
-  box-shadow: 0 0 0 2px #bac8ff, 0 6px 18px rgba(59, 91, 219, 0.12);
+  box-shadow: none;
 }
 
 /* Modo texto simple (cuando se pasan strings como items). */
@@ -64,7 +64,7 @@
   left: 0;
   right: 0;
   height: 40px;
-  background: linear-gradient(to bottom, #ffffff, transparent);
+  background: transparent;
   pointer-events: none;
   transition: opacity 0.3s ease;
 }
@@ -74,7 +74,7 @@
   left: 0;
   right: 0;
   height: 60px;
-  background: linear-gradient(to top, #ffffff, transparent);
+  background: transparent;
   pointer-events: none;
   transition: opacity 0.3s ease;
 }
