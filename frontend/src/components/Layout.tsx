@@ -23,6 +23,7 @@ import {
   IconLogOut,
   IconMore,
   IconPack,
+  IconStar,
   IconTrophy,
   IconUsers,
 } from "./icons";
@@ -44,6 +45,7 @@ const MORE_NAV = [
   { to: "/rivales", label: "Rivales", Icon: IconUsers },
   { to: "/historial", label: "Historial", Icon: IconClock },
   { to: "/jugar", label: "Jugar", Icon: IconGamepad },
+  { to: "/leyenda", label: "Tu Leyenda", Icon: IconStar },
 ];
 const NAV = [...PRIMARY_NAV, ...MORE_NAV];
 
