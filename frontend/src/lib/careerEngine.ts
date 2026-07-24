@@ -2,7 +2,16 @@
 // (crece en la juventud, pico ~28-30, decae después) y el árbol de eventos
 // con decisiones. Todo determinista salvo por `Math.random`, así que las
 // pantallas solo leen el estado — no hay lógica de juego en los componentes.
-import { CLUBS, CareerClub, PitchPosition, clubsForCountry, clubsForTier, tierFromOvr } from "./careerData";
+//
+// Modelo de "encaje" (fit): cada club tiene un OVR de plantilla esperado
+// según su tier real (expectedOvrForTier). fit = tu OVR - ese esperado.
+//   fit muy negativo → el club te queda grande: menos minutos, más chance
+//     de ir a préstamo o de competir por el puesto, casi no ganas títulos.
+//   fit muy positivo → eres mejor que el nivel del club: minutos asegurados,
+//     los grandes se fijan en ti (más "mercado de pases").
+// Los títulos dependen sobre todo del TIER del club (un tier 5 gana ligas
+// todo el tiempo, un tier 1 casi nunca), con el fit como ajuste fino.
+import { CareerClub, PitchPosition, canteraClubs, clubsForCountry, expectedOvrForTier, findClub, tierFromOvr } from "./careerData";
 
 export interface CareerTrophy {
   label: string;
@@ -27,6 +36,7 @@ export interface CareerOption {
   clubId?: string;
   effect: string; // texto visible: "Titular 65% / Lesión 35%", "+3 OVR", etc.
   risk?: string;
+  image?: string; // foto de contexto (Pexels) cuando la opción trae % de riesgo
 }
 
 export interface CareerEvent {
@@ -75,6 +85,15 @@ export interface CareerState {
 
 const rand = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
 const pick = <T,>(arr: T[]): T => arr[rand(0, arr.length - 1)];
+const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
+
+// Fotos de Pexels que ilustran cada tipo de decisión con porcentaje.
+import { PEXELS } from "./careerData";
+
+// Cuánto mejor/peor eres que lo que ese club espera de su plantilla titular.
+export function clubFit(ovr: number, club: CareerClub): number {
+  return ovr - expectedOvrForTier(club.tier);
+}
 
 // Curva logarítmica (misma familia que valueFromOverall del backend real,
 // calibrada contra valores de mercado reales de FotMob): a diferencia de una
@@ -95,8 +114,7 @@ export function newCareer(input: {
   position: PitchPosition;
 }): CareerState {
   const ovr = 50 + rand(-2, 3);
-  const clubs = clubsForCountry(input.countryName, 1);
-  const club = pick(clubs.length ? clubs : clubsForTier(1));
+  const club = pick(canteraClubs(input.countryName));
   return {
     ...input,
     age: 16,
@@ -119,7 +137,7 @@ export function newCareer(input: {
 }
 
 function buildCanteraEvent(currentClub: CareerClub, country: string): CareerEvent {
-  const others = clubsForCountry(country, 1).filter((c) => c.id !== currentClub.id);
+  const others = canteraClubs(country).filter((c) => c.id !== currentClub.id);
   const options: CareerClub[] = [currentClub, ...others].slice(0, 3);
   return {
     kind: "cantera",
@@ -134,17 +152,30 @@ function buildCanteraEvent(currentClub: CareerClub, country: string): CareerEven
   };
 }
 
+// Multiplicador de minutos según qué tan grande te queda el club (ver
+// clubFit): a un club que te queda grande no te van a poner de titular
+// seguido, a uno que te queda chico casi no te sacan.
+function fitMultiplier(fit: number): number {
+  if (fit <= -15) return 0.45;
+  if (fit <= -8) return 0.65;
+  if (fit <= 0) return 0.85;
+  if (fit <= 10) return 1;
+  return 1.15;
+}
+
 // Simula una etapa (~2 años) con el club/decisión actual: minutos, goles,
-// asistencias y evolución de OVR, según edad y penalizaciones activas.
+// asistencias y evolución de OVR, según edad, encaje con el club y
+// penalizaciones activas.
 function simulateStage(s: CareerState, minutesShare: number): { pj: number; gls: number; ast: number; ovrDelta: number } {
-  const basePj = Math.round(rand(20, 34) * minutesShare);
+  const effectiveShare = clamp(minutesShare * fitMultiplier(clubFit(s.ovr, s.club)), 0.15, 1.3);
+  const basePj = Math.round(rand(20, 34) * effectiveShare);
   const attack = s.position === "DC" || s.position === "EI" || s.position === "ED" ? 1.3 : s.position === "MCO" ? 1 : 0.4;
   const gls = Math.max(0, Math.round((basePj / 10) * attack * (s.ovr / 65) * (Math.random() * 0.6 + 0.7)));
   const ast = Math.max(0, Math.round((basePj / 12) * (attack * 0.6 + 0.4) * (Math.random() * 0.6 + 0.7)));
 
   let ovrDelta: number;
-  if (s.age <= 21) ovrDelta = rand(4, 9) * minutesShare;
-  else if (s.age <= 27) ovrDelta = rand(2, 6) * minutesShare;
+  if (s.age <= 21) ovrDelta = rand(4, 9) * effectiveShare;
+  else if (s.age <= 27) ovrDelta = rand(2, 6) * effectiveShare;
   else if (s.age <= 30) ovrDelta = rand(-1, 3);
   else if (s.age <= 33) ovrDelta = rand(-4, 0);
   else ovrDelta = rand(-8, -3);
@@ -170,10 +201,16 @@ function closeStage(s: CareerState, sim: { pj: number; gls: number; ast: number;
   };
 }
 
+// La chance de título depende sobre todo de qué tan grande es el club real
+// (tier), no de tu OVR personal — un club chico casi nunca sale campeón
+// aunque tú rindas; uno grande gana seguido aunque tú no seas titular fijo.
 function maybeTrophy(s: CareerState): string[] {
-  const chance = s.ovr >= 82 ? 0.55 : s.ovr >= 72 ? 0.3 : s.ovr >= 62 ? 0.12 : 0.03;
+  const baseByTier = [0, 0.02, 0.06, 0.15, 0.32, 0.55][s.club.tier] ?? 0.02;
+  const fit = clubFit(s.ovr, s.club);
+  const chance = clamp(baseByTier + clamp(fit / 300, -0.08, 0.12), 0.01, 0.75);
   if (Math.random() > chance) return [];
-  return [pick(["Liga", "Copa Nacional", "Copa Continental", "Bota de Oro de la liga"])];
+  const options = s.club.tier >= 3 ? ["Liga", "Copa Nacional", "Copa Continental"] : ["Liga", "Copa Nacional"];
+  return [pick(options)];
 }
 
 function maybeCap(s: CareerState): number {
@@ -182,21 +219,35 @@ function maybeCap(s: CareerState): number {
   return Math.random() < chance ? rand(1, 4) : 0;
 }
 
-// Elige el siguiente tipo de evento según edad/fase de carrera, evitando
-// repetir el tipo inmediatamente anterior para que no se sienta repetitivo.
+// Elige el siguiente tipo de evento según edad, fase de carrera y encaje
+// con el club actual: si el club te queda grande, más "competencia"/
+// "préstamo"; si te queda chico, más "mercado" (los grandes se fijan en ti).
 function pickEventKind(s: CareerState, lastKind: EventKind | null): EventKind {
   const declining = s.age >= 31 && s.ovr < s.peakOvr - 5;
   if (declining && Math.random() < 0.4) return Math.random() < 0.5 ? "declive" : "retiro-oferta";
-  const pool: EventKind[] = ["mercado", "competencia", "mentor", "narrativo", "doble-turno"];
+
+  const fit = clubFit(s.ovr, s.club);
+  let pool: EventKind[];
+  if (fit <= -10) {
+    pool = ["competencia", "competencia", "prestamo", "prestamo", "narrativo", "doble-turno"];
+  } else if (fit >= 10) {
+    pool = ["mercado", "mercado", "mentor", "narrativo", "doble-turno"];
+  } else {
+    pool = ["mercado", "competencia", "mentor", "narrativo", "doble-turno"];
+  }
   const filtered = pool.filter((k) => k !== lastKind);
-  return pick(filtered);
+  return pick(filtered.length ? filtered : pool);
 }
 
 function buildEvent(s: CareerState, kind: EventKind, lastClubId: string | null): CareerEvent {
   const tier = tierFromOvr(s.ovr);
+  const fit = clubFit(s.ovr, s.club);
   switch (kind) {
     case "prestamo": {
-      const opts = clubsForTier(tier, [s.club.id]).slice(0, 2);
+      // A préstamo, un escalón (o dos si el club te queda muy grande) por
+      // debajo de tu club actual — así sumas minutos de verdad.
+      const targetTier = Math.max(1, s.club.tier - (fit <= -15 ? 2 : 1));
+      const opts = clubsForCountry(s.countryName, targetTier, [s.club.id]).slice(0, 2);
       return {
         kind,
         title: "Salida a préstamo",
@@ -205,8 +256,8 @@ function buildEvent(s: CareerState, kind: EventKind, lastClubId: string | null):
       };
     }
     case "regreso": {
-      const alt1 = pick(clubsForTier(tier, [s.club.id]));
-      const alt2 = pick(clubsForTier(tier, [s.club.id, alt1.id]));
+      const alt1 = pick(clubsForCountry(s.countryName, tier, [s.club.id]));
+      const alt2 = pick(clubsForCountry(s.countryName, tier, [s.club.id, alt1.id]));
       return {
         kind,
         title: "Regreso a tu club",
@@ -220,7 +271,7 @@ function buildEvent(s: CareerState, kind: EventKind, lastClubId: string | null):
     }
     case "mercado": {
       const upTier = Math.min(5, tier + 1);
-      const offer = pick(clubsForTier(upTier, [s.club.id]));
+      const offer = pick(clubsForCountry(s.countryName, upTier, [s.club.id]));
       return {
         kind,
         title: "Mercado de pases",
@@ -232,14 +283,16 @@ function buildEvent(s: CareerState, kind: EventKind, lastClubId: string | null):
       };
     }
     case "competencia": {
-      const titular = rand(45, 70);
+      // El % de titularidad refleja el encaje real: si el club te queda
+      // grande, vas a jugar mucho menos que si te queda chico.
+      const titular = clamp(55 + fit * 1.8, 15, 85);
       return {
         kind,
         title: "Competencia por el puesto",
         description: "El club incorpora a otro jugador para competir por tu lugar.",
         options: [
-          { id: "competir", label: "Competir", effect: `Titular ${titular}%`, risk: `Rotación baja ${100 - titular}%` },
-          { id: "salida", label: "Buscar salida", effect: "Cambiar de aire", risk: "Empezar de cero" },
+          { id: "competir", label: "Competir", effect: `Titular ${titular}%`, risk: `Rotación baja ${100 - titular}%`, image: PEXELS.bench },
+          { id: "salida", label: "Buscar salida", effect: "Cambiar de aire", risk: "Empezar de cero", image: PEXELS.celebration },
         ],
       };
     }
@@ -249,7 +302,7 @@ function buildEvent(s: CareerState, kind: EventKind, lastClubId: string | null):
         title: "Promesa inesperada",
         description: "El club te pide ser mentor de un juvenil prometedor.",
         options: [
-          { id: "mentor", label: "Aceptar ser mentor", effect: "Más chance de campeón", risk: "Menos minutos" },
+          { id: "mentor", label: "Aceptar ser mentor", effect: "Más chance de campeón", risk: "Menos minutos", image: PEXELS.coach },
           { id: "no", label: "Rechazar y seguir enfocado", effect: "Minutos completos", risk: "Sin bono de vestuario" },
         ],
       };
@@ -267,23 +320,29 @@ function buildEvent(s: CareerState, kind: EventKind, lastClubId: string | null):
         title: ev.title,
         description: ev.desc,
         options: [
-          { id: "aceptar", label: "Seguir adelante", effect: ev.penalty > 0 ? `${-ev.penalty} OVR temporal` : `+${-ev.penalty} OVR` },
+          {
+            id: "aceptar",
+            label: "Seguir adelante",
+            effect: ev.penalty > 0 ? `${-ev.penalty} OVR temporal` : `+${-ev.penalty} OVR`,
+            image: ev.penalty > 0 ? PEXELS.injury : PEXELS.celebration,
+          },
         ],
       };
     }
     case "doble-turno": {
+      const titular = clamp(60 + fit * 1.5, 20, 85);
       return {
         kind,
         title: "Doble turno",
         description: "Dos entrenamientos al día para mejorar tu rendimiento.",
         options: [
-          { id: "fondo", label: "Entrenar a fondo", effect: "Titular 65%", risk: "Lesión 35%" },
+          { id: "fondo", label: "Entrenar a fondo", effect: `Titular ${titular}%`, risk: `Lesión ${100 - titular}%`, image: PEXELS.training },
           { id: "carga", label: "Bajar la carga", effect: "Menos minutos", risk: "Sin riesgo de lesión" },
         ],
       };
     }
     case "declive": {
-      const opts = clubsForTier(Math.max(1, tier - 1), [s.club.id, lastClubId ?? ""]).slice(0, 2);
+      const opts = clubsForCountry(s.countryName, Math.max(1, tier - 1), [s.club.id, lastClubId ?? ""]).slice(0, 2);
       return {
         kind,
         title: "El cuerpo ya no responde igual",
@@ -333,7 +392,7 @@ export function resolveOption(s: CareerState, optionId: string): CareerState {
       const titular = Number(event.options[0].effect.replace(/\D/g, ""));
       minutesShare = Math.random() * 100 < titular ? 1 : 0.4;
     } else {
-      const opts = clubsForTier(tierFromOvr(s.ovr), [s.club.id]);
+      const opts = clubsForCountry(s.countryName, tierFromOvr(s.ovr), [s.club.id]);
       next = { ...s, club: pick(opts) };
       minutesShare = 0.7;
     }
@@ -344,7 +403,8 @@ export function resolveOption(s: CareerState, optionId: string): CareerState {
     }
   } else if (event.kind === "doble-turno") {
     if (optionId === "fondo") {
-      minutesShare = Math.random() < 0.35 ? 0.5 : 1.15;
+      const titular = Number(event.options[0].effect.replace(/\D/g, ""));
+      minutesShare = Math.random() * 100 < titular ? 1.15 : 0.5;
     } else {
       minutesShare = 0.8;
     }
@@ -378,8 +438,4 @@ function pickNextKind(s: CareerState, newAge: number, prevKind: EventKind): Even
   if (newAge === 18) return "prestamo";
   if (newAge === 20) return "regreso";
   return pickEventKind({ ...s, age: newAge }, prevKind);
-}
-
-function findClub(id: string): CareerClub | undefined {
-  return CLUBS.find((c) => c.id === id);
 }

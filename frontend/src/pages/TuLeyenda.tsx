@@ -1,7 +1,9 @@
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { COUNTRIES, PITCH_LAYOUT, PitchPosition } from "../lib/careerData";
+import { CONTINENTAL_CUP_LOGO, COUNTRIES, CareerClub, LEAGUE_LOGOS, PITCH_LAYOUT, PitchPosition } from "../lib/careerData";
 import { CareerState, newCareer, resolveOption } from "../lib/careerEngine";
+import { IconStar } from "../components/icons";
 import { formatMoney } from "../lib/money";
 import styles from "./TuLeyenda.module.css";
 
@@ -21,9 +23,37 @@ function flagUrl(code: string) {
   return `https://flagcdn.com/w80/${code}.png`;
 }
 
+function trophyLogo(label: string, club: CareerClub): string {
+  if (label === "Copa Continental") return CONTINENTAL_CUP_LOGO;
+  return LEAGUE_LOGOS[club.league] ?? CONTINENTAL_CUP_LOGO;
+}
+
+const fade = {
+  initial: { opacity: 0, y: 12 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -8 },
+};
+
+// Pop sutil cada vez que cambia el valor — se usa en OVR, valor de mercado y
+// PJ/GLS/AST para que se note el avance sin recargar toda la pantalla.
+function AnimatedNumber({ value, className, reduceMotion }: { value: string | number; className?: string; reduceMotion?: boolean }) {
+  return (
+    <motion.span
+      key={value}
+      className={className}
+      initial={reduceMotion ? undefined : { opacity: 0, y: -4 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+    >
+      {value}
+    </motion.span>
+  );
+}
+
 export default function TuLeyenda() {
   const [screen, setScreen] = useState<Screen>("start");
   const [career, setCareer] = useState<CareerState | null>(null);
+  const reduceMotion = useReducedMotion();
 
   // Identidad en construcción
   const [surname, setSurname] = useState("");
@@ -92,44 +122,84 @@ export default function TuLeyenda() {
     setScreen("start");
   }
 
-  if (screen === "start") return <StartScreen onStart={startNewCareer} hasSaved={!!career} onContinue={() => setScreen(career?.retired ? "retired" : "career")} />;
+  function restart() {
+    if (!confirm("¿Reiniciar tu carrera actual? Se pierde el progreso.")) return;
+    playAgain();
+  }
 
-  if (screen === "identity") {
-    return (
-      <IdentityScreen
-        surname={surname}
-        setSurname={setSurname}
-        number={number}
-        setNumber={setNumber}
-        foot={foot}
-        setFoot={setFoot}
-        countryQuery={countryQuery}
-        setCountryQuery={setCountryQuery}
-        countries={filteredCountries}
-        country={country}
-        setCountry={setCountry}
-        position={position}
-        setPosition={setPosition}
-        onBack={() => setScreen("start")}
-        onConfirm={confirmIdentity}
+  const inGame = screen === "career" || screen === "retired" || screen === "summary";
+
+  return (
+    <div>
+      <TopBar
+        stageLabel={career && inGame ? `${career.surname} · ${career.age} años · ${career.club.name}` : undefined}
+        onRestart={career ? restart : undefined}
       />
-    );
-  }
-
-  if (!career) return null;
-
-  if (screen === "retired") {
-    return <RetiredScreen career={career} onSummary={() => setScreen("summary")} onPlayAgain={playAgain} />;
-  }
-
-  if (screen === "summary") {
-    return <SummaryScreen career={career} onPlayAgain={playAgain} />;
-  }
-
-  return <CareerScreen career={career} onChoose={choose} />;
+      <AnimatePresence mode="wait">
+        {screen === "start" && (
+          <motion.div key="start" {...(reduceMotion ? {} : fade)} transition={{ duration: 0.45 }}>
+            <StartScreen onStart={startNewCareer} hasSaved={!!career} onContinue={() => setScreen(career?.retired ? "retired" : "career")} />
+          </motion.div>
+        )}
+        {screen === "identity" && (
+          <motion.div key="identity" {...(reduceMotion ? {} : fade)} transition={{ duration: 0.45 }}>
+            <IdentityScreen
+              surname={surname}
+              setSurname={setSurname}
+              number={number}
+              setNumber={setNumber}
+              foot={foot}
+              setFoot={setFoot}
+              countryQuery={countryQuery}
+              setCountryQuery={setCountryQuery}
+              countries={filteredCountries}
+              country={country}
+              setCountry={setCountry}
+              position={position}
+              setPosition={setPosition}
+              onBack={() => setScreen("start")}
+              onConfirm={confirmIdentity}
+            />
+          </motion.div>
+        )}
+        {screen === "career" && career && (
+          <motion.div key="career" {...(reduceMotion ? {} : fade)} transition={{ duration: 0.45 }}>
+            <CareerScreen career={career} onChoose={choose} reduceMotion={!!reduceMotion} />
+          </motion.div>
+        )}
+        {screen === "retired" && career && (
+          <motion.div key="retired" {...(reduceMotion ? {} : fade)} transition={{ duration: 0.45 }}>
+            <RetiredScreen career={career} onSummary={() => setScreen("summary")} onPlayAgain={playAgain} />
+          </motion.div>
+        )}
+        {screen === "summary" && career && (
+          <motion.div key="summary" {...(reduceMotion ? {} : fade)} transition={{ duration: 0.45 }}>
+            <SummaryScreen career={career} onPlayAgain={playAgain} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
 }
 
 // ---------------------------------------------------------------------------
+
+function TopBar({ stageLabel, onRestart }: { stageLabel?: string; onRestart?: () => void }) {
+  return (
+    <div className={styles.topBar}>
+      <span className={styles.topBarBrand}>
+        <IconStar size={18} />
+        Tu Leyenda
+      </span>
+      {stageLabel && <span className={styles.topBarStage}>{stageLabel}</span>}
+      {onRestart && (
+        <button className={styles.topBarRestart} onClick={onRestart}>
+          Reiniciar carrera
+        </button>
+      )}
+    </div>
+  );
+}
 
 function StartScreen({ onStart, hasSaved, onContinue }: { onStart: () => void; hasSaved: boolean; onContinue: () => void }) {
   return (
@@ -186,10 +256,15 @@ function IdentityScreen(p: IdentityProps) {
         <div className={styles.identityCol}>
           <h2 className={styles.colTitle}>Identidad</h2>
           <div className={styles.jerseyWrap}>
-            <div className={styles.jersey} style={p.country ? ({ "--jc1": "#1a8f4a", "--jc2": "#e6001a" } as never) : undefined}>
+            <motion.div
+              className={styles.jersey}
+              animate={{ scale: [0.97, 1] }}
+              transition={{ duration: 0.5 }}
+              key={p.number}
+            >
               <span className={styles.jerseySurname}>{p.surname || "APELLIDO"}</span>
               <span className={styles.jerseyNumber}>{p.number}</span>
-            </div>
+            </motion.div>
           </div>
           <label className={styles.field}>
             <span>Apellido</span>
@@ -270,14 +345,22 @@ function IdentityScreen(p: IdentityProps) {
   );
 }
 
-function CareerScreen({ career, onChoose }: { career: CareerState; onChoose: (id: string) => void }) {
+function CareerScreen({ career, onChoose, reduceMotion }: { career: CareerState; onChoose: (id: string) => void; reduceMotion: boolean }) {
   const event = career.pendingEvent;
   return (
     <div className={styles.careerScreen}>
       <div className={styles.profileCol}>
         <div className={styles.profileCard}>
           <div className={styles.profileHead}>
-            <span className={`${styles.ovrBadge} ${ovrTier(career.ovr)}`}>{career.ovr}</span>
+            <motion.span
+              key={career.ovr}
+              className={`${styles.ovrBadge} ${ovrTier(career.ovr)}`}
+              initial={reduceMotion ? undefined : { scale: 0.6, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: "spring", stiffness: 120, damping: 14 }}
+            >
+              {career.ovr}
+            </motion.span>
             <div className={styles.profileInfo}>
               <div className={styles.profileChips}>
                 <img src={flagUrl(career.countryCode)} alt="" width={18} height={13} />
@@ -286,28 +369,31 @@ function CareerScreen({ career, onChoose }: { career: CareerState; onChoose: (id
               <div className={styles.profileMeta}>
                 <span className={styles.profileAge}>EDAD {career.age}</span>
                 <span className={styles.profileValue}>
-                  VALOR {formatMoney(career.marketValue)}
+                  VALOR <AnimatedNumber value={formatMoney(career.marketValue)} reduceMotion={reduceMotion} />
                 </span>
               </div>
             </div>
           </div>
           <div className={styles.profileClub}>
-            <span className={styles.clubDot} style={{ background: career.club.color }} />
-            {career.club.name}
+            <img src={career.club.logoUrl} alt="" className={styles.clubCrest} />
+            <span>
+              {career.club.name}
+              <span className={styles.profileClubLeague}>{career.club.league}</span>
+            </span>
           </div>
 
           <div className={styles.statsRow}>
             <div className={styles.statBox}>
               <span className={styles.statLabel}>PJ</span>
-              <span className={styles.statValue}>{career.totalPj}</span>
+              <AnimatedNumber value={career.totalPj} className={styles.statValue} reduceMotion={reduceMotion} />
             </div>
             <div className={styles.statBox}>
               <span className={styles.statLabel}>GLS</span>
-              <span className={styles.statValue}>{career.totalGls}</span>
+              <AnimatedNumber value={career.totalGls} className={styles.statValue} reduceMotion={reduceMotion} />
             </div>
             <div className={styles.statBox}>
               <span className={styles.statLabel}>AST</span>
-              <span className={styles.statValue}>{career.totalAst}</span>
+              <AnimatedNumber value={career.totalAst} className={styles.statValue} reduceMotion={reduceMotion} />
             </div>
           </div>
 
@@ -315,25 +401,46 @@ function CareerScreen({ career, onChoose }: { career: CareerState; onChoose: (id
             {career.trophies.length === 0 ? (
               <span className={styles.emptyCase}>Vitrina vacía</span>
             ) : (
-              <span className={styles.trophyCount}>🏆 {career.trophies.length} trofeo{career.trophies.length !== 1 ? "s" : ""}</span>
+              <div className={styles.trophyIcons}>
+                {career.trophies.slice(-6).map((tr, i) => (
+                  <img key={i} src={trophyLogo(tr.label, career.club)} alt={tr.label} title={`${tr.label} · ${tr.club} (${tr.age})`} className={styles.trophyIcon} />
+                ))}
+                {career.trophies.length > 6 && <span className={styles.trophyMore}>+{career.trophies.length - 6}</span>}
+              </div>
             )}
           </div>
 
-          {event && (
-            <div className={styles.eventBox}>
-              <h3 className={styles.eventTitle}>{event.title}</h3>
-              <p className={styles.eventDesc}>{event.description}</p>
-              <div className={styles.eventOptions}>
-                {event.options.map((opt) => (
-                  <button key={opt.id} className={styles.eventOption} onClick={() => onChoose(opt.id)}>
-                    <span className={styles.eventOptionLabel}>{opt.label}</span>
-                    <span className={styles.eventOptionEffect}>{opt.effect}</span>
-                    {opt.risk && <span className={styles.eventOptionRisk}>{opt.risk}</span>}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+          <AnimatePresence mode="wait">
+            {event && (
+              <motion.div
+                key={event.title + career.age}
+                className={styles.eventBox}
+                initial={reduceMotion ? undefined : { opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={reduceMotion ? undefined : { opacity: 0 }}
+                transition={{ duration: 0.4 }}
+              >
+                <h3 className={styles.eventTitle}>{event.title}</h3>
+                <p className={styles.eventDesc}>{event.description}</p>
+                <div className={styles.eventOptions}>
+                  {event.options.map((opt) => (
+                    <motion.button
+                      key={opt.id}
+                      className={styles.eventOption}
+                      onClick={() => onChoose(opt.id)}
+                      whileHover={reduceMotion ? undefined : { scale: 1.015 }}
+                      whileTap={reduceMotion ? undefined : { scale: 0.98 }}
+                      style={opt.image ? { backgroundImage: `linear-gradient(90deg, rgba(11,18,32,.94), rgba(11,18,32,.55)), url(${opt.image})` } : undefined}
+                    >
+                      <span className={styles.eventOptionLabel}>{opt.label}</span>
+                      <span className={styles.eventOptionEffect}>{opt.effect}</span>
+                      {opt.risk && <span className={styles.eventOptionRisk}>{opt.risk}</span>}
+                    </motion.button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
@@ -347,18 +454,26 @@ function CareerScreen({ career, onChoose }: { career: CareerState; onChoose: (id
           <span>AST</span>
         </div>
         {career.history.map((h, i) => (
-          <div key={i} className={`${styles.timelineRow} ${i === career.history.length - 1 ? styles.timelineRowCurrent : ""}`}>
+          <motion.div
+            key={i}
+            className={`${styles.timelineRow} ${i === career.history.length - 1 ? styles.timelineRowCurrent : ""}`}
+            initial={reduceMotion ? undefined : { opacity: 0, x: -8 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.4, delay: reduceMotion ? 0 : Math.min(i * 0.05, 0.4) }}
+          >
             <span className={styles.timelineAge}>{h.age}</span>
             <span className={styles.timelineClub}>
-              <span className={styles.clubDot} style={{ background: h.club.color }} />
+              <img src={h.club.logoUrl} alt="" className={styles.timelineCrest} />
               {h.club.name}
-              {h.trophies.length > 0 && <span className={styles.timelineTrophy} title={h.trophies.join(", ")}>🏆</span>}
+              {h.trophies.length > 0 && (
+                <img src={trophyLogo(h.trophies[0], h.club)} alt="" className={styles.timelineTrophy} title={h.trophies.join(", ")} />
+              )}
             </span>
             <span className={`${styles.timelineOvr} ${ovrTier(h.ovr)}`}>{h.ovr}</span>
             <span>{h.pj}</span>
             <span>{h.gls}</span>
             <span>{h.ast}</span>
-          </div>
+          </motion.div>
         ))}
         <div className={styles.timelineRow}>
           <span className={styles.timelineAge}>{career.age}</span>
@@ -394,9 +509,9 @@ function RetiredScreen({ career, onSummary, onPlayAgain }: { career: CareerState
 
 function SummaryScreen({ career, onPlayAgain }: { career: CareerState; onPlayAgain: () => void }) {
   const byClub = useMemo(() => {
-    const map = new Map<string, { name: string; color: string; pj: number; gls: number; ast: number; trophies: number }>();
+    const map = new Map<string, { club: CareerClub; pj: number; gls: number; ast: number; trophies: number }>();
     for (const h of career.history) {
-      const cur = map.get(h.club.id) ?? { name: h.club.name, color: h.club.color, pj: 0, gls: 0, ast: 0, trophies: 0 };
+      const cur = map.get(h.club.id) ?? { club: h.club, pj: 0, gls: 0, ast: 0, trophies: 0 };
       cur.pj += h.pj;
       cur.gls += h.gls;
       cur.ast += h.ast;
@@ -410,7 +525,8 @@ function SummaryScreen({ career, onPlayAgain }: { career: CareerState; onPlayAga
     <div className={styles.summaryScreen}>
       <h1 className={styles.identityTitle}>Resumen de carrera</h1>
       <p className={styles.startDesc}>
-        {career.surname} #{career.number} · {career.position} · <img src={flagUrl(career.countryCode)} alt="" width={16} height={12} style={{ verticalAlign: "middle" }} /> {career.countryName}
+        {career.surname} #{career.number} · {career.position} ·{" "}
+        <img src={flagUrl(career.countryCode)} alt="" width={16} height={12} style={{ verticalAlign: "middle" }} /> {career.countryName}
       </p>
 
       <div className={styles.summaryStats}>
@@ -445,9 +561,10 @@ function SummaryScreen({ career, onPlayAgain }: { career: CareerState; onPlayAga
         <p className={styles.emptyCase}>Vitrina vacía</p>
       ) : (
         <div className={styles.trophyList}>
-          {career.trophies.map((t, i) => (
+          {career.trophies.map((tr, i) => (
             <span key={i} className={styles.trophyPill}>
-              🏆 {t.label} · {t.club} ({t.age})
+              <img src={trophyLogo(tr.label, byClub.find((c) => c.club.name === tr.club)?.club ?? career.club)} alt="" className={styles.trophyPillIcon} />
+              {tr.label} · {tr.club} ({tr.age})
             </span>
           ))}
           {career.awards.map((a, i) => (
@@ -461,10 +578,10 @@ function SummaryScreen({ career, onPlayAgain }: { career: CareerState; onPlayAga
       <h2 className={styles.colTitle}>Por club</h2>
       <div className={styles.clubBreakdown}>
         {byClub.map((c) => (
-          <div key={c.name} className={styles.clubCard} style={{ borderColor: c.color }}>
+          <div key={c.club.id} className={styles.clubCard}>
             <div className={styles.clubCardHead}>
-              <span className={styles.clubDot} style={{ background: c.color }} />
-              <strong>{c.name}</strong>
+              <img src={c.club.logoUrl} alt="" className={styles.clubCrest} />
+              <strong>{c.club.name}</strong>
             </div>
             <div className={styles.clubCardStats}>
               <span>{c.pj} PJ</span>
