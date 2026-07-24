@@ -1,8 +1,10 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { CONTINENTAL_CUP_LOGO, COUNTRIES, CareerClub, LEAGUE_LOGOS, PITCH_LAYOUT, PitchPosition } from "../lib/careerData";
-import { CareerState, newCareer, resolveOption } from "../lib/careerEngine";
+import { CONTINENTAL_CUP_LOGO, COUNTRIES, CareerClub, LEAGUE_LOGOS, PITCH_LAYOUT, PitchPosition, findClub } from "../lib/careerData";
+import { CareerEvent, CareerState, newCareer, resolveOption } from "../lib/careerEngine";
+import CountUp from "../components/CountUp";
+import Stack, { StackCard } from "../components/Stack";
 import { IconStar } from "../components/icons";
 import { formatMoney } from "../lib/money";
 import styles from "./TuLeyenda.module.css";
@@ -345,6 +347,63 @@ function IdentityScreen(p: IdentityProps) {
   );
 }
 
+// Cuando TODAS las opciones apuntan a un club (cantera, préstamo, regreso,
+// mercado, declive) se muestran como una pila de cartas arrastrable — se
+// siente como hojear ofertas físicas. El resto (competencia, mentor,
+// narrativos…) son decisiones abstractas sin escudo, así que se quedan como
+// botones simples.
+function EventOptions({ event, onChoose, reduceMotion }: { event: CareerEvent; onChoose: (id: string) => void; reduceMotion: boolean }) {
+  const isClubChoice = event.options.length > 1 && event.options.every((o) => o.clubId);
+
+  if (isClubChoice) {
+    const cards: StackCard[] = event.options
+      .map((opt): StackCard | null => {
+        const club = opt.clubId ? findClub(opt.clubId) : undefined;
+        if (!club) return null;
+        return {
+          id: opt.id,
+          content: (
+            <div className={styles.stackCard}>
+              <img src={club.logoUrl} alt="" className={styles.stackCardCrest} />
+              <strong className={styles.stackCardClub}>{club.name}</strong>
+              <span className={styles.stackCardLeague}>{club.league}</span>
+              <span className={styles.stackCardAction}>{opt.label}</span>
+            </div>
+          ),
+        };
+      })
+      .filter((c): c is StackCard => !!c);
+
+    return (
+      <div>
+        <div className={styles.stackWrap}>
+          <Stack cards={cards} onSelect={onChoose} />
+        </div>
+        <p className={styles.stackHint}>Arrastrá la carta de encima para ver otra opción · tocala para elegirla</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.eventOptions}>
+      {event.options.map((opt) => (
+        <motion.button
+          key={opt.id}
+          className={styles.eventOption}
+          onClick={() => onChoose(opt.id)}
+          whileHover={reduceMotion ? undefined : { scale: 1.015 }}
+          whileTap={reduceMotion ? undefined : { scale: 0.98 }}
+          style={opt.image ? { backgroundImage: `linear-gradient(90deg, rgba(11,18,32,.94), rgba(11,18,32,.55)), url(${opt.image})` } : undefined}
+        >
+          <span className={styles.eventOptionLabel}>{opt.label}</span>
+          <span className={styles.eventOptionEffect}>{opt.effect}</span>
+          {opt.risk && <span className={styles.eventOptionRisk}>{opt.risk}</span>}
+        </motion.button>
+      ))}
+    </div>
+  );
+}
+
 function CareerScreen({ career, onChoose, reduceMotion }: { career: CareerState; onChoose: (id: string) => void; reduceMotion: boolean }) {
   const event = career.pendingEvent;
   return (
@@ -352,15 +411,9 @@ function CareerScreen({ career, onChoose, reduceMotion }: { career: CareerState;
       <div className={styles.profileCol}>
         <div className={styles.profileCard}>
           <div className={styles.profileHead}>
-            <motion.span
-              key={career.ovr}
-              className={`${styles.ovrBadge} ${ovrTier(career.ovr)}`}
-              initial={reduceMotion ? undefined : { scale: 0.6, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ type: "spring", stiffness: 120, damping: 14 }}
-            >
-              {career.ovr}
-            </motion.span>
+            <span className={`${styles.ovrBadge} ${ovrTier(career.ovr)}`}>
+              <CountUp to={career.ovr} duration={0.9} />
+            </span>
             <div className={styles.profileInfo}>
               <div className={styles.profileChips}>
                 <img src={flagUrl(career.countryCode)} alt="" width={18} height={13} />
@@ -385,15 +438,21 @@ function CareerScreen({ career, onChoose, reduceMotion }: { career: CareerState;
           <div className={styles.statsRow}>
             <div className={styles.statBox}>
               <span className={styles.statLabel}>PJ</span>
-              <AnimatedNumber value={career.totalPj} className={styles.statValue} reduceMotion={reduceMotion} />
+              <span className={styles.statValue}>
+                <CountUp to={career.totalPj} duration={0.9} />
+              </span>
             </div>
             <div className={styles.statBox}>
               <span className={styles.statLabel}>GLS</span>
-              <AnimatedNumber value={career.totalGls} className={styles.statValue} reduceMotion={reduceMotion} />
+              <span className={styles.statValue}>
+                <CountUp to={career.totalGls} duration={0.9} />
+              </span>
             </div>
             <div className={styles.statBox}>
               <span className={styles.statLabel}>AST</span>
-              <AnimatedNumber value={career.totalAst} className={styles.statValue} reduceMotion={reduceMotion} />
+              <span className={styles.statValue}>
+                <CountUp to={career.totalAst} duration={0.9} />
+              </span>
             </div>
           </div>
 
@@ -422,22 +481,7 @@ function CareerScreen({ career, onChoose, reduceMotion }: { career: CareerState;
               >
                 <h3 className={styles.eventTitle}>{event.title}</h3>
                 <p className={styles.eventDesc}>{event.description}</p>
-                <div className={styles.eventOptions}>
-                  {event.options.map((opt) => (
-                    <motion.button
-                      key={opt.id}
-                      className={styles.eventOption}
-                      onClick={() => onChoose(opt.id)}
-                      whileHover={reduceMotion ? undefined : { scale: 1.015 }}
-                      whileTap={reduceMotion ? undefined : { scale: 0.98 }}
-                      style={opt.image ? { backgroundImage: `linear-gradient(90deg, rgba(11,18,32,.94), rgba(11,18,32,.55)), url(${opt.image})` } : undefined}
-                    >
-                      <span className={styles.eventOptionLabel}>{opt.label}</span>
-                      <span className={styles.eventOptionEffect}>{opt.effect}</span>
-                      {opt.risk && <span className={styles.eventOptionRisk}>{opt.risk}</span>}
-                    </motion.button>
-                  ))}
-                </div>
+                <EventOptions event={event} onChoose={onChoose} reduceMotion={reduceMotion} />
               </motion.div>
             )}
           </AnimatePresence>
