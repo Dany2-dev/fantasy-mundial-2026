@@ -140,14 +140,18 @@ export function detectAwards(c: AwardContext, roll: () => number): string[] {
 
   // Bota de oro: goles muy por encima de lo esperado en su puesto.
   if (isAttacker && c.gls >= 15 && c.performance >= 1.12 && roll() < 0.65) {
-    out.push("Bota de Oro de la liga");
+    out.push("Bota de Oro");
+  }
+  // Guante de oro: el equivalente para porteros.
+  if (c.position === "POR" && c.performance >= 1.12 && c.pj >= 24 && roll() < 0.5) {
+    out.push("Guante de Oro");
   }
   // Once ideal: rendir por encima de lo esperado en un club competitivo.
   if (c.performance >= 1.1 && c.clubTier >= 3 && c.pj >= 20 && roll() < 0.5) {
     out.push("Once ideal de la liga");
   }
   // Mejor defensa: el reconocimiento propio de los puestos que no puntúan.
-  if (isDefensive && c.performance >= 1.12 && c.pj >= 24 && c.clubTier >= 2 && roll() < 0.45) {
+  if (isDefensive && c.position !== "POR" && c.performance >= 1.12 && c.pj >= 24 && c.clubTier >= 2 && roll() < 0.45) {
     out.push("Mejor defensa de la liga");
   }
   // Mejor joven: sub-23 con temporada notable.

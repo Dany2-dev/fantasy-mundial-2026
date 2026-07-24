@@ -44,6 +44,7 @@ import {
   detectMilestones,
   stageNarrative,
 } from "./careerNarrative";
+import { MUNDIAL, continentalCupsFor, domesticCupTrophy, leagueTrophy } from "./careerTrophies";
 
 export interface CareerTrophy {
   label: string;
@@ -65,6 +66,21 @@ export interface CareerStage {
   gls: number;
   ast: number;
   trophies: string[];
+}
+
+/**
+ * Resultado de una decisión con porcentaje (competir por el puesto, doble
+ * turno…). La UI lo usa para animar la ruleta de la suerte: la aguja gira y
+ * se detiene en `rolled`, dentro o fuera de la zona verde de `chance`.
+ */
+export interface LuckRoll {
+  /** Probabilidad de éxito que se le mostró al jugador, 0-100. */
+  chance: number;
+  /** Número que salió, 0-100. Éxito si es menor que `chance`. */
+  rolled: number;
+  success: boolean;
+  successLabel: string;
+  failLabel: string;
 }
 
 export interface CareerOption {
@@ -133,6 +149,8 @@ export interface CareerState {
   history: CareerStage[];
   /** Relato de la última etapa simulada — alimenta el panel de historia. */
   lastStage: StageOutcome | null;
+  /** Resultado del último tiro de suerte — alimenta la ruleta de la UI. */
+  lastRoll: LuckRoll | null;
   retired: boolean;
   pendingEvent: CareerEvent | null;
 }
@@ -221,6 +239,7 @@ export function newCareer(input: {
     pendingMinutes: 1,
     history: [],
     lastStage: null,
+    lastRoll: null,
     retired: false,
     pendingEvent: buildCanteraEvent(club, input.countryName),
   };
@@ -324,17 +343,47 @@ function simulateStage(s: CareerState, minutesShare: number): StageResult {
   };
 }
 
-/** Títulos: manda el nivel real del club; tu rendimiento solo lo matiza. */
+/**
+ * Títulos ganados en la etapa. Manda el nivel real del club (un tier 5 gana
+ * ligas seguido, un tier 1 casi nunca) y tu rendimiento lo matiza. Cada club
+ * solo puede ganar lo que le corresponde: liga y copa de SU país, y la copa
+ * continental de SU confederación.
+ */
 function rollTrophies(s: CareerState, performance: number): string[] {
-  const baseByTier = [0, 0.03, 0.08, 0.18, 0.36, 0.6][s.club.tier] ?? 0.03;
-  const chance = clamp(baseByTier * (0.75 + performance * 0.35), 0.01, 0.78);
   const out: string[] = [];
-  if (Math.random() < chance) out.push(s.club.tier >= 4 ? pick(["Liga", "Liga", "Copa Nacional"]) : pick(["Liga", "Copa Nacional"]));
-  // Los gigantes pelean además la copa continental.
-  if (s.club.tier >= 4 && Math.random() < (s.club.tier === 5 ? 0.22 : 0.1) * (0.7 + performance * 0.4)) {
-    out.push("Copa Continental");
+  const league = s.club.league;
+  const perf = 0.75 + performance * 0.35;
+
+  // Liga: lo más difícil de todo, hay que ser de los mejores del país.
+  const ligaChance = clamp(([0, 0.02, 0.05, 0.12, 0.26, 0.45][s.club.tier] ?? 0.02) * perf, 0.005, 0.6);
+  if (Math.random() < ligaChance) out.push(leagueTrophy(league).name);
+
+  // Copa nacional: más accesible, entra cualquiera con una buena racha.
+  const copaChance = clamp(([0, 0.05, 0.09, 0.15, 0.24, 0.33][s.club.tier] ?? 0.05) * perf, 0.01, 0.5);
+  if (Math.random() < copaChance) out.push(domesticCupTrophy(league).name);
+
+  // Continental: solo si el club realmente juega esa competición.
+  const cups = continentalCupsFor(league, s.club.tier);
+  if (cups.length) {
+    const contChance = clamp(([0, 0, 0.04, 0.09, 0.16, 0.28][s.club.tier] ?? 0) * perf, 0, 0.4);
+    if (Math.random() < contChance) {
+      // La primera de la lista es la que le corresponde por jerarquía; a veces
+      // cae la secundaria (un grande que se va a la Europa League, por ejemplo).
+      const cup = cups.length > 1 && Math.random() < 0.3 ? cups[1] : cups[0];
+      out.push(cup.name);
+    }
   }
   return out;
+}
+
+/**
+ * Mundial con la selección: solo si sos internacional y estás en tu mejor
+ * momento. Se juega cada 4 años, así que puede caer una vez cada dos etapas.
+ */
+function rollWorldCup(s: CareerState, caps: number, performance: number): boolean {
+  if (caps === 0 || s.ovr < 80) return false;
+  const chance = clamp((s.ovr - 78) / 60 + (performance - 1) * 0.12, 0.02, 0.2);
+  return Math.random() < chance;
 }
 
 /** Convocatorias: hace falta nivel y, sobre todo, estar rindiendo. */
@@ -362,7 +411,9 @@ function updateReputation(s: CareerState, r: StageResult, trophies: string[], aw
   rep += trophies.length * 5 + (trophies.includes("Copa Continental") ? 5 : 0);
   rep += awards.length * 8;
   rep += caps * 0.3;
-  rep += (s.club.tier - 2) * 1.5;
+  // Jugar en un club grande da cartel; jugar en uno chico es neutro, no un
+  // castigo: un goleador de club humilde igual se hace un nombre.
+  rep += Math.max(0, s.club.tier - 2) * 1.8;
   // Olvido proporcional: mantener un nombre grande cuesta más que hacerlo.
   // Esto crea un equilibrio natural en vez de dejar que todos saturen en 100.
   rep -= 1 + rep * 0.09;
@@ -666,6 +717,7 @@ export function resolveOption(s: CareerState, optionId: string): CareerState {
   let minutes = 1;
   let bonusTrophies: string[] = [];
   let injured = false;
+  let luck: LuckRoll | null = null;
   const opt = event.options.find((o) => o.id === optionId);
 
   switch (event.kind) {
@@ -690,7 +742,16 @@ export function resolveOption(s: CareerState, optionId: string): CareerState {
     case "competencia": {
       if (optionId === "competir") {
         const titular = Number(event.options[0].effect.replace(/\D/g, ""));
-        minutes = Math.random() * 100 < titular ? 1.1 : 0.4;
+        const rolled = Math.random() * 100;
+        const success = rolled < titular;
+        luck = {
+          chance: titular,
+          rolled: Math.round(rolled),
+          success,
+          successLabel: "Te ganaste el puesto de titular",
+          failLabel: "Te quedaste en la rotación",
+        };
+        minutes = success ? 1.1 : 0.4;
       } else {
         const dest = pick(clubPool({ tier: Math.max(1, interestTier(s) - 1), country: s.countryName, abroad: canGoAbroad(s), excludeIds: [s.club.id] }));
         next.club = dest;
@@ -727,7 +788,16 @@ export function resolveOption(s: CareerState, optionId: string): CareerState {
     case "doble-turno": {
       if (optionId === "fondo") {
         const exito = Number(event.options[0].effect.replace(/\D/g, ""));
-        if (Math.random() * 100 < exito) {
+        const rolled = Math.random() * 100;
+        const success = rolled < exito;
+        luck = {
+          chance: exito,
+          rolled: Math.round(rolled),
+          success,
+          successLabel: "El trabajo extra dio resultado",
+          failLabel: "Te rompiste: lesión por sobrecarga",
+        };
+        if (success) {
           minutes = 1.12;
           next.potential = Math.min(99, s.potential + rand(1, 3)); // rompés tu techo
         } else {
@@ -762,8 +832,10 @@ export function resolveOption(s: CareerState, optionId: string): CareerState {
     99
   );
 
-  const trophies = [...bonusTrophies, ...rollTrophies(next, result.performance)];
   const caps = rollCaps(next, result.performance);
+  const totalCaps = next.caps + caps;
+  const trophies = [...bonusTrophies, ...rollTrophies(next, result.performance)];
+  if (rollWorldCup(next, totalCaps, result.performance)) trophies.push(MUNDIAL.name);
 
   const awardCtx: AwardContext = {
     position: next.position,
@@ -781,7 +853,6 @@ export function resolveOption(s: CareerState, optionId: string): CareerState {
   const totalPj = next.totalPj + result.pj;
   const totalGls = next.totalGls + result.gls;
   const totalAst = next.totalAst + result.ast;
-  const totalCaps = next.caps + caps;
 
   const milestoneCtx: MilestoneContext = {
     prevTotalGls: next.totalGls,
@@ -843,6 +914,7 @@ export function resolveOption(s: CareerState, optionId: string): CareerState {
       { age: next.age, club: next.club, ovr: ovrAfter, pj: result.pj, gls: result.gls, ast: result.ast, trophies },
     ],
     lastStage: outcome,
+    lastRoll: luck,
   };
 
   // Retiro: por edad tope, o por nivel demasiado bajo pasados los 33.

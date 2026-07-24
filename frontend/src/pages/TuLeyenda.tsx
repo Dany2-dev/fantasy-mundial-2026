@@ -1,11 +1,13 @@
 import { motion, useReducedMotion } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { CONTINENTAL_CUP_LOGO, COUNTRIES, CareerClub, LEAGUE_LOGOS, PITCH_LAYOUT, PitchPosition, findClub } from "../lib/careerData";
-import { CareerEvent, CareerState, newCareer, resolveOption } from "../lib/careerEngine";
+import { COUNTRIES, CareerClub, PITCH_LAYOUT, PitchPosition, findClub } from "../lib/careerData";
+import { CareerEvent, CareerState, LuckRoll, newCareer, resolveOption } from "../lib/careerEngine";
 import { StageOutcome, careerEpitaph, scoutingHint, stageNarrative } from "../lib/careerNarrative";
+import { trophyByName } from "../lib/careerTrophies";
 import CountUp from "../components/CountUp";
-import Stack, { StackCard } from "../components/Stack";
+import LuckGauge from "../components/LuckGauge";
+import { TrophyGlyph } from "../components/TrophyIcons";
 import { IconStar } from "../components/icons";
 import { formatMoney } from "../lib/money";
 import styles from "./TuLeyenda.module.css";
@@ -26,9 +28,30 @@ function flagUrl(code: string) {
   return `https://flagcdn.com/w80/${code}.png`;
 }
 
-function trophyLogo(label: string, club: CareerClub): string {
-  if (label === "Copa Continental") return CONTINENTAL_CUP_LOGO;
-  return LEAGUE_LOGOS[club.league] ?? CONTINENTAL_CUP_LOGO;
+// Un título se dibuja con su logo real (ligas, copas, Champions, Mundial…) o
+// con un SVG propio cuando es un premio individual sin logo oficial.
+function TrophyBadge({
+  label,
+  league,
+  size = 24,
+  title,
+  className,
+}: {
+  label: string;
+  league?: string;
+  size?: number;
+  title?: string;
+  className?: string;
+}) {
+  const def = trophyByName(label, league);
+  if (def.logoUrl) {
+    return <img src={def.logoUrl} alt="" title={title ?? def.name} className={className} width={size} height={size} />;
+  }
+  return (
+    <span className={className} title={title ?? def.name} style={{ color: "var(--oro-claro)", display: "inline-flex" }}>
+      <TrophyGlyph icon={def.icon ?? "trophy"} size={size} />
+    </span>
+  );
 }
 
 function reputationLabel(rep: number): string {
@@ -41,15 +64,28 @@ function reputationLabel(rep: number): string {
 }
 
 // Panel de historia: qué pasó en las dos temporadas que acabás de jugar.
-function StageReport({ stage, position, reduceMotion }: { stage: StageOutcome; position: PitchPosition; reduceMotion: boolean }) {
+function StageReport({
+  stage,
+  position,
+  luck,
+  reduceMotion,
+}: {
+  stage: StageOutcome;
+  position: PitchPosition;
+  luck: LuckRoll | null;
+  reduceMotion: boolean;
+}) {
   const delta = stage.ovrAfter - stage.ovrBefore;
   return (
     <motion.div
       className={styles.reportBox}
-      initial={reduceMotion ? undefined : { opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={reduceMotion ? undefined : { y: 8 }}
+      animate={{ y: 0 }}
       transition={{ duration: 0.45 }}
     >
+      {/* Si la decisión anterior tenía porcentaje, primero se ve cómo cayó. */}
+      {luck && <LuckGauge roll={luck} />}
+
       <div className={styles.reportHead}>
         <span className={styles.reportSeason}>
           {stage.ageFrom}–{stage.ageTo} · {stage.clubName}
@@ -78,7 +114,7 @@ function StageReport({ stage, position, reduceMotion }: { stage: StageOutcome; p
         <div className={styles.reportBadges}>
           {stage.awards.map((a) => (
             <span key={a} className={styles.awardBadge}>
-              🏅 {a}
+              <TrophyBadge label={a} size={14} className={styles.badgeIcon} /> {a}
             </span>
           ))}
           {stage.milestones.map((m) => (
@@ -92,10 +128,13 @@ function StageReport({ stage, position, reduceMotion }: { stage: StageOutcome; p
   );
 }
 
+// Entrada de pantalla: SOLO desplazamiento, sin fundido. Un `opacity: 0`
+// inicial deja la pantalla entera invisible si el navegador congela los
+// frames (pestaña en segundo plano, ahorro de energía); con transform, el
+// peor caso es que aparezca 12px desplazada pero perfectamente usable.
 const fade = {
-  initial: { opacity: 0, y: 12 },
-  animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -8 },
+  initial: { y: 12 },
+  animate: { y: 0 },
 };
 
 // Pop sutil cada vez que cambia el valor — se usa en OVR, valor de mercado y
@@ -105,8 +144,8 @@ function AnimatedNumber({ value, className, reduceMotion }: { value: string | nu
     <motion.span
       key={value}
       className={className}
-      initial={reduceMotion ? undefined : { opacity: 0, y: -4 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={reduceMotion ? undefined : { y: -4 }}
+      animate={{ y: 0 }}
       transition={{ duration: 0.4 }}
     >
       {value}
@@ -402,50 +441,54 @@ function IdentityScreen(p: IdentityProps) {
   );
 }
 
-// Cuando TODAS las opciones apuntan a un club (cantera, préstamo, regreso,
-// mercado, declive) se muestran como una pila de cartas arrastrable — se
-// siente como hojear ofertas físicas. El resto (competencia, mentor,
-// narrativos…) son decisiones abstractas sin escudo, así que se quedan como
-// botones simples.
+// Todas las opciones se ven a la vez, una al lado de la otra. Antes eran una
+// pila arrastrable, pero el gesto de arrastrar para ver la siguiente terminaba
+// disparando el click y elegías sin querer: con las cartas desplegadas no hay
+// ambigüedad entre "mirar" y "elegir".
 function EventOptions({ event, onChoose, reduceMotion }: { event: CareerEvent; onChoose: (id: string) => void; reduceMotion: boolean }) {
   const isClubChoice = event.options.length > 1 && event.options.every((o) => o.clubId);
 
   if (isClubChoice) {
-    const cards: StackCard[] = event.options
-      .map((opt): StackCard | null => {
-        const club = opt.clubId ? findClub(opt.clubId) : undefined;
-        if (!club) return null;
-        return {
-          id: opt.id,
-          content: (
-            <div className={styles.stackCard}>
-              <img src={club.logoUrl} alt="" className={styles.stackCardCrest} />
-              <strong className={styles.stackCardClub}>{club.name}</strong>
-              <span className={styles.stackCardLeague}>{club.league}</span>
-              <span className={styles.stackCardAction}>{opt.label}</span>
-            </div>
-          ),
-        };
-      })
-      .filter((c): c is StackCard => !!c);
-
     return (
-      <div>
-        <div className={styles.stackWrap}>
-          <Stack cards={cards} onSelect={onChoose} />
-        </div>
-        <p className={styles.stackHint}>Arrastrá la carta de encima para ver otra opción · tocala para elegirla</p>
+      <div className={styles.clubChoiceGrid}>
+        {event.options.map((opt, i) => {
+          const club = opt.clubId ? findClub(opt.clubId) : undefined;
+          if (!club) return null;
+          // Solo se anima el desplazamiento, nunca la opacidad: si el navegador
+          // congela los frames, la carta queda visible y clickeable.
+          return (
+            <motion.button
+              key={opt.id}
+              className={styles.clubChoiceCard}
+              onClick={() => onChoose(opt.id)}
+              initial={reduceMotion ? undefined : { y: 12 }}
+              animate={{ y: 0 }}
+              transition={{ duration: 0.35, delay: reduceMotion ? 0 : i * 0.07 }}
+              whileHover={reduceMotion ? undefined : { y: -4 }}
+              whileTap={reduceMotion ? undefined : { scale: 0.98 }}
+            >
+              <img src={club.logoUrl} alt="" className={styles.clubChoiceCrest} />
+              <strong className={styles.clubChoiceName}>{club.name}</strong>
+              <span className={styles.clubChoiceLeague}>{club.league}</span>
+              <span className={styles.clubChoiceAction}>{opt.label}</span>
+              {opt.risk && <span className={styles.clubChoiceRisk}>{opt.risk}</span>}
+            </motion.button>
+          );
+        })}
       </div>
     );
   }
 
   return (
     <div className={styles.eventOptions}>
-      {event.options.map((opt) => (
+      {event.options.map((opt, i) => (
         <motion.button
           key={opt.id}
           className={styles.eventOption}
           onClick={() => onChoose(opt.id)}
+          initial={reduceMotion ? undefined : { y: 10 }}
+          animate={{ y: 0 }}
+          transition={{ duration: 0.35, delay: reduceMotion ? 0 : i * 0.07 }}
           whileHover={reduceMotion ? undefined : { scale: 1.015 }}
           whileTap={reduceMotion ? undefined : { scale: 0.98 }}
           style={opt.image ? { backgroundImage: `linear-gradient(90deg, rgba(11,18,32,.94), rgba(11,18,32,.55)), url(${opt.image})` } : undefined}
@@ -532,7 +575,13 @@ function CareerScreen({ career, onChoose, reduceMotion }: { career: CareerState;
             ) : (
               <div className={styles.trophyIcons}>
                 {career.trophies.slice(-6).map((tr, i) => (
-                  <img key={i} src={trophyLogo(tr.label, career.club)} alt={tr.label} title={`${tr.label} · ${tr.club} (${tr.age})`} className={styles.trophyIcon} />
+                  <TrophyBadge
+                    key={i}
+                    label={tr.label}
+                    league={career.club.league}
+                    title={`${tr.label} · ${tr.club} (${tr.age})`}
+                    className={styles.trophyIcon}
+                  />
                 ))}
                 {career.trophies.length > 6 && <span className={styles.trophyMore}>+{career.trophies.length - 6}</span>}
               </div>
@@ -540,21 +589,12 @@ function CareerScreen({ career, onChoose, reduceMotion }: { career: CareerState;
           </div>
 
           {career.lastStage && (
-            <StageReport stage={career.lastStage} position={career.position} reduceMotion={reduceMotion} />
-          )}
-
-          {event && (
-            <motion.div
-              key={event.title + career.age}
-              className={styles.eventBox}
-              initial={reduceMotion ? undefined : { opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.4 }}
-            >
-              <h3 className={styles.eventTitle}>{event.title}</h3>
-              <p className={styles.eventDesc}>{event.description}</p>
-              <EventOptions event={event} onChoose={onChoose} reduceMotion={reduceMotion} />
-            </motion.div>
+            <StageReport
+              stage={career.lastStage}
+              position={career.position}
+              luck={career.lastRoll}
+              reduceMotion={reduceMotion}
+            />
           )}
         </div>
       </div>
@@ -572,17 +612,17 @@ function CareerScreen({ career, onChoose, reduceMotion }: { career: CareerState;
           <motion.div
             key={i}
             className={`${styles.timelineRow} ${i === career.history.length - 1 ? styles.timelineRowCurrent : ""}`}
-            initial={reduceMotion ? undefined : { opacity: 0, x: -8 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={reduceMotion ? undefined : { x: -8 }}
+            animate={{ x: 0 }}
             transition={{ duration: 0.4, delay: reduceMotion ? 0 : Math.min(i * 0.05, 0.4) }}
           >
             <span className={styles.timelineAge}>{h.age}</span>
             <span className={styles.timelineClub}>
               <img src={h.club.logoUrl} alt="" className={styles.timelineCrest} />
               {h.club.name}
-              {h.trophies.length > 0 && (
-                <img src={trophyLogo(h.trophies[0], h.club)} alt="" className={styles.timelineTrophy} title={h.trophies.join(", ")} />
-              )}
+              {h.trophies.map((t, ti) => (
+                <TrophyBadge key={ti} label={t} league={h.club.league} size={15} className={styles.timelineTrophy} title={t} />
+              ))}
             </span>
             <span className={`${styles.timelineOvr} ${ovrTier(h.ovr)}`}>{h.ovr}</span>
             <span>{h.pj}</span>
@@ -595,6 +635,22 @@ function CareerScreen({ career, onChoose, reduceMotion }: { career: CareerState;
           <span className={styles.timelineClubPending}>Eligiendo club…</span>
         </div>
       </div>
+
+      {/* La decisión ocupa todo el ancho: es la interacción principal y así
+          las opciones caben lado a lado, sin pilas ni arrastres. */}
+      {event && (
+        <motion.div
+          key={event.title + career.age}
+          className={styles.decisionPanel}
+          initial={reduceMotion ? undefined : { y: 10 }}
+          animate={{ y: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          <h3 className={styles.eventTitle}>{event.title}</h3>
+          <p className={styles.eventDesc}>{event.description}</p>
+          <EventOptions event={event} onChoose={onChoose} reduceMotion={reduceMotion} />
+        </motion.div>
+      )}
     </div>
   );
 }
@@ -688,13 +744,19 @@ function SummaryScreen({ career, onPlayAgain }: { career: CareerState; onPlayAga
         <div className={styles.trophyList}>
           {career.trophies.map((tr, i) => (
             <span key={i} className={styles.trophyPill}>
-              <img src={trophyLogo(tr.label, byClub.find((c) => c.club.name === tr.club)?.club ?? career.club)} alt="" className={styles.trophyPillIcon} />
+              <TrophyBadge
+                label={tr.label}
+                league={byClub.find((c) => c.club.name === tr.club)?.club.league ?? career.club.league}
+                size={16}
+                className={styles.trophyPillIcon}
+              />
               {tr.label} · {tr.club} ({tr.age})
             </span>
           ))}
           {career.awards.map((a, i) => (
             <span key={`a${i}`} className={styles.trophyPill}>
-              🏅 {a.label} · {a.club} ({a.age})
+              <TrophyBadge label={a.label} size={16} className={styles.trophyPillIcon} />
+              {a.label} · {a.club} ({a.age})
             </span>
           ))}
         </div>

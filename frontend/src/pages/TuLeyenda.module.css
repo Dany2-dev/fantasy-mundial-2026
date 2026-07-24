@@ -328,6 +328,7 @@
 .careerScreen {
   display: grid;
   grid-template-columns: 380px 1fr;
+  align-items: start;
   gap: var(--sp-5);
   background: var(--noche);
   border-radius: var(--r-card);
@@ -664,53 +665,67 @@
 }
 
 .eventOptions {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: var(--sp-3);
 }
 
-.stackWrap {
-  position: relative;
-  width: 100%;
-  max-width: 260px;
-  height: 200px;
-  margin: 0 auto var(--sp-3);
+.badgeIcon {
+  vertical-align: -2px;
 }
 
-.stackCard {
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(160deg, var(--tribuna-alta) 0%, var(--noche) 100%);
+/* Panel de decisión: ocupa las dos columnas para que las opciones quepan
+   lado a lado. Es la interacción principal del juego. */
+.decisionPanel {
+  grid-column: 1 / -1;
+  background: linear-gradient(160deg, rgba(47, 67, 196, 0.14) 0%, var(--tribuna) 100%);
   border: 1px solid var(--linea);
+  border-radius: var(--r-card);
+  padding: var(--sp-4) var(--sp-5);
+}
+
+.clubChoiceGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: var(--sp-3);
+}
+
+.clubChoiceCard {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   gap: 6px;
-  padding: var(--sp-3);
+  background: linear-gradient(160deg, var(--tribuna-alta) 0%, var(--noche) 100%);
+  border: 1px solid var(--linea);
+  border-radius: var(--r-input);
+  padding: var(--sp-4) var(--sp-3);
   text-align: center;
+  color: var(--crema);
 }
 
-.stackCardCrest {
-  width: 56px;
-  height: 56px;
+.clubChoiceCard:hover:not(:disabled) {
+  border-color: var(--crema);
+}
+
+.clubChoiceCrest {
+  width: 54px;
+  height: 54px;
   object-fit: contain;
   filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.5));
 }
 
-.stackCardClub {
+.clubChoiceName {
   font-size: 15px;
-  color: var(--crema);
 }
 
-.stackCardLeague {
+.clubChoiceLeague {
   font-size: 12px;
   color: var(--gris);
   font-weight: 600;
 }
 
-.stackCardAction {
-  margin-top: 6px;
+.clubChoiceAction {
+  margin-top: 4px;
   font-size: 11px;
   font-weight: 800;
   text-transform: uppercase;
@@ -718,11 +733,10 @@
   color: var(--pasto);
 }
 
-.stackHint {
-  text-align: center;
+.clubChoiceRisk {
   font-size: 11px;
-  color: var(--gris);
-  margin: 0;
+  font-weight: 700;
+  color: #ff9aa4;
 }
 
 .eventOption {
@@ -730,9 +744,9 @@
   flex-direction: column;
   align-items: flex-start;
   justify-content: center;
-  gap: 2px;
+  gap: 3px;
   width: 100%;
-  min-height: 56px;
+  min-height: 84px;
   background-color: var(--tribuna-alta);
   background-size: cover;
   background-position: center;
