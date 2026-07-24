@@ -89,5 +89,19 @@ export default function CountUp({
     return () => unsubscribe();
   }, [springValue, formatValue]);
 
+  // Red de seguridad: si el navegador congela los frames (pestaña en segundo
+  // plano, `prefers-reduced-motion`, rAF throttled), el resorte nunca emite
+  // cambios y el número se quedaría clavado en el valor inicial —el usuario
+  // vería un 0. Pasado el tiempo de la animación forzamos el valor final.
+  useEffect(() => {
+    const settle = setTimeout(
+      () => {
+        if (ref.current) ref.current.textContent = formatValue(direction === "down" ? from : to);
+      },
+      (delay + duration) * 1000 + 150
+    );
+    return () => clearTimeout(settle);
+  }, [delay, duration, direction, from, to, formatValue]);
+
   return <span className={className} ref={ref} />;
 }

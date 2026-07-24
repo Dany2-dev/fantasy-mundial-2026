@@ -473,6 +473,139 @@
   font-size: 20px;
 }
 
+/* Reputación: la barra que explica por qué te buscan (o te ignoran). */
+.repRow {
+  margin-bottom: var(--sp-4);
+}
+
+.repHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.repValue {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--oro-claro);
+}
+
+.repTrack {
+  height: 6px;
+  background: var(--tribuna-alta);
+  border-radius: var(--r-chip);
+  overflow: hidden;
+}
+
+.repFill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--wc-azul-vivo), var(--oro));
+  border-radius: var(--r-chip);
+}
+
+.repHint {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: var(--gris);
+  line-height: 1.4;
+}
+
+/* Informe de la etapa: el relato de lo que acabás de vivir. */
+.reportBox {
+  background: linear-gradient(160deg, rgba(47, 67, 196, 0.16) 0%, var(--noche) 100%);
+  border: 1px solid var(--linea);
+  border-radius: var(--r-input);
+  padding: var(--sp-3) var(--sp-4);
+  margin-bottom: var(--sp-3);
+}
+
+.reportHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  margin-bottom: 8px;
+}
+
+.reportSeason {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--gris);
+}
+
+.reportDelta {
+  font-family: var(--font-display);
+  font-size: 15px;
+}
+
+.deltaUp {
+  color: var(--pasto);
+}
+
+.deltaDown {
+  color: var(--rojo);
+}
+
+.reportStats {
+  display: flex;
+  gap: var(--sp-4);
+  font-size: 12px;
+  color: var(--gris);
+  margin-bottom: 8px;
+}
+
+.reportStats strong {
+  font-family: var(--font-display);
+  font-size: 16px;
+  color: var(--crema);
+  margin-right: 3px;
+}
+
+.reportText {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--crema);
+}
+
+.reportBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.awardBadge,
+.milestoneBadge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: var(--r-chip);
+}
+
+.awardBadge {
+  background: color-mix(in srgb, var(--oro) 22%, transparent);
+  color: var(--oro-claro);
+  border: 1px solid color-mix(in srgb, var(--oro) 45%, transparent);
+}
+
+.milestoneBadge {
+  background: color-mix(in srgb, var(--wc-azul-vivo) 24%, transparent);
+  color: #b9c6ff;
+  border: 1px solid color-mix(in srgb, var(--wc-azul-vivo) 45%, transparent);
+}
+
+.epitaph {
+  font-size: 15px;
+  font-style: italic;
+  color: var(--oro-claro);
+  line-height: 1.6;
+  margin: 0 0 var(--sp-5);
+}
+
 .trophyCase {
   padding-bottom: var(--sp-4);
   border-bottom: 1px solid var(--linea);

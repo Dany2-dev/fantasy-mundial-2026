@@ -113,6 +113,18 @@ export const LEAGUE_LOGOS: Record<string, string> = {
 };
 export const CONTINENTAL_CUP_LOGO = "https://images.fotmob.com/image_resources/logo/leaguelogo/42.png"; // Champions League
 
+// Ligas del "sueño europeo": el salto que cambia una carrera. Se usa para que
+// el evento correspondiente ofrezca destinos coherentes con su texto.
+export const EUROPEAN_LEAGUES = new Set([
+  "LaLiga",
+  "Premier League",
+  "Bundesliga",
+  "Serie A",
+  "Ligue 1",
+  "Eredivisie",
+  "Liga Portugal",
+]);
+
 export interface CareerClub {
   id: string;
   name: string;
@@ -291,6 +303,29 @@ export function clubsForTier(tier: number, excludeIds: string[] = []): CareerClu
 export function clubsForCountry(country: string, tier: number, excludeIds: string[] = []): CareerClub[] {
   const local = CLUBS.filter((c) => c.country === country && Math.abs(c.tier - tier) <= 1 && !excludeIds.includes(c.id));
   return local.length >= 2 ? local : clubsForTier(tier, excludeIds);
+}
+
+// Selector central del mercado: quién te ficharía AHORA. `abroad` se abre solo
+// cuando tu reputación ya cruzó el umbral de "lo siguen desde Europa" — así un
+// canterano mexicano empieza en Liga MX y, si de verdad rinde, termina
+// recibiendo ofertas de LaLiga o Premier, como pasa en la realidad.
+export function clubPool(opts: {
+  tier: number;
+  country: string;
+  abroad: boolean;
+  excludeIds?: string[];
+}): CareerClub[] {
+  const exclude = opts.excludeIds ?? [];
+  const inTier = (c: CareerClub) => Math.abs(c.tier - opts.tier) <= 1 && !exclude.includes(c.id);
+
+  if (!opts.abroad) {
+    const local = CLUBS.filter((c) => c.country === opts.country && inTier(c));
+    // Si tu país no tiene clubes de ese nivel en los datos (selecciones sin
+    // liga en FotMob), se abre el mercado igual para no dejarte sin opciones.
+    if (local.length >= 2) return local;
+  }
+  const global = CLUBS.filter(inTier);
+  return global.length >= 2 ? global : CLUBS.filter((c) => !exclude.includes(c.id));
 }
 
 // Solo clubes humildes (tier 1) para la oferta de cantera: nadie empieza en
