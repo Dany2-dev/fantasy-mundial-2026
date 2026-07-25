@@ -1,5 +1,5 @@
 import { motion } from "motion/react";
-import { CSSProperties, useEffect, useState } from "react";
+import { CSSProperties, Fragment, useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import { formatMoney } from "../lib/money";
@@ -30,22 +30,25 @@ import {
 import styles from "./Layout.module.css";
 import StickyBanner from "./StickyBanner";
 
-// Los 5 de uso diario van siempre visibles en el tab bar móvil.
+// Orden por lo que de verdad se usa cada día: primero armar y mover el equipo
+// (Mi Once, Mercado), luego conseguir cartas (Sobres, Colección) y al final lo
+// de consulta (clasificación, calendario, historial). Los 5 primeros son los
+// que caben en el tab bar móvil.
 const PRIMARY_NAV = [
   { to: "/", label: "Inicio", Icon: IconHome },
-  { to: "/sobres", label: "Sobres", Icon: IconPack },
-  { to: "/coleccion", label: "Colección", Icon: IconCards },
   { to: "/once", label: "Mi Once", Icon: IconBall },
   { to: "/mercado", label: "Mercado", Icon: IconExchange },
+  { to: "/sobres", label: "Sobres", Icon: IconPack },
+  { to: "/coleccion", label: "Colección", Icon: IconCards },
 ];
 // El resto vive detrás de "Más" en móvil; en escritorio el riel ya cabe todo.
 const MORE_NAV = [
   { to: "/ligas", label: "Ligas", Icon: IconTrophy },
   { to: "/partidos", label: "Partidos", Icon: IconCalendar },
   { to: "/rivales", label: "Rivales", Icon: IconUsers },
-  { to: "/historial", label: "Historial", Icon: IconClock },
   { to: "/jugar", label: "Jugar", Icon: IconGamepad },
   { to: "/leyenda", label: "Tu Leyenda", Icon: IconStar },
+  { to: "/historial", label: "Historial", Icon: IconClock },
 ];
 const NAV = [...PRIMARY_NAV, ...MORE_NAV];
 
@@ -154,16 +157,19 @@ export default function Layout() {
       {/* Escritorio: riel fijo a la izquierda que se expande al pasar el cursor. */}
       <aside className={styles.sidebar} aria-label="Navegación principal">
         <nav className={styles.sidebarNav}>
-          {NAV.map(({ to, label, Icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={to === "/"}
-              className={({ isActive }) => `${styles.sidebarItem} ${isActive ? styles.active : ""}`}
-            >
-              <Icon size={20} aria-hidden="true" className={styles.sidebarIcon} />
-              <span className={styles.sidebarLabel}>{label}</span>
-            </NavLink>
+          {NAV.map(({ to, label, Icon }, i) => (
+            <Fragment key={to}>
+              {/* Separa el bloque de uso diario del de consulta. */}
+              {i === PRIMARY_NAV.length && <span className={styles.sidebarDivider} aria-hidden="true" />}
+              <NavLink
+                to={to}
+                end={to === "/"}
+                className={({ isActive }) => `${styles.sidebarItem} ${isActive ? styles.active : ""}`}
+              >
+                <Icon size={20} aria-hidden="true" className={styles.sidebarIcon} />
+                <span className={styles.sidebarLabel}>{label}</span>
+              </NavLink>
+            </Fragment>
           ))}
         </nav>
 
@@ -250,7 +256,11 @@ export default function Layout() {
           </div>
         </motion.header>
 
-        <main className={styles.main}>
+        {/* Tu Leyenda es una experiencia inmersiva aparte: se le suelta el ancho
+            máximo para que ocupe todo el área de contenido. Se hace aquí y no
+            con márgenes negativos en la página porque salirse de un contenedor
+            centrado provoca scroll horizontal en cuanto aparece la barra. */}
+        <main className={`${styles.main} ${location.pathname === "/leyenda" ? styles.mainWide : ""}`}>
           <Outlet />
         </main>
 

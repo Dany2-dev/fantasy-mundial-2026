@@ -71,6 +71,14 @@
     color: var(--league-cta, var(--wc-rojo));
   }
 
+  /* Marca dónde acaba el bloque de uso diario. Se alinea con los iconos, no
+     con el borde del riel, para que no cruce todo el ancho al expandirse. */
+  .sidebarDivider {
+    height: 1px;
+    margin: 8px 11px;
+    background: var(--borde);
+  }
+
   .sidebarIcon {
     flex: none;
   }
@@ -278,6 +286,12 @@
   .main {
     padding-bottom: var(--sp-6);
   }
+}
+
+/* Páginas que piden todo el ancho disponible (Tu Leyenda). */
+.mainWide {
+  max-width: none;
+  padding-inline: clamp(var(--sp-4), 3vw, var(--sp-6));
 }
 
 /* ---------- Pie de página ---------- */

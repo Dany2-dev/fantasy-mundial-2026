@@ -11,7 +11,11 @@ model User {
   id        String   @id @default(cuid())
   email     String   @unique
   name      String
-  password  String
+  // Opcional: quien entra con Google nunca elige contraseña. Se guarda "" y
+  // el login por contraseña queda bloqueado para esa cuenta.
+  password  String   @default("")
+  googleId  String?  @unique
+  avatarUrl String?
   createdAt DateTime @default(now())
 
   owned          OwnedPlayer[]
@@ -78,9 +82,10 @@ model Player {
   competition   Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
   team          Team        @relation(fields: [teamId], references: [id], onDelete: Cascade)
 
-  owned    OwnedPlayer[]
-  stats    PlayerGameweekStats[]
-  listings PlayerListing[]
+  owned      OwnedPlayer[]
+  stats      PlayerGameweekStats[]
+  listings   PlayerListing[]
+  freeAgents FreeAgent[]
 
   @@unique([competitionId, fotmobId])
   @@index([competitionId])
@@ -105,8 +110,28 @@ model League {
   scores       UserGameweekScore[]
   trades       TradeOffer[]
   listings     PlayerListing[]
+  freeAgents   FreeAgent[]
 
   @@index([competitionId])
+}
+
+// Agentes libres: cada 24 h la liga saca un lote de jugadores SIN dueño que
+// cualquier mánager puede fichar al contado. El lote se regenera de forma
+// perezosa (la primera vez que alguien abre el mercado tras vencer el anterior),
+// así el juego no depende de un cron corriendo en el servidor.
+model FreeAgent {
+  id        String   @id @default(cuid())
+  leagueId  String
+  playerId  Int
+  price     Int
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  league    League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  // Un jugador no puede estar dos veces en el mismo lote.
+  @@unique([leagueId, playerId])
+  @@index([leagueId, expiresAt])
 }
 
 // El presupuesto vive AQUÍ, no en User: cada liga tiene su propia economía

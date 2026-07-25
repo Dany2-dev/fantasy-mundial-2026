@@ -111,50 +111,74 @@
 }
 
 .startScreen {
-  min-height: calc(100vh - 220px);
+  position: relative;
+  min-height: calc(100vh - 180px);
   display: flex;
   align-items: center;
   justify-content: center;
   background: radial-gradient(ellipse at top, var(--tribuna-alta) 0%, var(--noche) 55%, #05070d 100%);
   border-radius: var(--r-card);
-  padding: var(--sp-7) var(--sp-5);
+  padding: clamp(var(--sp-6), 8vh, var(--sp-8)) var(--sp-5);
   color: var(--crema);
+  overflow: hidden;
+}
+
+/* Líneas de cancha muy tenues detrás del texto: llenan el vacío del fondo sin
+   competir con el título. Decorativas, por eso no llevan marcado propio. */
+.startScreen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle at 50% 50%, transparent 118px, var(--linea) 119px, transparent 121px),
+    linear-gradient(90deg, transparent calc(50% - 0.5px), var(--linea) 50%, transparent calc(50% + 0.5px));
+  opacity: 0.28;
+  pointer-events: none;
 }
 
 .startInner {
-  max-width: 640px;
+  position: relative;
+  max-width: 880px;
   text-align: center;
 }
 
 .eyebrow {
-  color: var(--gris);
+  color: var(--oro-claro);
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   font-size: 13px;
-  margin-bottom: var(--sp-3);
+  margin-bottom: var(--sp-4);
 }
 
 .startTitle {
   font-family: var(--font-display);
-  font-size: clamp(32px, 5vw, 48px);
-  line-height: 1.1;
-  margin: 0 0 var(--sp-4);
+  font-size: clamp(44px, 7vw, 86px);
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  margin: 0 0 var(--sp-5);
+  color: var(--crema);
 }
 
 .startDesc {
   color: var(--gris);
-  font-size: 17px;
+  font-size: clamp(17px, 1.6vw, 21px);
   line-height: 1.6;
-  margin-bottom: var(--sp-6);
+  max-width: 62ch;
+  margin: 0 auto var(--sp-7);
 }
 
 .startActions {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--sp-3);
+  gap: var(--sp-4);
   flex-wrap: wrap;
+}
+
+/* El CTA es el único punto de entrada al juego: se le da tamaño de héroe. */
+.startActions button {
+  font-size: 17px;
+  padding: 15px 38px;
 }
 
 .linkBack {
@@ -209,12 +233,16 @@
   margin-bottom: var(--sp-5);
 }
 
+/* Polo negro con ribete dorado. El ribete son bandas de fondo colocadas a la
+   altura del puño y del bajo; como el clip-path recorta también a los hijos y
+   pseudoelementos, las bandas siguen solas la silueta de la camiseta. */
 .jersey {
-  --jc1: var(--wc-azul, #2a398d);
-  --jc2: var(--wc-rojo, #e61d25);
+  --jc1: #12141a;
+  --jtrim: #c9a227;
+  position: relative;
   width: 220px;
   height: 220px;
-  background: linear-gradient(160deg, var(--jc1) 0%, color-mix(in srgb, var(--jc1) 70%, black 20%) 100%);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--jc1) 88%, white 12%) 0%, var(--jc1) 55%, #08090d 100%);
   clip-path: polygon(20% 0%, 35% 0%, 50% 16%, 65% 0%, 80% 0%, 100% 22%, 84% 36%, 76% 30%, 76% 100%, 24% 100%, 24% 30%, 16% 36%, 0% 22%);
   display: flex;
   flex-direction: column;
@@ -224,20 +252,34 @@
   box-shadow: var(--shadow-card);
 }
 
+.jersey::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    /* bajo de la camiseta */ linear-gradient(var(--jtrim), var(--jtrim)) 0 97% / 100% 3.5% no-repeat,
+    /* puño izquierdo */ linear-gradient(var(--jtrim), var(--jtrim)) 0 30% / 22% 4% no-repeat,
+    /* puño derecho */ linear-gradient(var(--jtrim), var(--jtrim)) 100% 30% / 22% 4% no-repeat,
+    /* canesú del cuello */ linear-gradient(var(--jtrim), var(--jtrim)) 50% 15% / 34% 3% no-repeat;
+}
+
 .jerseySurname {
+  position: relative;
   font-family: var(--font-sport);
   font-size: 13px;
   letter-spacing: 0.05em;
-  color: #fff;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  color: var(--jtrim, #c9a227);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 }
 
 .jerseyNumber {
+  position: relative;
   font-family: var(--font-display);
   font-size: 56px;
   color: #fff;
   line-height: 1;
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
 }
 
 .field {
@@ -406,13 +448,54 @@
 
 .careerScreen {
   display: grid;
-  grid-template-columns: 380px 1fr;
+  grid-template-columns: 360px 1fr;
   align-items: start;
-  gap: var(--sp-5);
+  gap: var(--sp-4);
   background: var(--noche);
   border-radius: var(--r-card);
-  padding: var(--sp-5);
+  padding: var(--sp-4);
   color: var(--crema);
+}
+
+/* En escritorio la partida entra ENTERA en una pantalla: no se debe hacer
+   scroll para llegar a las decisiones. El alto se fija descontando el resto
+   de la interfaz y cada columna hace su propio scroll interno.
+   171px = cabecera 58 + padding sup. 24 + barra 45 + su margen 12 + padding inf. 32.
+   Solo se aplica si la ventana es lo bastante alta; por debajo de eso vale más
+   dejar que la página crezca que aplastar las cartas. */
+@media (min-width: 901px) and (min-height: 700px) {
+  .careerScreen {
+    height: calc(100dvh - 171px);
+    grid-template-rows: minmax(0, 1fr) auto;
+    /* El `start` del caso móvil impediría que las columnas llenen su fila. */
+    align-items: stretch;
+    overflow: hidden;
+  }
+
+  /* El perfil ocupa toda la altura a la izquierda. */
+  .profileCol {
+    grid-row: 1 / -1;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+
+  /* Arriba a la derecha el historial, que se encoge…  */
+  .timelineCol {
+    grid-row: 1;
+    grid-column: 2;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  /* …y abajo las decisiones, que nunca se salen de la pantalla. */
+  .turnPanel {
+    grid-row: 2;
+    grid-column: 2;
+    min-height: 0;
+    overflow-y: auto;
+  }
 }
 
 @media (max-width: 900px) {
@@ -911,11 +994,21 @@
 }
 
 /* Con 23 temporadas la lista es larga: se hace scrolleable para que el panel
-   de decisiones siga visible sin empujar la página. */
+   de decisiones siga visible sin empujar la página. En escritorio toma la
+   altura que sobra (flex hijo de .timelineCol); en móvil se limita a mano
+   porque ahí la página sí scrollea de forma natural. */
 .timelineScroll {
+  flex: 1;
+  min-height: 0;
   max-height: 460px;
   overflow-y: auto;
   padding-right: 4px;
+}
+
+@media (min-width: 901px) and (min-height: 700px) {
+  .timelineScroll {
+    max-height: none;
+  }
 }
 
 .timelineHead,
