@@ -598,15 +598,37 @@
     overflow: hidden;
   }
 
-  /* 112px de mínimo (en vez de 140) es lo que permite que dos opciones sigan
-     cabiendo una al lado de otra dentro de una carta a media columna. */
+  /* 94px de mínimo (en vez de 140) es lo que permite que hasta TRES opciones
+     quepan en una sola fila dentro de una carta a media columna. Con 112 las
+     cartas de tres opciones pasaban a dos filas y el panel se desbordaba. */
   .careerScreen .optionGrid {
-    grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(94px, 1fr));
     gap: 6px;
   }
 
   .careerScreen .optionCard {
-    min-height: 84px;
+    min-height: 76px;
+    padding: 10px 8px;
+    gap: 3px;
+  }
+
+  /* En columna estrecha lo que engorda la opción no es el mínimo, es el texto
+     envolviendo en tres líneas y el escudo a tamaño de póster. Bajando escudo
+     e interlineado la opción pasa de ~208px a ~170 sin perder nada legible. */
+  .careerScreen .optionCrest {
+    width: 30px;
+    height: 30px;
+  }
+
+  .careerScreen .optionLabel {
+    font-size: 12px;
+    line-height: 1.2;
+  }
+
+  .careerScreen .optionEffect,
+  .careerScreen .optionRisk {
+    font-size: 10px;
+    line-height: 1.25;
   }
 }
 
@@ -1152,6 +1174,61 @@
 
 .timelineCol {
   min-width: 0;
+}
+
+/* La barra del sistema (blanca, gruesa, con flechas) desentona con el tema
+   oscuro del juego. Se estiliza en todas las zonas que pueden scrollear dentro
+   de Tu Leyenda: fina, sin flechas, con el pulgar redondeado y translúcido
+   sobre la propia superficie. `scrollbar-width`/`scrollbar-color` cubren
+   Firefox; el bloque ::-webkit- cubre Chrome y Edge. */
+.timelineScroll,
+.careerScreen .profileCol,
+.careerScreen .turnPanel,
+.careerScreen .reportBox {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--crema) 22%, transparent) transparent;
+}
+
+.timelineScroll::-webkit-scrollbar,
+.careerScreen .profileCol::-webkit-scrollbar,
+.careerScreen .turnPanel::-webkit-scrollbar,
+.careerScreen .reportBox::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.timelineScroll::-webkit-scrollbar-track,
+.careerScreen .profileCol::-webkit-scrollbar-track,
+.careerScreen .turnPanel::-webkit-scrollbar-track,
+.careerScreen .reportBox::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.timelineScroll::-webkit-scrollbar-thumb,
+.careerScreen .profileCol::-webkit-scrollbar-thumb,
+.careerScreen .turnPanel::-webkit-scrollbar-thumb,
+.careerScreen .reportBox::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--crema) 20%, transparent);
+  border-radius: 999px;
+  /* El borde transparente deja aire a los lados sin necesitar otro elemento. */
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.timelineScroll::-webkit-scrollbar-thumb:hover,
+.careerScreen .profileCol::-webkit-scrollbar-thumb:hover,
+.careerScreen .turnPanel::-webkit-scrollbar-thumb:hover,
+.careerScreen .reportBox::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--oro) 55%, transparent);
+  background-clip: padding-box;
+}
+
+/* Sin esto Chrome pinta los botones de flecha arriba y abajo. */
+.timelineScroll::-webkit-scrollbar-button,
+.careerScreen .profileCol::-webkit-scrollbar-button,
+.careerScreen .turnPanel::-webkit-scrollbar-button,
+.careerScreen .reportBox::-webkit-scrollbar-button {
+  display: none;
 }
 
 /* Con 23 temporadas la lista es larga: se hace scrolleable para que el panel

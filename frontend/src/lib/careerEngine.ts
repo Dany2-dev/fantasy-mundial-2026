@@ -15,17 +15,21 @@
 //                          tu país; al cruzar el umbral, ofertas de Europa; con
 //                          reputación de élite, los gigantes.
 //
-//  4. TURNO DOBLE          Cada temporada presenta DOS cartas: una de FUTURO
+//  4. TURNO DOBLE          Cada etapa presenta DOS cartas: una de FUTURO
 //                          (traspaso, préstamo, venta, renovación) y otra de
-//                          ENFOQUE (en qué trabajás ese año). Se resuelven
-//                          juntas — así cada año tiene dos decisiones con peso
+//                          ENFOQUE (en qué trabajás en ese tramo). Se resuelven
+//                          juntas — así cada etapa tiene dos decisiones con peso
 //                          en vez de una sola.
 //
-//  5. NARRATIVA            Cada temporada devuelve un `StageOutcome` con relato,
+//  5. NARRATIVA            Cada etapa devuelve un `StageOutcome` con relato,
 //                          hitos y premios (ver careerNarrative.ts).
 //
-// El calendario avanza AÑO A AÑO (16 → 39). A partir de los 33 el cuerpo pasa
-// factura: el OVR baja y crece el riesgo de lesión.
+// El calendario avanza en tramos de `STAGE_YEARS` años (16 → 18 → … → 38): son
+// 12 etapas, el historial entra de un vistazo y cada decisión pesa más que si
+// se resolviera año a año. Todo lo que se acumula por temporada —partidos,
+// goles, crecimiento, títulos, convocatorias— se escala por esa constante.
+// A partir de los 33 el cuerpo pasa factura: el OVR baja y crece el riesgo de
+// lesión.
 //
 // RNG: no se usa `Math.random()` plano para lo importante. `bell()` promedia
 // tres uniformes → campana, donde lo normal es común y lo extremo raro.
@@ -202,6 +206,15 @@ const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n
 
 export const RETIREMENT_AGE = 39;
 const DECLINE_AGE = 33;
+/**
+ * Años que cubre cada turno. Con 2, la carrera va 16 → 18 → … → 38: son 12
+ * etapas en vez de 23, el historial cabe de un vistazo y cada decisión pesa
+ * más. Todo lo que se acumula por temporada (partidos, goles, crecimiento,
+ * títulos) se escala por esta constante en vez de estar duplicado a mano.
+ */
+/* Tipado como `number` y no como el literal `2` para que las ramas que
+   contemplan otras duraciones no las marque TypeScript como código muerto. */
+export const STAGE_YEARS: number = 2;
 
 // ---------------------------------------------------------------------------
 // Perfiles por posición: producción esperada por temporada (34 partidos) a 70 OVR.
@@ -346,15 +359,20 @@ function simulateSeason(s: CareerState, minutesShare: number): SeasonResult {
   const fit = clubFit(s.ovr, s.club);
   let share = clamp(minutesShare * minutesFromFit(fit), 0.1, 1.1);
 
-  // Riesgo de lesión: bajo de joven, alto pasados los 33. Una lesión te come
-  // media temporada.
-  const injuryRisk = s.age >= DECLINE_AGE ? 0.1 + (s.age - DECLINE_AGE) * 0.05 : 0.05;
-  const injured = Math.random() < clamp(injuryRisk, 0.03, 0.42);
-  if (injured) share *= 0.45;
+  // Riesgo de lesión POR AÑO; como la etapa cubre dos, se pregunta por la
+  // probabilidad de lesionarse al menos una vez: 1 - (1-p)^2.
+  const injuryRiskYear = s.age >= DECLINE_AGE ? 0.1 + (s.age - DECLINE_AGE) * 0.05 : 0.05;
+  const injuryRisk = 1 - Math.pow(1 - clamp(injuryRiskYear, 0.03, 0.42), STAGE_YEARS);
+  const injured = Math.random() < injuryRisk;
+  if (injured) share *= 0.72; // una lesión en dos años pesa menos que en uno
 
-  const pj = Math.round(clamp(34 * share * around(1, 0.1), 1, 38));
+  // 34 partidos por temporada × los años que dura la etapa.
+  const pjPerSeason = 34;
+  const pj = Math.round(clamp(pjPerSeason * STAGE_YEARS * share * around(1, 0.1), 1, 38 * STAGE_YEARS));
   const starter = share >= 0.62;
-  const minutesScale = pj / 34;
+  // Las escalas de rendimiento siguen siendo POR TEMPORADA: si no, un jugador
+  // parecería el doble de bueno solo por que la etapa dure el doble.
+  const minutesScale = pj / (pjPerSeason * STAGE_YEARS);
   const teamScale = 0.8 + s.club.tier * 0.09;
   const levelScale = Math.pow(s.ovr / 70, 1.8);
 
@@ -371,8 +389,10 @@ function simulateSeason(s: CareerState, minutesShare: number): SeasonResult {
     performance = clamp(expectedCS > 0.5 ? cleanSheets / expectedCS : 1, 0.35, 1.85);
   } else {
     const profile = POSITION_PROFILE[s.position];
-    const expectedGls = profile.goals * levelScale * teamScale * minutesScale;
-    const expectedAst = profile.assists * levelScale * teamScale * minutesScale;
+    // El perfil está en goles POR TEMPORADA, así que se multiplica por los
+    // años de la etapa para obtener el total del tramo.
+    const expectedGls = profile.goals * levelScale * teamScale * minutesScale * STAGE_YEARS;
+    const expectedAst = profile.assists * levelScale * teamScale * minutesScale * STAGE_YEARS;
     const luck = around(1, 0.3) + s.form * 0.12;
     gls = Math.max(0, Math.round(expectedGls * luck));
     ast = Math.max(0, Math.round(expectedAst * around(1, 0.28)));
@@ -406,13 +426,19 @@ function simulateSeason(s: CareerState, minutesShare: number): SeasonResult {
   // El crecimiento base se apaga al acercarte a tu techo: si no, el potencial
   // dejaría de significar algo y todos terminarían en el mismo número.
   const roomFactor = clamp(gap / 10, 0, 1);
-  let ovrDelta = baseGrowth * share * clamp(perfMult, 0.55, 1.5) * roomFactor;
-  if (gap > 0) ovrDelta += gap * ageRate * share * perfMult;
+  // La base es progreso por temporada: en una etapa de dos años se cobra dos
+  // veces. El acercamiento al techo se compone —(1-r)² en vez de 2r— porque
+  // aplicar la tasa dos veces sobre el mismo hueco lo cerraría de más.
+  let ovrDelta = baseGrowth * STAGE_YEARS * share * clamp(perfMult, 0.55, 1.5) * roomFactor;
+  if (gap > 0) {
+    const closed = 1 - Math.pow(1 - clamp(ageRate * share * perfMult, 0, 0.9), STAGE_YEARS);
+    ovrDelta += gap * closed;
+  }
 
   // Declive: empieza a los 33 y se acelera; cada lesión grave deja secuela.
   if (s.age >= DECLINE_AGE) {
     const severity = (s.age - DECLINE_AGE + 1) * 0.55 + s.injuries * 0.25;
-    ovrDelta -= severity * (starter ? 0.8 : 1.2) * around(1, 0.2);
+    ovrDelta -= severity * STAGE_YEARS * (starter ? 0.8 : 1.2) * around(1, 0.2);
   }
   if (injured) ovrDelta -= 0.8;
 
@@ -424,14 +450,15 @@ function rollTrophies(s: CareerState, performance: number): { won: string[]; fin
   const league = s.club.league;
   const perf = 0.75 + performance * 0.35;
 
-  // Probabilidades POR TEMPORADA (antes cada tirada cubría dos años, por eso
-  // están a la mitad): un gigante gana su liga ~1 de cada 4 años, un club
-  // chico prácticamente nunca.
+  // Probabilidades POR TEMPORADA: un gigante gana su liga ~1 de cada 4 años,
+  // un club chico prácticamente nunca. Como la etapa dura varias temporadas,
+  // se tira una vez por año y se puede levantar el mismo título dos veces.
   const ligaChance = clamp(([0, 0.01, 0.025, 0.06, 0.13, 0.24][s.club.tier] ?? 0.01) * perf, 0.003, 0.35);
-  if (Math.random() < ligaChance) won.push(leagueTrophy(league).name);
-
   const copaChance = clamp(([0, 0.025, 0.045, 0.075, 0.12, 0.17][s.club.tier] ?? 0.025) * perf, 0.005, 0.28);
-  if (Math.random() < copaChance) won.push(domesticCupTrophy(league).name);
+  for (let year = 0; year < STAGE_YEARS; year++) {
+    if (Math.random() < ligaChance) won.push(leagueTrophy(league).name);
+    if (Math.random() < copaChance) won.push(domesticCupTrophy(league).name);
+  }
 
   // Continental: en vez de resolverse sola, si llegás a la FINAL la define un
   // penal que tirás vos (ver PendingPenalty).
@@ -450,7 +477,8 @@ function rollCaps(s: CareerState, performance: number): number {
   const threshold = 71;
   if (s.ovr < threshold) return 0;
   const chance = clamp((s.ovr - threshold) / 22 + (performance - 1) * 0.3, 0.05, 0.92);
-  return Math.random() < chance ? rand(2, 8) : 0;
+  // Convocatorias por temporada, por los años que dura la etapa.
+  return Math.random() < chance ? rand(2, 8) * STAGE_YEARS : 0;
 }
 
 function updateReputation(s: CareerState, r: SeasonResult, trophies: string[], awards: string[], caps: number): number {
@@ -463,13 +491,17 @@ function updateReputation(s: CareerState, r: SeasonResult, trophies: string[], a
   } else {
     rep += (r.gls * 0.22 + r.ast * 0.11) * (0.7 + s.club.tier * 0.16);
   }
-  rep += clamp((r.performance - 1) * 7, -4, 6);
-  if (r.starter && r.pj >= 22) rep += 0.4 + s.club.tier * 0.4;
+  // Goles, vallas, títulos y convocatorias ya vienen sumados por toda la etapa,
+  // así que escalan solos. Lo que sí hay que multiplicar por los años es lo que
+  // se cobra "una vez por tramo": rendimiento, titularidad, caché del club y el
+  // olvido.
+  rep += clamp((r.performance - 1) * 7, -4, 6) * STAGE_YEARS;
+  if (r.starter && r.pj >= 22 * STAGE_YEARS) rep += (0.4 + s.club.tier * 0.4) * STAGE_YEARS;
   rep += trophies.length * 4 + (trophies.some((t) => t.includes("Champions")) ? 4 : 0);
   rep += awards.length * 6;
   rep += caps * 0.25;
-  rep += Math.max(0, s.club.tier - 2) * 1.1;
-  rep -= 0.8 + rep * 0.1;
+  rep += Math.max(0, s.club.tier - 2) * 1.1 * STAGE_YEARS;
+  rep -= (0.8 + rep * 0.1) * STAGE_YEARS;
   return clamp(rep, 0, 100);
 }
 
@@ -498,7 +530,11 @@ function interestTier(s: CareerState): number {
 
 function seasonLabel(age: number): string {
   const start = 2026 + (age - 16);
-  return `Temporada ${start}/${String((start + 1) % 100).padStart(2, "0")}`;
+  const yy = (y: number) => String((y + 1) % 100).padStart(2, "0");
+  if (STAGE_YEARS === 1) return `Temporada ${start}/${yy(start)}`;
+  // La etapa cubre varias temporadas: se nombran la primera y la última.
+  const end = start + STAGE_YEARS - 1;
+  return `Temporadas ${start}/${yy(start)} – ${end}/${yy(end)}`;
 }
 
 /** Texto de contexto que abre la temporada: te sitúa en tu momento real. */
@@ -566,20 +602,23 @@ function buildTransferCard(s: CareerState): CareerEvent {
     };
   }
 
-  // ¿Hay ofertas reales este año? En una carrera de verdad no te cambiás de
+  // ¿Hay ofertas reales en este tramo? En una carrera de verdad no te cambiás de
   // club cada temporada: el mercado se mueve por vos cuando rendís, cuando se
   // te acaba el contrato o cuando sobrás en tu equipo. El resto de los años la
   // decisión es sobre tu ROL en el club, no sobre irte.
   // El mercado se mueve por vos cada ~2 años (fin de contrato), y antes si
-  // rendís o si te quedó chico el club. Los años sin ofertas la decisión pasa
+  // rendís o si te quedó chico el club. Las etapas sin ofertas la decisión pasa
   // a ser sobre tu ROL, no sobre irte.
-  const contractYear = (s.age - 16) % 2 === 0;
-  let offerChance = 0.08;
-  if (fit >= 8) offerChance += 0.28; // te quedó chico el club
-  if (s.reputation >= REP_ELITE) offerChance += 0.18;
-  if (contractYear) offerChance += 0.45; // el año que se te vence el contrato
-  if (s.age >= 34) offerChance -= 0.15;
-  const hasOffers = Math.random() < clamp(offerChance, 0.05, 0.85);
+  //
+  // Cada etapa cubre STAGE_YEARS temporadas, así que en cada una cae al menos
+  // un fin de contrato: la base es alta. Aun así no se garantiza —quedarse
+  // varios tramos en el mismo club es lo normal en una carrera de verdad— y
+  // pasados los 34 el mercado se enfría.
+  let offerChance = STAGE_YEARS >= 2 ? 0.55 : 0.18;
+  if (fit >= 8) offerChance += 0.25; // te quedó chico el club
+  if (s.reputation >= REP_ELITE) offerChance += 0.15;
+  if (s.age >= 34) offerChance -= 0.2;
+  const hasOffers = Math.random() < clamp(offerChance, 0.1, 0.88);
 
   if (!hasOffers) {
     // Año sin mercado: se decide el rol dentro del club.
@@ -587,7 +626,7 @@ function buildTransferCard(s: CareerState): CareerEvent {
     return {
       kind: "futuro",
       title: "Tu lugar en el equipo",
-      description: `No hay ofertas sobre la mesa. En el ${s.club.name} toca definir qué papel vas a tener esta temporada.`,
+      description: `No hay ofertas sobre la mesa. En el ${s.club.name} toca definir qué papel vas a tener en los próximos dos años.`,
       options: [
         { id: "titular", label: "Exigir ser titular", effect: `Lo conseguís ${titular}%`, risk: `Si no, al banco ${100 - titular}%`, image: PEXELS.bench },
         { id: "stay", label: "Aceptar tu rol y trabajar", effect: "Minutos estables, sin conflicto" },
@@ -621,12 +660,12 @@ function buildTransferCard(s: CareerState): CareerEvent {
     title: isEuroJump ? "Te llaman de Europa" : "Mercado de pases",
     description: isEuroJump
       ? `Llegaron ofertas del fútbol europeo. Es el salto que soñaste… y también donde la competencia es otra.`
-      : `Tu representante trae ofertas sobre la mesa. Decidí dónde seguís esta temporada.`,
+      : `Tu representante trae ofertas sobre la mesa. Decidí dónde seguís este tramo de carrera.`,
     options,
   };
 }
 
-/** Carta 2: en qué te enfocás esta temporada (sube tu nivel, con riesgo). */
+/** Carta 2: en qué te enfocás este tramo (sube tu nivel, con riesgo). */
 /** Contexto que leen las historias del guion para decidir si aplican. */
 function storyContext(s: CareerState): StoryContext {
   return {
@@ -705,7 +744,7 @@ function buildTurn(s: CareerState, isFirst = false): { turn: CareerTurn; storyId
         event: {
           kind: "enfoque" as const,
           title: "Tus primeros pasos",
-          description: "Antes de debutar, el club quiere saber en qué querés poner el foco este año.",
+          description: "Antes de debutar, el club quiere saber en qué querés poner el foco estos años.",
           options: isGoalkeeper(s.position)
             ? [
                 { id: "arco", label: "Vivir bajo los tres palos", effect: "Más vallas invictas" },
@@ -931,19 +970,27 @@ function advanceSeason(s: CareerState): CareerState {
     trophies.push(MUNDIAL.name);
   }
 
+  // Los umbrales de `detectAwards` (14 goles, 10 vallas, 18 partidos) están
+  // pensados POR TEMPORADA. Como la etapa acumula varias, se le pasa el
+  // promedio anual y se tira una vez por año: si no, cualquier tramo decente
+  // cumpliría los mínimos y los premios dejarían de significar nada.
+  const perSeason = (n: number) => Math.round(n / STAGE_YEARS);
   const awardCtx: AwardContext = {
     position: next.position,
     age: next.age,
     ovr: ovrAfter,
-    gls: result.gls,
-    pj: result.pj,
-    cleanSheets: result.cleanSheets,
+    gls: perSeason(result.gls),
+    pj: perSeason(result.pj),
+    cleanSheets: perSeason(result.cleanSheets),
     performance: result.performance,
     clubTier: next.club.tier,
     reputation: next.reputation,
     trophies,
   };
-  const awards = detectAwards(awardCtx, Math.random);
+  const awards: string[] = [];
+  for (let year = 0; year < STAGE_YEARS; year++) {
+    awards.push(...detectAwards(awardCtx, Math.random));
+  }
 
   const totalPj = next.totalPj + result.pj;
   const totalGls = next.totalGls + result.gls;
@@ -973,7 +1020,7 @@ function advanceSeason(s: CareerState): CareerState {
 
   const outcome: StageOutcome = {
     ageFrom: next.age,
-    ageTo: next.age + 1,
+    ageTo: next.age + STAGE_YEARS,
     seasonLabel: seasonLabel(next.age),
     clubName: next.club.name,
     position: next.position,
@@ -994,7 +1041,7 @@ function advanceSeason(s: CareerState): CareerState {
   };
 
   const reputation = updateReputation(next, result, trophies, awards, caps);
-  const newAge = next.age + 1;
+  const newAge = next.age + STAGE_YEARS;
 
   const advanced: CareerState = {
     ...next,
