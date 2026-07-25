@@ -48,6 +48,16 @@ import {
   detectMilestones,
 } from "./careerNarrative";
 import { MUNDIAL, continentalCupsFor, domesticCupTrophy, leagueTrophy } from "./careerTrophies";
+import {
+  AGENT_NAMES,
+  COACH_NAMES,
+  FRIEND_NAMES,
+  RIVAL_NAMES,
+  STORIES,
+  StoryContext,
+  StoryOutcome,
+  pickStory,
+} from "./careerStories";
 
 export interface CareerTrophy {
   label: string;
@@ -163,11 +173,22 @@ export interface CareerState {
   lastPenalty: PenaltyResult | null;
   retired: boolean;
 
+  // --- Guion --------------------------------------------------------------
+  /** Decisiones y momentos ya vividos. Permite callbacks entre historias. */
+  flags: string[];
+  /** Personajes recurrentes: dan continuidad al relato a lo largo de los años. */
+  rivalName: string;
+  agentName: string;
+  friendName: string;
+  coachName: string;
+
   // --- Turno en curso -----------------------------------------------------
   pendingTurn: CareerTurn | null;
   pickedTransfer: string | null;
   pickedDevelopment: string | null;
   pendingPenalty: PendingPenalty | null;
+  /** Id de la historia que se está jugando este turno (para aplicar efectos). */
+  activeStoryId: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -275,12 +296,19 @@ export function newCareer(input: {
     lastRoll: null,
     lastPenalty: null,
     retired: false,
+    // Personajes de tu carrera: se sortean una vez y te acompañan siempre.
+    flags: [],
+    rivalName: pick(RIVAL_NAMES),
+    agentName: pick(AGENT_NAMES),
+    friendName: pick(FRIEND_NAMES),
+    coachName: pick(COACH_NAMES),
     pendingTurn: null,
     pickedTransfer: null,
     pickedDevelopment: null,
     pendingPenalty: null,
+    activeStoryId: null,
   };
-  return { ...base, pendingTurn: buildTurn(base, true) };
+  return withNewTurn(base, true);
 }
 
 // ---------------------------------------------------------------------------
@@ -575,92 +603,83 @@ function buildTransferCard(s: CareerState): CareerEvent {
 }
 
 /** Carta 2: en qué te enfocás esta temporada (sube tu nivel, con riesgo). */
-function buildDevelopmentCard(s: CareerState): CareerEvent {
-  const fit = clubFit(s.ovr, s.club);
-  const gk = isGoalkeeper(s.position);
-
-  const pool: CareerEvent[] = [];
-
-  // Doble turno — siempre disponible: el clásico riesgo/recompensa.
-  const exito = Math.round(clamp(62 + fit * 1.2 - Math.max(0, s.age - 26) * 2.2, 25, 88));
-  pool.push({
-    kind: "enfoque",
-    title: "Doble turno",
-    description: "El preparador físico te ofrece un plan de dos entrenamientos diarios. Podés dar un salto… o romperte.",
-    options: [
-      { id: "fondo", label: "Entrenar a fondo", effect: `Salto de nivel ${exito}%`, risk: `Lesión ${100 - exito}%`, image: PEXELS.training },
-      { id: "carga", label: "Cuidar el cuerpo", effect: "Llegás sano todo el año", risk: "Crecés más lento" },
-    ],
-  });
-
-  // Trabajo específico del puesto.
-  pool.push({
-    kind: "enfoque",
-    title: gk ? "Trabajo con el entrenador de arqueros" : "Trabajo específico",
-    description: gk
-      ? "Sesiones extra de blocaje, salidas y juego con los pies. Menos vistoso, pero es lo que sostiene una portería."
-      : "Podés pulir la definición para ser más determinante, o trabajar el juego colectivo y hacer mejores a los demás.",
-    options: gk
-      ? [
-          { id: "arco", label: "Especializarte bajo los tres palos", effect: "Más vallas invictas" },
-          { id: "pies", label: "Mejorar tu juego con los pies", effect: "Encajás mejor en equipos grandes" },
-        ]
-      : [
-          { id: "definicion", label: "Afinar la definición", effect: "Más goles esta temporada" },
-          { id: "colectivo", label: "Mejorar el juego colectivo", effect: "Más asistencias y solidez" },
-        ],
-  });
-
-  // Liderazgo: solo cuando ya tenés jerarquía.
-  if (s.age >= 25 && fit >= -4) {
-    pool.push({
-      kind: "enfoque",
-      title: "La joya de la cantera",
-      description: "Un juvenil deslumbra en los entrenamientos y el club te pide que lo guíes. El vestuario lo notaría.",
-      options: [
-        { id: "mentor", label: "Apadrinarlo", effect: "El vestuario te respeta más", risk: "Le cedés algunos minutos", image: PEXELS.coach },
-        { id: "no", label: "Enfocarte en lo tuyo", effect: "Todos los minutos para vos" },
-      ],
-    });
-  }
-
-  // Selección: mientras estés en edad y nivel.
-  if (s.ovr >= 72 && s.age <= 34) {
-    pool.push({
-      kind: "enfoque",
-      title: "Fecha FIFA",
-      description: `El seleccionador de ${s.countryName} te tiene en carpeta. Ir suma prestigio, pero son miles de kilómetros en las piernas.`,
-      options: [
-        { id: "seleccion", label: "Ir con la selección", effect: "Reputación mundial", risk: "Más desgaste", image: PEXELS.celebration },
-        { id: "club", label: "Priorizar el club", effect: "Llegás entero a la temporada" },
-      ],
-    });
-  }
-
-  // Veteranía: cuidarse para estirar la carrera.
-  if (s.age >= DECLINE_AGE) {
-    pool.push({
-      kind: "enfoque",
-      title: "El cuerpo pide otra cosa",
-      description: "A esta altura, entrenar más no siempre es entrenar mejor. Hay que elegir cómo administrarse.",
-      options: [
-        { id: "gimnasio", label: "Plan de prevención", effect: "Menos riesgo de lesión", risk: "Menos explosividad" },
-        { id: "competir", label: "Seguir al máximo", effect: "Rendís como siempre", risk: "Más riesgo de romperte" },
-      ],
-    });
-  }
-
-  return pick(pool);
+/** Contexto que leen las historias del guion para decidir si aplican. */
+function storyContext(s: CareerState): StoryContext {
+  return {
+    surname: s.surname,
+    age: s.age,
+    ovr: s.ovr,
+    potential: s.potential,
+    reputation: s.reputation,
+    club: s.club,
+    countryName: s.countryName,
+    position: s.position,
+    fit: clubFit(s.ovr, s.club),
+    form: s.form,
+    caps: s.caps,
+    trophies: s.trophies.length,
+    totalGls: s.totalGls,
+    totalPj: s.totalPj,
+    injuries: s.injuries,
+    flags: s.flags,
+    rivalName: s.rivalName,
+    agentName: s.agentName,
+    friendName: s.friendName,
+    coachName: s.coachName,
+    isGK: isGoalkeeper(s.position),
+    clubAbroad: s.club.country !== s.countryName,
+  };
 }
 
-function buildTurn(s: CareerState, isFirst = false): CareerTurn {
+/**
+ * Carta 2: la historia de la temporada. Se sortea del guion (careerStories.ts)
+ * entre las que aplican a tu momento de carrera. Si no hubiera ninguna
+ * elegible, cae a un entrenamiento genérico para que el turno nunca quede vacío.
+ */
+function buildDevelopmentCard(s: CareerState): { event: CareerEvent; storyId: string | null } {
+  const ctx = storyContext(s);
+  const story = pickStory(ctx, s.activeStoryId);
+
+  if (story) {
+    return {
+      storyId: story.id,
+      event: {
+        kind: "enfoque",
+        title: story.title,
+        description: story.text(ctx),
+        options: story.options(ctx).map((o) => ({
+          id: o.id,
+          label: o.label,
+          effect: o.effect,
+          risk: o.risk,
+          image: o.image,
+        })),
+      },
+    };
+  }
+
+  const fit = clubFit(s.ovr, s.club);
+  const exito = Math.round(clamp(62 + fit * 1.2 - Math.max(0, s.age - 26) * 2.2, 25, 88));
   return {
-    seasonLabel: seasonLabel(s.age),
-    intro: seasonIntro(s),
-    transfer: buildTransferCard(s),
-    development: isFirst
-      ? {
-          kind: "enfoque",
+    storyId: null,
+    event: {
+      kind: "enfoque",
+      title: "Doble turno",
+      description: "El preparador físico te ofrece un plan de dos entrenamientos diarios. Podés dar un salto… o romperte.",
+      options: [
+        { id: "fondo", label: "Entrenar a fondo", effect: `Salto de nivel ${exito}%`, risk: `Lesión ${100 - exito}%`, image: PEXELS.training },
+        { id: "carga", label: "Cuidar el cuerpo", effect: "Llegás sano todo el año", risk: "Crecés más lento" },
+      ],
+    },
+  };
+}
+
+function buildTurn(s: CareerState, isFirst = false): { turn: CareerTurn; storyId: string | null } {
+  const dev = isFirst
+    ? {
+        storyId: null,
+        event: {
+          kind: "enfoque" as const,
           title: "Tus primeros pasos",
           description: "Antes de debutar, el club quiere saber en qué querés poner el foco este año.",
           options: isGoalkeeper(s.position)
@@ -672,9 +691,70 @@ function buildTurn(s: CareerState, isFirst = false): CareerTurn {
                 { id: "definicion", label: "Trabajar la definición", effect: "Más goles" },
                 { id: "colectivo", label: "Entender el juego", effect: "Más asistencias" },
               ],
-        }
-      : buildDevelopmentCard(s),
+        },
+      }
+    : buildDevelopmentCard(s);
+
+  return {
+    storyId: dev.storyId,
+    turn: {
+      seasonLabel: seasonLabel(s.age),
+      intro: seasonIntro(s),
+      transfer: buildTransferCard(s),
+      development: dev.event,
+    },
   };
+}
+
+/** Arma el próximo turno y deja registrado qué historia toca (para sus efectos). */
+function withNewTurn(s: CareerState, isFirst = false): CareerState {
+  const { turn, storyId } = buildTurn(s, isFirst);
+  return { ...s, pendingTurn: turn, activeStoryId: storyId };
+}
+
+/**
+ * Aplica un efecto declarativo del guion. Si la opción es una apuesta, se
+ * resuelve acá y se devuelve el tiro para que la UI lo muestre en la ruleta.
+ */
+function applyStoryOutcome(
+  s: CareerState,
+  outcome: StoryOutcome
+): { state: CareerState; minutes: number; luck: LuckRoll | null; bonus: string[] } {
+  let next = { ...s };
+  let minutes = outcome.minutes ?? 1;
+  let luck: LuckRoll | null = null;
+  const bonus: string[] = [];
+
+  const applyFlat = (o: StoryOutcome) => {
+    if (o.ovr) next.ovr = clamp(next.ovr + o.ovr, 40, 99);
+    if (o.potential) next.potential = clamp(next.potential + o.potential, 40, 99);
+    if (o.reputation) next.reputation = clamp(next.reputation + o.reputation, 0, 100);
+    if (o.form) next.form = clamp(next.form + o.form, -1, 1);
+    if (o.caps) next.caps = next.caps + o.caps;
+    if (o.penaltyOvr) next.penaltyOvr = Math.max(0, next.penaltyOvr + o.penaltyOvr);
+    if (o.injuries) next.injuries = Math.max(0, next.injuries + o.injuries);
+    if (o.addFlag && !next.flags.includes(o.addFlag)) next.flags = [...next.flags, o.addFlag];
+    if (o.bonusTrophy) bonus.push(o.bonusTrophy);
+    if (o.minutes !== undefined) minutes *= o.minutes;
+  };
+
+  // El efecto base se aplica siempre (menos `minutes`, ya tomado arriba).
+  applyFlat({ ...outcome, minutes: undefined });
+
+  if (outcome.luck) {
+    const rolled = Math.random() * 100;
+    const success = rolled < outcome.luck.chance;
+    luck = {
+      chance: outcome.luck.chance,
+      rolled: Math.round(rolled),
+      success,
+      successLabel: outcome.luck.successLabel,
+      failLabel: outcome.luck.failLabel,
+    };
+    applyFlat(success ? outcome.luck.onSuccess : outcome.luck.onFail);
+  }
+
+  return { state: next, minutes, luck, bonus };
 }
 
 // ---------------------------------------------------------------------------
@@ -713,10 +793,33 @@ function applyTransfer(s: CareerState): CareerState {
 }
 
 /** Aplica la carta de enfoque. Devuelve minutos y, si hubo, el tiro de suerte. */
+/**
+ * Aplica la carta de enfoque. Si el turno venía de una historia del guion, se
+ * usan sus efectos declarativos; si fue el entrenamiento genérico de respaldo,
+ * se resuelve acá mismo.
+ */
 function applyDevelopment(s: CareerState): { state: CareerState; minutes: number; luck: LuckRoll | null; bonus: string[] } {
   const turn = s.pendingTurn!;
   const id = s.pickedDevelopment!;
-  const card = turn.development;
+
+  // Camino normal: la carta era una historia del guion.
+  if (s.activeStoryId) {
+    const story = STORIES.find((st) => st.id === s.activeStoryId);
+    if (story) {
+      const opt = story.options(storyContext(s)).find((o) => o.id === id);
+      if (opt) {
+        const res = applyStoryOutcome(s, opt.outcome);
+        // Las historias `once` se marcan para no repetirse en esta carrera.
+        if (story.once) {
+          const flag = `story:${story.id}`;
+          if (!res.state.flags.includes(flag)) res.state.flags = [...res.state.flags, flag];
+        }
+        return res;
+      }
+    }
+  }
+
+  // Respaldo: entrenamiento genérico y opciones del primer año.
   let next = { ...s };
   let minutes = 1;
   let luck: LuckRoll | null = null;
@@ -724,7 +827,7 @@ function applyDevelopment(s: CareerState): { state: CareerState; minutes: number
 
   switch (id) {
     case "fondo": {
-      const exito = Number(card.options[0].effect.replace(/\D/g, ""));
+      const exito = Number(turn.development.options[0].effect.replace(/\D/g, ""));
       const rolled = Math.random() * 100;
       const success = rolled < exito;
       luck = {
@@ -754,26 +857,6 @@ function applyDevelopment(s: CareerState): { state: CareerState; minutes: number
     case "colectivo":
     case "pies":
       minutes = 1.04;
-      break;
-    case "mentor":
-      minutes = 0.85;
-      next.reputation = clamp(s.reputation + 4, 0, 100);
-      if (Math.random() < 0.3) bonus.push("Premio al liderazgo");
-      break;
-    case "seleccion":
-      next.caps = s.caps + rand(4, 9);
-      next.reputation = clamp(s.reputation + 7, 0, 100);
-      minutes = 0.92;
-      break;
-    case "club":
-      minutes = 1.05;
-      break;
-    case "gimnasio":
-      minutes = 0.95;
-      next.injuries = Math.max(0, s.injuries - 1);
-      break;
-    case "competir":
-      minutes = 1.05;
       break;
   }
   return { state: next, minutes, luck, bonus };
@@ -938,7 +1021,7 @@ function advanceSeason(s: CareerState): CareerState {
   }
 
   if (retiring) return { ...advanced, retired: true };
-  return { ...advanced, pendingTurn: buildTurn(advanced) };
+  return withNewTurn(advanced);
 }
 
 /** Resuelve el penal de la final: si metés, levantás el título. */
@@ -966,5 +1049,5 @@ export function shootPenalty(s: CareerState, zone: number): CareerState {
   }
 
   if (s.retired) return next;
-  return { ...next, pendingTurn: buildTurn(next) };
+  return withNewTurn(next);
 }
