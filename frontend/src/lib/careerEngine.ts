@@ -254,8 +254,16 @@ export function marketValueFromOvr(ovr: number, age: number, reputation = 0, clu
   return Math.max(50_000, Math.round(value / 10_000) * 10_000);
 }
 
+/**
+ * Techo de carrera. Alto a propósito: todo jugador debe poder soñar con llegar
+ * a 99 antes de los 32 si rinde y elige bien. Lo que separa una carrera buena
+ * de una legendaria no es el techo sino cuánto de ese techo alcanzás.
+ */
 function rollPotential(): number {
-  return Math.round(clamp(55 + bell() * 44, 58, 97));
+  // 1 de cada ~12 nace siendo un talento generacional: solo esos pueden
+  // aspirar de verdad al 99. El resto tiene un techo alto pero humano.
+  if (Math.random() < 0.08) return rand(93, 99);
+  return Math.round(clamp(70 + bell() * 26, 68, 94));
 }
 
 export function newCareer(input: {
@@ -382,13 +390,24 @@ function simulateSeason(s: CareerState, minutesShare: number): SeasonResult {
     }
   }
 
-  // Crecimiento asintótico hacia el potencial, por AÑO (ritmos ~mitad de lo
-  // que eran cuando cada etapa valía dos temporadas).
+  // Crecimiento = BASE + APROXIMACIÓN AL TECHO.
+  //
+  // La base es el progreso garantizado por entrenar y competir un año entero:
+  // mientras juegues y estés en edad de crecer, siempre subís algo. Antes todo
+  // dependía del hueco contra el potencial, así que un jugador con techo bajo
+  // se estancaba a los 22 y la carrera se sentía muerta.
   const gap = s.potential - s.ovr;
+  const baseGrowth =
+    s.age <= 21 ? 1.5 : s.age <= 25 ? 1.1 : s.age <= 28 ? 0.6 : s.age < DECLINE_AGE ? 0.25 : 0;
   const ageRate =
-    s.age <= 19 ? 0.19 : s.age <= 22 ? 0.15 : s.age <= 25 ? 0.1 : s.age <= 28 ? 0.055 : 0.02;
+    s.age <= 19 ? 0.2 : s.age <= 22 ? 0.16 : s.age <= 25 ? 0.11 : s.age <= 28 ? 0.06 : 0.025;
   const perfMult = clamp(0.45 + performance * 0.75, 0.4, 1.7);
-  let ovrDelta = gap > 0 ? gap * ageRate * share * perfMult : 0;
+
+  // El crecimiento base se apaga al acercarte a tu techo: si no, el potencial
+  // dejaría de significar algo y todos terminarían en el mismo número.
+  const roomFactor = clamp(gap / 10, 0, 1);
+  let ovrDelta = baseGrowth * share * clamp(perfMult, 0.55, 1.5) * roomFactor;
+  if (gap > 0) ovrDelta += gap * ageRate * share * perfMult;
 
   // Declive: empieza a los 33 y se acelera; cada lesión grave deja secuela.
   if (s.age >= DECLINE_AGE) {
@@ -462,11 +481,13 @@ function canGoAbroad(s: CareerState): boolean {
 }
 
 function interestTier(s: CareerState): number {
+  // Umbrales recalibrados a la escala de OVR actual: llegar a un gigante
+  // (tier 5) tiene que seguir siendo cosa de unos pocos.
   let tier = 1;
-  if (s.ovr >= 84) tier = 5;
-  else if (s.ovr >= 77) tier = 4;
-  else if (s.ovr >= 69) tier = 3;
-  else if (s.ovr >= 60) tier = 2;
+  if (s.ovr >= 89) tier = 5;
+  else if (s.ovr >= 83) tier = 4;
+  else if (s.ovr >= 75) tier = 3;
+  else if (s.ovr >= 66) tier = 2;
   if (s.reputation >= REP_ELITE) tier = Math.min(5, tier + 1);
   if (s.age >= 34) tier = Math.max(1, tier - 1);
   return tier;
@@ -549,13 +570,16 @@ function buildTransferCard(s: CareerState): CareerEvent {
   // club cada temporada: el mercado se mueve por vos cuando rendís, cuando se
   // te acaba el contrato o cuando sobrás en tu equipo. El resto de los años la
   // decisión es sobre tu ROL en el club, no sobre irte.
-  const contractYear = (s.age - 16) % 3 === 0; // renovación cada ~3 años
-  let offerChance = 0.1;
-  if (fit >= 8) offerChance += 0.3; // te quedó chico el club
-  if (s.reputation >= REP_ELITE) offerChance += 0.2;
-  if (contractYear) offerChance += 0.25;
+  // El mercado se mueve por vos cada ~2 años (fin de contrato), y antes si
+  // rendís o si te quedó chico el club. Los años sin ofertas la decisión pasa
+  // a ser sobre tu ROL, no sobre irte.
+  const contractYear = (s.age - 16) % 2 === 0;
+  let offerChance = 0.08;
+  if (fit >= 8) offerChance += 0.28; // te quedó chico el club
+  if (s.reputation >= REP_ELITE) offerChance += 0.18;
+  if (contractYear) offerChance += 0.45; // el año que se te vence el contrato
   if (s.age >= 34) offerChance -= 0.15;
-  const hasOffers = Math.random() < clamp(offerChance, 0.05, 0.75);
+  const hasOffers = Math.random() < clamp(offerChance, 0.05, 0.85);
 
   if (!hasOffers) {
     // Año sin mercado: se decide el rol dentro del club.
@@ -888,7 +912,12 @@ function advanceSeason(s: CareerState): CareerState {
   }
 
   const result = simulateSeason(next, minutes);
-  const ovrBefore = next.ovr;
+  // `ovrBefore` es el nivel con el que ARRANCÓ la temporada, antes de que la
+  // decisión sumara nada: así el informe puede mostrar por separado lo que te
+  // dio el año de competencia y lo que te dio tu elección.
+  const ovrBefore = s.ovr;
+  const ovrBonus = next.ovr - s.ovr; // aporte directo de la historia elegida
+  const ovrBase = result.ovrDelta;
   const ovrAfter = clamp(Math.min(next.potential + 2, next.ovr + result.ovrDelta) - next.penaltyOvr, 40, 99);
 
   const caps = rollCaps(next, result.performance);
@@ -954,6 +983,8 @@ function advanceSeason(s: CareerState): CareerState {
     cleanSheets: result.cleanSheets,
     ovrBefore,
     ovrAfter,
+    ovrBase,
+    ovrBonus,
     performance: result.performance,
     starter: result.starter,
     trophies,

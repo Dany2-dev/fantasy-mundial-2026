@@ -49,6 +49,11 @@ function ovrTier(ovr: number): string {
 
 const flagUrl = (code: string) => `https://flagcdn.com/w80/${code}.png`;
 
+/** Número del historial: cuenta hacia arriba solo si es la fila recién jugada. */
+function TimelineNum({ value, animate }: { value: number; animate: boolean }) {
+  return animate ? <CountUp to={value} duration={0.8} /> : <>{value}</>;
+}
+
 function reputationLabel(rep: number): string {
   if (rep >= 85) return "Leyenda mundial";
   if (rep >= 65) return "Estrella internacional";
@@ -726,10 +731,20 @@ function CareerScreen({
                   <TrophyBadge key={ti} label={t} league={h.club.league} size={14} className={styles.timelineTrophy} title={t} />
                 ))}
               </span>
-              <span className={`${styles.timelineOvr} ${ovrTier(h.ovr)}`}>{h.ovr}</span>
-              <span>{h.pj}</span>
-              <span>{gk ? h.cleanSheets : h.gls}</span>
-              <span>{gk ? "—" : h.ast}</span>
+              {/* Solo la última fila se anima: es la temporada que acabás de
+                  jugar. Animar las 23 al recargar la partida sería un caos. */}
+              <span className={`${styles.timelineOvr} ${ovrTier(h.ovr)}`}>
+                <TimelineNum value={h.ovr} animate={i === career.history.length - 1} />
+              </span>
+              <span>
+                <TimelineNum value={h.pj} animate={i === career.history.length - 1} />
+              </span>
+              <span>
+                <TimelineNum value={gk ? h.cleanSheets : h.gls} animate={i === career.history.length - 1} />
+              </span>
+              <span>
+                {gk ? "—" : <TimelineNum value={h.ast} animate={i === career.history.length - 1} />}
+              </span>
             </motion.div>
           ))}
           {!career.retired && (
@@ -796,9 +811,30 @@ function StageReport({ stage, luck, reduceMotion }: { stage: StageOutcome; luck:
         </span>
         <span className={`${styles.reportDelta} ${delta >= 0 ? styles.deltaUp : styles.deltaDown}`}>
           {delta >= 0 ? "+" : ""}
-          {delta} OVR
+          <CountUp to={delta} duration={0.9} />
+          {" OVR"}
         </span>
       </div>
+
+      {/* Desglose: cuánto te dio competir el año y cuánto tu decisión. */}
+      {stage.ovrBonus !== 0 && (
+        <div className={styles.ovrBreakdown}>
+          <span>
+            <strong>
+              {stage.ovrBase >= 0 ? "+" : ""}
+              {stage.ovrBase}
+            </strong>{" "}
+            por la temporada
+          </span>
+          <span className={styles.ovrBonusChip}>
+            <strong>
+              {stage.ovrBonus >= 0 ? "+" : ""}
+              {stage.ovrBonus}
+            </strong>{" "}
+            por tu decisión
+          </span>
+        </div>
+      )}
 
       <div className={styles.reportStats}>
         <span>

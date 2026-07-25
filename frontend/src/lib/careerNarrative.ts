@@ -18,6 +18,10 @@ export interface StageOutcome {
   cleanSheets: number;
   ovrBefore: number;
   ovrAfter: number;
+  /** Crecimiento que dio la temporada en sí (entrenar y competir). */
+  ovrBase: number;
+  /** Crecimiento extra que aportó la decisión que tomaste. */
+  ovrBonus: number;
   /** Rendimiento vs. lo esperado: <0.8 flojo, >1.25 crack. */
   performance: number;
   starter: boolean;

@@ -629,6 +629,26 @@
   color: var(--rojo);
 }
 
+/* Desglose del crecimiento: qué te dio el año y qué te dio tu decisión. */
+.ovrBreakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  font-size: 11px;
+  color: var(--gris);
+  margin-bottom: 8px;
+}
+
+.ovrBreakdown strong {
+  color: var(--crema);
+  font-family: var(--font-display);
+  font-size: 13px;
+}
+
+.ovrBonusChip strong {
+  color: var(--pasto);
+}
+
 .reportStats {
   display: flex;
   gap: var(--sp-4);
