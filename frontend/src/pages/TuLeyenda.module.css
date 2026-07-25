@@ -508,10 +508,35 @@
   .careerScreen .turnPanel {
     grid-area: decision;
     min-height: 0;
+    /* Se ajusta a su contenido en vez de estirarse a toda la fila: por defecto
+       la rejilla lo estiraba y quedaba un hueco muerto enorme bajo las cartas.
+       El `max-height` impide que se pase de su fila, y el overflow es solo una
+       red de seguridad — con el compactado de abajo no debería dispararse:
+       el único scroll de la pantalla tiene que ser el del historial. */
+    align-self: start;
+    max-height: 100%;
     overflow-y: auto;
     /* Menos relleno que en móvil: cada píxel que suelta aquí es un píxel que
        gana la ficha de arriba. */
     padding: var(--sp-3) var(--sp-4) var(--sp-4);
+  }
+
+  /* Misma idea para la ficha: nunca se estira ni scrollea. */
+  .careerScreen .profileCol {
+    align-self: start;
+    max-height: 100%;
+  }
+
+  /* La tabla es lo que el jugador recorre, así que tiene alto mínimo propio:
+     sin esto, en anchos intermedios el informe de temporada se comía la
+     columna y dejaba la tabla en 66px, inservible. El informe cede primero. */
+  .careerScreen .timelineScroll {
+    min-height: 190px;
+  }
+
+  .careerScreen .reportBox {
+    min-height: 0;
+    overflow-y: auto;
   }
 
   /* Derecha: el historial completo, a toda la altura. */
