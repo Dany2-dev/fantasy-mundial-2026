@@ -466,35 +466,94 @@
 @media (min-width: 901px) and (min-height: 700px) {
   .careerScreen {
     height: calc(100dvh - 171px);
-    grid-template-rows: minmax(0, 1fr) auto;
+    /* Áreas EXPLÍCITAS a propósito. Con colocación automática el navegador se
+       inventaba una tercera columna y acababa con el perfil a la derecha y el
+       historial aplastado en una caja diminuta. Nombrando las áreas no queda
+       nada al algoritmo. */
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    /* Arriba perfil e historial; abajo las decisiones A TODO EL ANCHO. En media
+       columna las opciones se apilaban y cada carta crecía a 460 px, que era
+       justo lo que obligaba a scrollear. A lo ancho van en fila y bajan a ~250.
+       La fila de decisiones toma su alto natural y la de arriba se queda con lo
+       que sobre: si algo tiene que encogerse, nunca son las decisiones. */
+    grid-template-rows: minmax(0, 1fr) minmax(0, auto);
+    grid-template-areas:
+      "perfil historial"
+      "decision decision";
     /* El `start` del caso móvil impediría que las columnas llenen su fila. */
     align-items: stretch;
     overflow: hidden;
   }
 
-  /* El perfil ocupa toda la altura a la izquierda. */
-  .profileCol {
-    grid-row: 1 / -1;
+  /* Se califican con el padre a propósito: la regla base de .turnPanel
+     (grid-column: 1 / -1, para el caso de una sola columna) vive más abajo en
+     el archivo y con igual especificidad ganaría por orden, estirando el panel
+     sobre las dos columnas. */
+
+  /* Izquierda arriba: quién sos. */
+  .careerScreen .profileCol {
+    grid-area: perfil;
     min-height: 0;
     overflow-y: auto;
     padding-right: 4px;
   }
 
-  /* Arriba a la derecha el historial, que se encoge…  */
-  .timelineCol {
-    grid-row: 1;
-    grid-column: 2;
+  /* Izquierda abajo: qué decidís. Las dos filas se reparten el alto en
+     fracciones, así que ninguna puede empujar a la otra fuera de pantalla. */
+  .careerScreen .turnPanel {
+    grid-area: decision;
+    min-height: 0;
+    overflow-y: auto;
+    /* Menos relleno que en móvil: cada píxel que suelta aquí es un píxel que
+       gana la ficha de arriba. */
+    padding: var(--sp-3) var(--sp-4) var(--sp-4);
+  }
+
+  /* Derecha: el historial completo, a toda la altura. */
+  .careerScreen .timelineCol {
+    grid-area: historial;
     display: flex;
     flex-direction: column;
     min-height: 0;
   }
 
-  /* …y abajo las decisiones, que nunca se salen de la pantalla. */
-  .turnPanel {
-    grid-row: 2;
+  /* La ficha en dos columnas: apilada gastaba 381 px de alto para caber en 262
+     y obligaba a scrollear dentro del perfil. Repartida en dos, la identidad
+     queda a la izquierda y los números a la derecha, y baja a ~210. */
+  .careerScreen .profileCard {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 0 var(--sp-4);
+    align-content: start;
+    padding: var(--sp-3);
+  }
+
+  /* Ritmo vertical más apretado: en dos columnas la ficha sigue siendo legible
+     y así entra sin barra de scroll propia. */
+  .careerScreen .profileHead,
+  .careerScreen .repRow,
+  .careerScreen .statsRow {
+    margin-bottom: var(--sp-2);
+  }
+
+  .careerScreen .profileHead,
+  .careerScreen .profileClub {
+    grid-column: 1;
+  }
+
+  .careerScreen .statsRow,
+  .careerScreen .repRow,
+  .careerScreen .trophyCase {
     grid-column: 2;
-    min-height: 0;
-    overflow-y: auto;
+  }
+
+  /* El club es el último de su columna: sin margen no descuadra la rejilla. */
+  .careerScreen .profileClub {
+    margin-bottom: 0;
+  }
+
+  .careerScreen .trophyCase {
+    margin-bottom: 0;
   }
 }
 

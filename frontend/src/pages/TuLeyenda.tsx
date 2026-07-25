@@ -699,9 +699,6 @@ function CareerScreen({
             )}
           </div>
 
-          {career.lastStage && (
-            <StageReport stage={career.lastStage} luck={career.lastRoll} reduceMotion={reduceMotion} />
-          )}
         </div>
       </div>
 
@@ -754,6 +751,13 @@ function CareerScreen({
             </div>
           )}
         </div>
+
+        {/* El informe vive con el historial, no con el perfil: cuenta la
+            temporada que acabás de jugar, que es de lo que habla esta columna.
+            Además así la columna izquierda queda libre para las decisiones. */}
+        {career.lastStage && (
+          <StageReport stage={career.lastStage} luck={career.lastRoll} reduceMotion={reduceMotion} />
+        )}
       </div>
 
       {turn && (
