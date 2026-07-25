@@ -505,20 +505,43 @@
 
   /* Izquierda abajo: qué decidís. Las dos filas se reparten el alto en
      fracciones, así que ninguna puede empujar a la otra fuera de pantalla. */
+  /* El panel LLENA su fila, pero repartiendo el alto entre sus cartas en vez de
+     dejar un hueco muerto debajo: se estira él y se estiran las opciones con
+     él. Antes pasaba una de dos — o se estiraba el panel y quedaba un vacío
+     enorme bajo las cartas, o se ajustaba al contenido y el vacío quedaba
+     igual pero como fondo de la columna. Con la cadena flex de aquí abajo el
+     espacio sobrante se convierte en cartas más grandes. */
   .careerScreen .turnPanel {
     grid-area: decision;
     min-height: 0;
-    /* Se ajusta a su contenido en vez de estirarse a toda la fila: por defecto
-       la rejilla lo estiraba y quedaba un hueco muerto enorme bajo las cartas.
-       El `max-height` impide que se pase de su fila, y el overflow es solo una
-       red de seguridad — con el compactado de abajo no debería dispararse:
-       el único scroll de la pantalla tiene que ser el del historial. */
-    align-self: start;
-    max-height: 100%;
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    /* Red de seguridad, no comportamiento esperado: con el compactado de abajo
+       el panel entra en su fila y no scrollea. Si algún turno se pasara,
+       preferimos una barra a `hidden`, que dejaría una opción recortada e
+       imposible de pulsar. */
     overflow-y: auto;
     /* Menos relleno que en móvil: cada píxel que suelta aquí es un píxel que
        gana la ficha de arriba. */
     padding: var(--sp-3) var(--sp-4) var(--sp-4);
+  }
+
+  .careerScreen .turnGrid {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .careerScreen .decisionCard {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  /* Las opciones se quedan el alto que sobre dentro de su carta. */
+  .careerScreen .optionGrid {
+    flex: 1;
+    min-height: 0;
   }
 
   /* Misma idea para la ficha: nunca se estira ni scrollea. */
