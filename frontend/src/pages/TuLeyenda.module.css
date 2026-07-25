@@ -463,19 +463,24 @@
    171px = cabecera 58 + padding sup. 24 + barra 45 + su margen 12 + padding inf. 32.
    Solo se aplica si la ventana es lo bastante alta; por debajo de eso vale más
    dejar que la página crezca que aplastar las cartas. */
-@media (min-width: 901px) and (min-height: 700px) {
+/* El corte estaba en 901x700 y dejaba fuera ventanas de portátil normales
+   (p. ej. 897 de ancho), que caían al apilado móvil con el historial encogido
+   en una caja de tres filas. Se baja para que la vista de una pantalla cubra
+   esos tamaños. */
+@media (min-width: 840px) and (min-height: 620px) {
   .careerScreen {
     height: calc(100dvh - 171px);
     /* Áreas EXPLÍCITAS a propósito. Con colocación automática el navegador se
        inventaba una tercera columna y acababa con el perfil a la derecha y el
        historial aplastado en una caja diminuta. Nombrando las áreas no queda
        nada al algoritmo. */
+    /* Ancho intermedio (~840-1200): media columna son ~360px, donde las dos
+       cartas de decisión se apilan y el panel pide el triple de alto del que
+       hay. Así que aquí las decisiones van abajo A TODO EL ANCHO —ahí las
+       cartas caben en fila— y el historial ocupa el alto que sobra arriba.
+       Nada scrollea. La variante de historial a toda la altura llega en el
+       bloque de 1200px, donde media columna ya da de sí. */
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    /* Arriba perfil e historial; abajo las decisiones A TODO EL ANCHO. En media
-       columna las opciones se apilaban y cada carta crecía a 460 px, que era
-       justo lo que obligaba a scrollear. A lo ancho van en fila y bajan a ~250.
-       La fila de decisiones toma su alto natural y la de arriba se queda con lo
-       que sobre: si algo tiene que encogerse, nunca son las decisiones. */
     grid-template-rows: minmax(0, 1fr) minmax(0, auto);
     grid-template-areas:
       "perfil historial"
@@ -517,23 +522,96 @@
     min-height: 0;
   }
 
-  /* La ficha en dos columnas: apilada gastaba 381 px de alto para caber en 262
-     y obligaba a scrollear dentro del perfil. Repartida en dos, la identidad
-     queda a la izquierda y los números a la derecha, y baja a ~210. */
+  /* Ritmo vertical más apretado en toda la ficha. El relleno inferior va aún
+     más corto porque el último bloque (vitrina) ya no lleva margen propio. */
+  .careerScreen .profileCard {
+    padding: var(--sp-3) var(--sp-3) var(--sp-2);
+  }
+
+  .careerScreen .profileHead,
+  .careerScreen .profileClub,
+  .careerScreen .repRow,
+  .careerScreen .statsRow {
+    margin-bottom: var(--sp-2);
+  }
+
+  .careerScreen .trophyCase {
+    margin-bottom: 0;
+  }
+
+  /* ---- Bloque de decisión compactado -----------------------------------
+     Todo lo de aquí abajo existe para que las dos cartas y sus opciones
+     entren en media columna sin barra de scroll. Los tamaños base siguen
+     valiendo en móvil, donde hay ancho de sobra. */
+
+  .careerScreen .turnHead {
+    margin-bottom: var(--sp-2);
+  }
+
+  .careerScreen .turnIntro {
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .careerScreen .turnGrid {
+    gap: var(--sp-2);
+  }
+
+  .careerScreen .decisionCard {
+    padding: var(--sp-3);
+  }
+
+  /* El relato se recorta a dos líneas: es contexto, no instrucciones, y sin
+     tope una tirada larga empujaba las opciones fuera de pantalla. */
+  .careerScreen .decisionDesc {
+    font-size: 12px;
+    line-height: 1.4;
+    margin-bottom: var(--sp-2);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* 112px de mínimo (en vez de 140) es lo que permite que dos opciones sigan
+     cabiendo una al lado de otra dentro de una carta a media columna. */
+  .careerScreen .optionGrid {
+    grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+    gap: 6px;
+  }
+
+  .careerScreen .optionCard {
+    min-height: 84px;
+  }
+}
+
+/* 1500px es el ancho a partir del cual media columna pasa de ~660px, que es lo
+   que necesitan las dos cartas de decisión para ir en fila (2x300 + hueco).
+   Solo entonces el historial puede quedarse la columna derecha ENTERA de
+   arriba abajo, que es como mejor se lee. Se probó con 1200 y no daba: a
+   1280 la columna izquierda son 545px, las cartas se apilaban y las opciones
+   volvían a caer fuera de pantalla. */
+@media (min-width: 1500px) and (min-height: 620px) {
+  .careerScreen {
+    grid-template-rows: minmax(0, auto) minmax(0, 1fr);
+    grid-template-areas:
+      "perfil historial"
+      "decision historial";
+  }
+
+}
+
+/* La ficha se reparte en dos —identidad a la izquierda, números a la derecha—
+   en cuanto su columna pasa de ~450px. Apilada pide 338px de alto; repartida
+   baja a ~200 y deja ese espacio al historial. Por debajo de 1100 no se aplica
+   porque las dos mitades saldrían tan estrechas que el texto envolvería y no se
+   ganaría nada. */
+@media (min-width: 1100px) and (min-height: 620px) {
   .careerScreen .profileCard {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 0 var(--sp-4);
     align-content: start;
-    padding: var(--sp-3);
-  }
-
-  /* Ritmo vertical más apretado: en dos columnas la ficha sigue siendo legible
-     y así entra sin barra de scroll propia. */
-  .careerScreen .profileHead,
-  .careerScreen .repRow,
-  .careerScreen .statsRow {
-    margin-bottom: var(--sp-2);
   }
 
   .careerScreen .profileHead,
@@ -547,17 +625,16 @@
     grid-column: 2;
   }
 
-  /* El club es el último de su columna: sin margen no descuadra la rejilla. */
+  /* Último de su columna: sin margen no descuadra la rejilla. */
   .careerScreen .profileClub {
-    margin-bottom: 0;
-  }
-
-  .careerScreen .trophyCase {
     margin-bottom: 0;
   }
 }
 
-@media (max-width: 900px) {
+/* Complementario exacto del bloque de una pantalla: si se solapan, esta regla
+   gana por orden y deja la rejilla en una sola columna aunque la vista de
+   escritorio estuviera activa. */
+@media (max-width: 839px) {
   .careerScreen {
     grid-template-columns: 1fr;
   }
@@ -1064,7 +1141,7 @@
   padding-right: 4px;
 }
 
-@media (min-width: 901px) and (min-height: 700px) {
+@media (min-width: 840px) and (min-height: 620px) {
   .timelineScroll {
     max-height: none;
   }
