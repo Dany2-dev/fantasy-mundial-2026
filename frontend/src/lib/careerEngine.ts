@@ -1,31 +1,34 @@
 // Motor de Tu Leyenda. Todo el juego vive acá; las pantallas solo leen estado.
 //
-// ARQUITECTURA — cuatro sistemas que se alimentan entre sí:
+// ARQUITECTURA — cinco sistemas que se alimentan entre sí:
 //
 //  1. POTENCIAL (oculto)   Cada jugador nace con un techo (`potential`). El OVR
-//                          se acerca a ese techo de forma asintótica: crecés
-//                          rápido de joven y cada vez menos al acercarte. Nadie
-//                          llega a 90 si no le tocó el potencial para hacerlo.
+//                          se acerca de forma asintótica: crecés rápido de joven
+//                          y cada vez menos. Nadie llega a 90 si no le tocó.
 //
-//  2. RENDIMIENTO          Los goles/asistencias NO son decorativos. Se comparan
-//                          contra lo esperado para tu puesto, tu OVR y el nivel
-//                          de tu club (`performance`, 1.0 = justo lo esperado).
-//                          Superar lo esperado acelera tu crecimiento, dispara
-//                          premios y sube tu reputación. Rendir mal te estanca.
+//  2. RENDIMIENTO          Goles/asistencias (o vallas invictas, si sos portero)
+//                          se comparan contra lo esperado para tu puesto, tu
+//                          nivel y el de tu club. Superarlo acelera el
+//                          crecimiento, da premios y sube tu reputación.
 //
-//  3. REPUTACIÓN           Acumulada por goles, títulos, premios, selección y
-//                          jerarquía del club. Decide QUIÉN te ficha: con poca
-//                          reputación solo te buscan clubes de tu país; al
-//                          cruzar cierto umbral aparecen las ofertas de Europa,
-//                          y con reputación de élite, los gigantes.
+//  3. REPUTACIÓN           Decide QUIÉN te ficha: con poca fama solo clubes de
+//                          tu país; al cruzar el umbral, ofertas de Europa; con
+//                          reputación de élite, los gigantes.
 //
-//  4. NARRATIVA            Cada etapa devuelve un `StageOutcome` con el relato,
+//  4. TURNO DOBLE          Cada temporada presenta DOS cartas: una de FUTURO
+//                          (traspaso, préstamo, venta, renovación) y otra de
+//                          ENFOQUE (en qué trabajás ese año). Se resuelven
+//                          juntas — así cada año tiene dos decisiones con peso
+//                          en vez de una sola.
+//
+//  5. NARRATIVA            Cada temporada devuelve un `StageOutcome` con relato,
 //                          hitos y premios (ver careerNarrative.ts).
 //
-// RNG: no se usa `Math.random()` plano para los resultados importantes. `bell()`
-// promedia tres uniformes → distribución de campana, donde lo normal es común y
-// lo extremo (una temporada histórica, o un desastre) es raro. Eso hace que la
-// carrera se sienta creíble en vez de una ruleta.
+// El calendario avanza AÑO A AÑO (16 → 39). A partir de los 33 el cuerpo pasa
+// factura: el OVR baja y crece el riesgo de lesión.
+//
+// RNG: no se usa `Math.random()` plano para lo importante. `bell()` promedia
+// tres uniformes → campana, donde lo normal es común y lo extremo raro.
 import {
   CareerClub,
   EUROPEAN_LEAGUES,
@@ -35,6 +38,7 @@ import {
   clubPool,
   expectedOvrForTier,
   findClub,
+  shuffle,
 } from "./careerData";
 import {
   AwardContext,
@@ -42,7 +46,6 @@ import {
   StageOutcome,
   detectAwards,
   detectMilestones,
-  stageNarrative,
 } from "./careerNarrative";
 import { MUNDIAL, continentalCupsFor, domesticCupTrophy, leagueTrophy } from "./careerTrophies";
 
@@ -65,22 +68,9 @@ export interface CareerStage {
   pj: number;
   gls: number;
   ast: number;
+  /** Vallas invictas — la métrica que de verdad mide a un portero. */
+  cleanSheets: number;
   trophies: string[];
-}
-
-/**
- * Resultado de una decisión con porcentaje (competir por el puesto, doble
- * turno…). La UI lo usa para animar la ruleta de la suerte: la aguja gira y
- * se detiene en `rolled`, dentro o fuera de la zona verde de `chance`.
- */
-export interface LuckRoll {
-  /** Probabilidad de éxito que se le mostró al jugador, 0-100. */
-  chance: number;
-  /** Número que salió, 0-100. Éxito si es menor que `chance`. */
-  rolled: number;
-  success: boolean;
-  successLabel: string;
-  failLabel: string;
 }
 
 export interface CareerOption {
@@ -88,9 +78,9 @@ export interface CareerOption {
   label: string;
   sublabel?: string;
   clubId?: string;
-  effect: string; // texto visible: "Titular 65%", "+3 OVR", etc.
+  effect: string;
   risk?: string;
-  image?: string; // foto de contexto (Pexels) para decisiones con riesgo
+  image?: string;
 }
 
 export interface CareerEvent {
@@ -100,20 +90,43 @@ export interface CareerEvent {
   options: CareerOption[];
 }
 
+/** Una temporada: dos decisiones (futuro + enfoque) y su contexto narrativo. */
+export interface CareerTurn {
+  seasonLabel: string;
+  intro: string;
+  transfer: CareerEvent;
+  development: CareerEvent;
+}
+
 export type EventKind =
   | "cantera"
-  | "prestamo"
-  | "regreso"
-  | "mercado"
-  | "europa"
-  | "competencia"
-  | "mentor"
-  | "narrativo"
-  | "doble-turno"
-  | "seleccion"
-  | "capitan"
-  | "declive"
-  | "retiro-oferta";
+  | "futuro"
+  | "enfoque";
+
+/** Penal de una final: el minijuego que decide un título. */
+export interface PendingPenalty {
+  competition: string;
+  club: string;
+  /** Zonas que cubre el portero (0-4). Ocultas hasta que tirás. */
+  keeperZones: number[];
+}
+
+export interface PenaltyResult {
+  competition: string;
+  club: string;
+  pickedZone: number;
+  keeperZones: number[];
+  scored: boolean;
+}
+
+/** Resultado de una decisión con porcentaje — alimenta la ruleta. */
+export interface LuckRoll {
+  chance: number;
+  rolled: number;
+  success: boolean;
+  successLabel: string;
+  failLabel: string;
+}
 
 export interface CareerState {
   surname: string;
@@ -124,84 +137,102 @@ export interface CareerState {
   position: PitchPosition;
   age: number;
   ovr: number;
-  /** Techo real del jugador. Oculto en la UI salvo por el informe de ojeadores. */
   potential: number;
   peakOvr: number;
   marketValue: number;
   peakValue: number;
   club: CareerClub;
-  /** Club dueño del pase mientras estás cedido (para el evento "regreso"). */
   parentClubId: string | null;
+  /** Temporadas seguidas cedido — para que el préstamo no sea eterno. */
+  loanYears: number;
   totalPj: number;
   totalGls: number;
   totalAst: number;
+  totalCleanSheets: number;
   trophies: CareerTrophy[];
   awards: CareerAward[];
   caps: number;
-  /** 0-100. Determina qué clubes se fijan en vos. */
   reputation: number;
-  /** Forma reciente, -1..+1. Sube tras buenas etapas, baja tras malas. */
   form: number;
-  /** Penalización temporal de OVR (lesión, escándalo…). Se disuelve con el tiempo. */
   penaltyOvr: number;
-  /** Multiplicador de minutos pactado por la decisión anterior. */
-  pendingMinutes: number;
+  /** Años seguidos lesionado de gravedad — empeora el declive. */
+  injuries: number;
   history: CareerStage[];
-  /** Relato de la última etapa simulada — alimenta el panel de historia. */
   lastStage: StageOutcome | null;
-  /** Resultado del último tiro de suerte — alimenta la ruleta de la UI. */
   lastRoll: LuckRoll | null;
+  lastPenalty: PenaltyResult | null;
   retired: boolean;
-  pendingEvent: CareerEvent | null;
+
+  // --- Turno en curso -----------------------------------------------------
+  pendingTurn: CareerTurn | null;
+  pickedTransfer: string | null;
+  pickedDevelopment: string | null;
+  pendingPenalty: PendingPenalty | null;
 }
 
 // ---------------------------------------------------------------------------
-// Utilidades de azar
+// Azar
 
-/** Campana [0,1): promedio de 3 uniformes. Lo normal es común, lo extremo raro. */
 const bell = () => (Math.random() + Math.random() + Math.random()) / 3;
-/** Valor centrado en `center` con dispersión `spread`, con forma de campana. */
 const around = (center: number, spread: number) => center + (bell() * 2 - 1) * spread;
 const rand = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
 const pick = <T,>(arr: T[]): T => arr[rand(0, arr.length - 1)];
 const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
 
+export const RETIREMENT_AGE = 39;
+const DECLINE_AGE = 33;
+
 // ---------------------------------------------------------------------------
-// Perfiles por posición: producción esperada por 30 partidos a 70 OVR.
-// Es la vara con la que se mide tu rendimiento — a un DFC no se le exigen
-// goles de killer, a un DC sí.
+// Perfiles por posición: producción esperada por temporada (34 partidos) a 70 OVR.
 
 const POSITION_PROFILE: Record<PitchPosition, { goals: number; assists: number }> = {
-  DC: { goals: 14, assists: 4 },
-  EI: { goals: 8, assists: 8 },
-  ED: { goals: 8, assists: 8 },
-  MCO: { goals: 6, assists: 10 },
-  MI: { goals: 4, assists: 7 },
-  MD: { goals: 4, assists: 7 },
-  MC: { goals: 3, assists: 6 },
+  DC: { goals: 16, assists: 5 },
+  EI: { goals: 9, assists: 9 },
+  ED: { goals: 9, assists: 9 },
+  MCO: { goals: 7, assists: 11 },
+  MI: { goals: 4, assists: 8 },
+  MD: { goals: 4, assists: 8 },
+  MC: { goals: 3, assists: 7 },
   MCD: { goals: 1, assists: 3 },
-  LI: { goals: 1, assists: 5 },
-  LD: { goals: 1, assists: 5 },
+  LI: { goals: 1, assists: 6 },
+  LD: { goals: 1, assists: 6 },
   DFC: { goals: 2, assists: 1 },
   POR: { goals: 0, assists: 0 },
 };
 
-/** Cuánto mejor/peor sos que lo que ese club espera de un titular suyo. */
+const GOALKEEPER: PitchPosition = "POR";
+const DEFENDERS: PitchPosition[] = ["DFC", "LI", "LD", "MCD"];
+
+export function isGoalkeeper(p: PitchPosition) {
+  return p === GOALKEEPER;
+}
+
 export function clubFit(ovr: number, club: CareerClub): number {
   return ovr - expectedOvrForTier(club.tier);
 }
 
-// Curva logarítmica (misma familia que el backend real, calibrada contra
-// valores de FotMob). La reputación agrega prima: un crack mediático vale más
-// que un jugador igual de bueno pero desconocido.
-export function marketValueFromOvr(ovr: number, age: number, reputation = 0): number {
+/**
+ * Valor de mercado. Curva logarítmica calibrada contra FotMob + prima por fama.
+ * Un crack en un gigante tiene además un SUELO: los grandes clubes no dejan
+ * salir a su estrella por menos de eso, por mucho que diga una fórmula.
+ */
+export function marketValueFromOvr(ovr: number, age: number, reputation = 0, clubTier = 1): number {
   const base = Math.pow(10, (ovr - 7.4) / 10.4);
   const ageFactor = age <= 24 ? 1.15 : age <= 29 ? 1 : age <= 32 ? 0.6 : age <= 35 ? 0.3 : 0.12;
-  const fameFactor = 1 + reputation / 250; // hasta +40% siendo leyenda
-  return Math.max(50_000, Math.round((base * ageFactor * fameFactor) / 10_000) * 10_000);
+  const fameFactor = 1 + reputation / 250;
+  let value = base * ageFactor * fameFactor;
+
+  // Suelo por jerarquía: si sos titular de un grande y estás en edad, valés
+  // lo que valen esos jugadores en el mercado real.
+  if (age <= 31) {
+    if (clubTier === 5 && ovr >= 80) value = Math.max(value, 80_000_000);
+    else if (clubTier === 5 && ovr >= 75) value = Math.max(value, 45_000_000);
+    else if (clubTier === 4 && ovr >= 78) value = Math.max(value, 35_000_000);
+    else if (clubTier === 4 && ovr >= 73) value = Math.max(value, 18_000_000);
+  }
+  return Math.max(50_000, Math.round(value / 10_000) * 10_000);
 }
 
-/** Techo de carrera. La mayoría se queda en 70-82; pasar de 90 es excepcional. */
 function rollPotential(): number {
   return Math.round(clamp(55 + bell() * 44, 58, 97));
 }
@@ -217,7 +248,7 @@ export function newCareer(input: {
   const ovr = 48 + rand(0, 5);
   const potential = Math.max(ovr + 8, rollPotential());
   const club = pick(canteraClubs(input.countryName));
-  return {
+  const base: CareerState = {
     ...input,
     age: 16,
     ovr,
@@ -227,44 +258,34 @@ export function newCareer(input: {
     peakValue: marketValueFromOvr(ovr, 16),
     club,
     parentClubId: null,
+    loanYears: 0,
     totalPj: 0,
     totalGls: 0,
     totalAst: 0,
+    totalCleanSheets: 0,
     trophies: [],
     awards: [],
     caps: 0,
     reputation: 2,
     form: 0,
     penaltyOvr: 0,
-    pendingMinutes: 1,
+    injuries: 0,
     history: [],
     lastStage: null,
     lastRoll: null,
+    lastPenalty: null,
     retired: false,
-    pendingEvent: buildCanteraEvent(club, input.countryName),
+    pendingTurn: null,
+    pickedTransfer: null,
+    pickedDevelopment: null,
+    pendingPenalty: null,
   };
-}
-
-function buildCanteraEvent(currentClub: CareerClub, country: string): CareerEvent {
-  const others = canteraClubs(country).filter((c) => c.id !== currentClub.id);
-  const options = [currentClub, ...others].slice(0, 3);
-  return {
-    kind: "cantera",
-    title: "Oferta de cantera",
-    description: "Tres clubes quieren sumarte a su proyecto juvenil. Elegí dónde empieza tu carrera.",
-    options: options.map((c) => ({
-      id: c.id,
-      label: `Fichar por ${c.name}`,
-      clubId: c.id,
-      effect: c.league,
-    })),
-  };
+  return { ...base, pendingTurn: buildTurn(base, true) };
 }
 
 // ---------------------------------------------------------------------------
-// Simulación de una etapa (~2 temporadas)
+// Simulación de temporada
 
-/** Cuota de minutos según qué tan grande te queda el club. */
 function minutesFromFit(fit: number): number {
   if (fit <= -18) return 0.3;
   if (fit <= -10) return 0.5;
@@ -274,568 +295,529 @@ function minutesFromFit(fit: number): number {
   return 1.05;
 }
 
-interface StageResult {
+interface SeasonResult {
   pj: number;
   gls: number;
   ast: number;
+  cleanSheets: number;
   performance: number;
   ovrDelta: number;
   starter: boolean;
+  injured: boolean;
 }
 
-function simulateStage(s: CareerState, minutesShare: number): StageResult {
+function simulateSeason(s: CareerState, minutesShare: number): SeasonResult {
   const fit = clubFit(s.ovr, s.club);
-  const share = clamp(minutesShare * minutesFromFit(fit), 0.12, 1.15);
+  let share = clamp(minutesShare * minutesFromFit(fit), 0.1, 1.1);
 
-  // Partidos: dos temporadas (~34 posibles) por la cuota de minutos.
-  const pj = Math.round(clamp(34 * share * around(1, 0.12), 2, 38));
-  const starter = share >= 0.7;
+  // Riesgo de lesión: bajo de joven, alto pasados los 33. Una lesión te come
+  // media temporada.
+  const injuryRisk = s.age >= DECLINE_AGE ? 0.1 + (s.age - DECLINE_AGE) * 0.05 : 0.05;
+  const injured = Math.random() < clamp(injuryRisk, 0.03, 0.42);
+  if (injured) share *= 0.45;
 
-  // Producción esperada para tu puesto, escalada por nivel propio y calidad
-  // del equipo (en un equipo grande te llegan más balones).
-  const profile = POSITION_PROFILE[s.position];
-  const levelScale = Math.pow(s.ovr / 70, 1.8);
+  const pj = Math.round(clamp(34 * share * around(1, 0.1), 1, 38));
+  const starter = share >= 0.62;
+  const minutesScale = pj / 34;
   const teamScale = 0.8 + s.club.tier * 0.09;
-  const minutesScale = pj / 30;
+  const levelScale = Math.pow(s.ovr / 70, 1.8);
 
-  const expectedGls = profile.goals * levelScale * teamScale * minutesScale;
-  const expectedAst = profile.assists * levelScale * teamScale * minutesScale;
-
-  // Varianza de campana + empujón por forma reciente.
-  const luck = around(1, 0.3) + s.form * 0.12;
-  const gls = Math.max(0, Math.round(expectedGls * luck));
-  const ast = Math.max(0, Math.round(expectedAst * around(1, 0.28)));
-
-  // Rendimiento = lo que hiciste vs. lo que se esperaba. Para porteros y
-  // defensas, que casi no puntúan, pesa más haber sido titular constante.
-  const outputWeight = profile.goals + profile.assists;
+  let gls = 0;
+  let ast = 0;
+  let cleanSheets = 0;
   let performance: number;
-  if (outputWeight <= 3) {
-    // Porteros y centrales casi no puntúan: su nota sale de ser titular fijo.
-    // Centrada en 1.0 con share completo, para que no inflen los premios.
-    performance = clamp(0.55 + share * 0.45 + around(0, 0.16), 0.4, 1.5);
+
+  if (isGoalkeeper(s.position)) {
+    // Un portero se mide por vallas invictas, no por goles. Depende de su
+    // nivel Y de lo sólido que sea el equipo delante suyo.
+    const expectedCS = pj * (0.16 + s.club.tier * 0.045) * Math.pow(s.ovr / 70, 1.1);
+    cleanSheets = Math.max(0, Math.round(expectedCS * around(1, 0.28)));
+    performance = clamp(expectedCS > 0.5 ? cleanSheets / expectedCS : 1, 0.35, 1.85);
   } else {
-    const expectedTotal = Math.max(1, expectedGls + expectedAst);
-    performance = clamp((gls + ast) / expectedTotal, 0.3, 1.9);
+    const profile = POSITION_PROFILE[s.position];
+    const expectedGls = profile.goals * levelScale * teamScale * minutesScale;
+    const expectedAst = profile.assists * levelScale * teamScale * minutesScale;
+    const luck = around(1, 0.3) + s.form * 0.12;
+    gls = Math.max(0, Math.round(expectedGls * luck));
+    ast = Math.max(0, Math.round(expectedAst * around(1, 0.28)));
+
+    if (DEFENDERS.includes(s.position)) {
+      // A un defensor se le pide solidez: cuenta también dejar la puerta a 0.
+      const expectedCS = pj * (0.14 + s.club.tier * 0.04);
+      cleanSheets = Math.max(0, Math.round(expectedCS * around(1, 0.3)));
+      const solidity = expectedCS > 0.5 ? cleanSheets / expectedCS : 1;
+      const output = expectedGls + expectedAst > 1 ? (gls + ast) / (expectedGls + expectedAst) : 1;
+      performance = clamp(solidity * 0.65 + output * 0.35, 0.35, 1.8);
+    } else {
+      const expectedTotal = Math.max(1, expectedGls + expectedAst);
+      performance = clamp((gls + ast) / expectedTotal, 0.3, 1.9);
+    }
   }
 
-  // Crecimiento asintótico hacia el potencial. Los minutos son requisito:
-  // en la banca no se progresa, por muy alto que sea tu techo.
+  // Crecimiento asintótico hacia el potencial, por AÑO (ritmos ~mitad de lo
+  // que eran cuando cada etapa valía dos temporadas).
   const gap = s.potential - s.ovr;
   const ageRate =
-    s.age <= 19 ? 0.34 : s.age <= 22 ? 0.28 : s.age <= 25 ? 0.19 : s.age <= 28 ? 0.1 : 0.04;
+    s.age <= 19 ? 0.19 : s.age <= 22 ? 0.15 : s.age <= 25 ? 0.1 : s.age <= 28 ? 0.055 : 0.02;
   const perfMult = clamp(0.45 + performance * 0.75, 0.4, 1.7);
   let ovrDelta = gap > 0 ? gap * ageRate * share * perfMult : 0;
 
-  // Declive físico, suavizado si seguís siendo titular indiscutible.
-  if (s.age >= 30) {
-    const severity = (s.age - 28) * 0.75;
-    ovrDelta -= severity * (starter ? 0.7 : 1.15) * around(1, 0.25);
+  // Declive: empieza a los 33 y se acelera; cada lesión grave deja secuela.
+  if (s.age >= DECLINE_AGE) {
+    const severity = (s.age - DECLINE_AGE + 1) * 0.55 + s.injuries * 0.25;
+    ovrDelta -= severity * (starter ? 0.8 : 1.2) * around(1, 0.2);
   }
+  if (injured) ovrDelta -= 0.8;
 
-  return {
-    pj,
-    gls,
-    ast,
-    performance,
-    ovrDelta: Math.round(ovrDelta),
-    starter,
-  };
+  return { pj, gls, ast, cleanSheets, performance, ovrDelta: Math.round(ovrDelta), starter, injured };
 }
 
-/**
- * Títulos ganados en la etapa. Manda el nivel real del club (un tier 5 gana
- * ligas seguido, un tier 1 casi nunca) y tu rendimiento lo matiza. Cada club
- * solo puede ganar lo que le corresponde: liga y copa de SU país, y la copa
- * continental de SU confederación.
- */
-function rollTrophies(s: CareerState, performance: number): string[] {
-  const out: string[] = [];
+function rollTrophies(s: CareerState, performance: number): { won: string[]; finalOf: string | null } {
+  const won: string[] = [];
   const league = s.club.league;
   const perf = 0.75 + performance * 0.35;
 
-  // Liga: lo más difícil de todo, hay que ser de los mejores del país.
-  const ligaChance = clamp(([0, 0.02, 0.05, 0.12, 0.26, 0.45][s.club.tier] ?? 0.02) * perf, 0.005, 0.6);
-  if (Math.random() < ligaChance) out.push(leagueTrophy(league).name);
+  // Probabilidades POR TEMPORADA (antes cada tirada cubría dos años, por eso
+  // están a la mitad): un gigante gana su liga ~1 de cada 4 años, un club
+  // chico prácticamente nunca.
+  const ligaChance = clamp(([0, 0.01, 0.025, 0.06, 0.13, 0.24][s.club.tier] ?? 0.01) * perf, 0.003, 0.35);
+  if (Math.random() < ligaChance) won.push(leagueTrophy(league).name);
 
-  // Copa nacional: más accesible, entra cualquiera con una buena racha.
-  const copaChance = clamp(([0, 0.05, 0.09, 0.15, 0.24, 0.33][s.club.tier] ?? 0.05) * perf, 0.01, 0.5);
-  if (Math.random() < copaChance) out.push(domesticCupTrophy(league).name);
+  const copaChance = clamp(([0, 0.025, 0.045, 0.075, 0.12, 0.17][s.club.tier] ?? 0.025) * perf, 0.005, 0.28);
+  if (Math.random() < copaChance) won.push(domesticCupTrophy(league).name);
 
-  // Continental: solo si el club realmente juega esa competición.
+  // Continental: en vez de resolverse sola, si llegás a la FINAL la define un
+  // penal que tirás vos (ver PendingPenalty).
+  let finalOf: string | null = null;
   const cups = continentalCupsFor(league, s.club.tier);
   if (cups.length) {
-    const contChance = clamp(([0, 0, 0.04, 0.09, 0.16, 0.28][s.club.tier] ?? 0) * perf, 0, 0.4);
-    if (Math.random() < contChance) {
-      // La primera de la lista es la que le corresponde por jerarquía; a veces
-      // cae la secundaria (un grande que se va a la Europa League, por ejemplo).
-      const cup = cups.length > 1 && Math.random() < 0.3 ? cups[1] : cups[0];
-      out.push(cup.name);
+    const finalChance = clamp(([0, 0, 0.02, 0.05, 0.09, 0.15][s.club.tier] ?? 0) * perf, 0, 0.2);
+    if (Math.random() < finalChance) {
+      finalOf = (cups.length > 1 && Math.random() < 0.3 ? cups[1] : cups[0]).name;
     }
   }
-  return out;
+  return { won, finalOf };
 }
 
-/**
- * Mundial con la selección: solo si sos internacional y estás en tu mejor
- * momento. Se juega cada 4 años, así que puede caer una vez cada dos etapas.
- */
-function rollWorldCup(s: CareerState, caps: number, performance: number): boolean {
-  if (caps === 0 || s.ovr < 80) return false;
-  const chance = clamp((s.ovr - 78) / 60 + (performance - 1) * 0.12, 0.02, 0.2);
-  return Math.random() < chance;
-}
-
-/** Convocatorias: hace falta nivel y, sobre todo, estar rindiendo. */
 function rollCaps(s: CareerState, performance: number): number {
   const threshold = 71;
   if (s.ovr < threshold) return 0;
   const chance = clamp((s.ovr - threshold) / 22 + (performance - 1) * 0.3, 0.05, 0.92);
-  return Math.random() < chance ? rand(4, 14) : 0;
+  return Math.random() < chance ? rand(2, 8) : 0;
 }
 
-/**
- * Reputación: lo que hace que "si tenés 80 de media, te busquen los mejores".
- * Crece con goles, títulos, premios, selección y jerarquía del club; decae
- * lentamente si desaparecés del mapa.
- */
-function updateReputation(s: CareerState, r: StageResult, trophies: string[], awards: string[], caps: number): number {
+function updateReputation(s: CareerState, r: SeasonResult, trophies: string[], awards: string[], caps: number): number {
+  // Ganancias POR TEMPORADA (a la mitad de cuando cada etapa valía dos años),
+  // con olvido proporcional para que la fama no sature en 100 a mitad de
+  // carrera y siga siendo una señal útil.
   let rep = s.reputation;
-  rep += (r.gls * 0.3 + r.ast * 0.16) * (0.7 + s.club.tier * 0.16);
-  // Rendir por encima de lo esperado también da cartel, aunque no seas
-  // goleador (así un central o un volante también pueden hacerse un nombre).
-  rep += clamp((r.performance - 1) * 12, -6, 10);
-  // Ser titular indiscutible en un club serio pesa por sí solo: es la vía por
-  // la que un portero o un central construyen prestigio sin marcar goles.
-  if (r.starter && r.pj >= 24) rep += 0.8 + s.club.tier * 0.7;
-  rep += trophies.length * 5 + (trophies.includes("Copa Continental") ? 5 : 0);
-  rep += awards.length * 8;
-  rep += caps * 0.3;
-  // Jugar en un club grande da cartel; jugar en uno chico es neutro, no un
-  // castigo: un goleador de club humilde igual se hace un nombre.
-  rep += Math.max(0, s.club.tier - 2) * 1.8;
-  // Olvido proporcional: mantener un nombre grande cuesta más que hacerlo.
-  // Esto crea un equilibrio natural en vez de dejar que todos saturen en 100.
-  rep -= 1 + rep * 0.09;
+  if (isGoalkeeper(s.position)) {
+    rep += r.cleanSheets * 0.26 * (0.7 + s.club.tier * 0.16);
+  } else {
+    rep += (r.gls * 0.22 + r.ast * 0.11) * (0.7 + s.club.tier * 0.16);
+  }
+  rep += clamp((r.performance - 1) * 7, -4, 6);
+  if (r.starter && r.pj >= 22) rep += 0.4 + s.club.tier * 0.4;
+  rep += trophies.length * 4 + (trophies.some((t) => t.includes("Champions")) ? 4 : 0);
+  rep += awards.length * 6;
+  rep += caps * 0.25;
+  rep += Math.max(0, s.club.tier - 2) * 1.1;
+  rep -= 0.8 + rep * 0.1;
   return clamp(rep, 0, 100);
 }
 
-// Umbrales calibrados contra la distribución real de reputación que produce
-// el motor (mediana ~40, p90 ~75): con estos valores, salir al extranjero es
-// alcanzable rindiendo bien, y el bono de los gigantes queda para la élite.
 const REP_ABROAD = 26;
 const REP_ELITE = 55;
-export const REP_BALLON_DOR = 65;
 
-/** ¿Ya te siguen desde el extranjero? Es el disparador del salto a Europa. */
 function canGoAbroad(s: CareerState): boolean {
   return s.reputation >= REP_ABROAD || s.ovr >= 73;
 }
 
-/**
- * Nivel de club que hoy se fijaría en vos. Es la respuesta a "si tenés 80 de
- * media, que te busquen los mejores": el OVR manda, la fama puede subirte un
- * escalón extra, y solo la edad avanzada te lo baja.
- */
 function interestTier(s: CareerState): number {
   let tier = 1;
   if (s.ovr >= 84) tier = 5;
   else if (s.ovr >= 77) tier = 4;
   else if (s.ovr >= 69) tier = 3;
   else if (s.ovr >= 60) tier = 2;
-
-  // La fama abre puertas que el nivel puro todavía no: un goleador mediático
-  // de 78 puede terminar en un gigante.
   if (s.reputation >= REP_ELITE) tier = Math.min(5, tier + 1);
-  // Pasados los 33 los grandes dejan de invertir en vos.
   if (s.age >= 34) tier = Math.max(1, tier - 1);
   return tier;
 }
 
 // ---------------------------------------------------------------------------
-// Eventos
+// Construcción del turno: carta de FUTURO + carta de ENFOQUE
 
-function buildEvent(s: CareerState, kind: EventKind): CareerEvent {
+function seasonLabel(age: number): string {
+  const start = 2026 + (age - 16);
+  return `Temporada ${start}/${String((start + 1) % 100).padStart(2, "0")}`;
+}
+
+/** Texto de contexto que abre la temporada: te sitúa en tu momento real. */
+function seasonIntro(s: CareerState): string {
   const fit = clubFit(s.ovr, s.club);
+  const abroad = s.club.country !== s.countryName;
+
+  if (s.age === 16) return `Tenés 16 años y un contrato juvenil por firmar. Todo está por escribirse.`;
+  if (s.parentClubId) {
+    const parent = findClub(s.parentClubId);
+    return `Seguís cedido en el ${s.club.name}${parent ? `, con el ${parent.name} mirando de reojo` : ""}. Cada partido es una audición.`;
+  }
+  if (s.age >= 36) return `A los ${s.age}, cada temporada puede ser la última. El cuerpo avisa, pero la cabeza todavía quiere.`;
+  if (s.age >= DECLINE_AGE) return `Con ${s.age} años ya no sos el que corría toda la banda, pero la lectura de juego la ganaste a pulso.`;
+  if (fit <= -12) return `En el ${s.club.name} te queda todo grande todavía. Hay que ganarse cada minuto.`;
+  if (fit >= 12) return `Sos lo mejor del ${s.club.name} y en el vestuario todos lo saben. La pregunta es hasta cuándo te retienen.`;
+  if (abroad) return `Tu vida está en ${s.club.country}, lejos de casa, defendiendo al ${s.club.name}.`;
+  if (s.reputation >= REP_ELITE) return `Tu nombre ya pesa. Cada movimiento tuyo es noticia de portada.`;
+  return `Arranca una temporada más en el ${s.club.name}. Toca demostrar de nuevo.`;
+}
+
+/** Carta 1: qué hacés con tu futuro (renovar, salir, cesión, venta). */
+function buildTransferCard(s: CareerState): CareerEvent {
   const tier = interestTier(s);
   const abroad = canGoAbroad(s);
-
-  switch (kind) {
-    case "prestamo": {
-      const targetTier = Math.max(1, s.club.tier - (fit <= -12 ? 2 : 1));
-      const opts = clubPool({ tier: targetTier, country: s.countryName, abroad: false, excludeIds: [s.club.id] }).slice(0, 3);
-      return {
-        kind,
-        title: "Salida a préstamo",
-        description: `En el ${s.club.name} todavía no te ven listo para ser titular. Una cesión te daría los minutos que necesitás para crecer.`,
-        options: opts.map((c) => ({ id: c.id, label: `Préstamo en ${c.name}`, clubId: c.id, effect: c.league })),
-      };
-    }
-
-    case "regreso": {
-      const parent = s.parentClubId ? findClub(s.parentClubId) : null;
-      const alts = clubPool({ tier, country: s.countryName, abroad, excludeIds: [s.club.id, parent?.id ?? ""] }).slice(0, 2);
-      const options: CareerOption[] = alts.map((c) => ({ id: c.id, label: `Fichar por ${c.name}`, clubId: c.id, effect: c.league }));
-      if (parent) {
-        options.push({ id: parent.id, label: `Volver al ${parent.name}`, clubId: parent.id, effect: "Tu club te espera" });
-      } else {
-        options.push({ id: "stay", label: `Seguir en ${s.club.name}`, clubId: s.club.id, effect: "Continuidad" });
-      }
-      return {
-        kind,
-        title: "Fin de la cesión",
-        description: parent
-          ? `Termina tu préstamo. El ${parent.name} quiere recuperarte, pero también hay clubes tocando la puerta.`
-          : "Se abre el mercado y tenés que decidir tu próximo paso.",
-        options,
-      };
-    }
-
-    case "europa": {
-      const dest = pick(CLUBS_ABROAD(s, tier));
-      const isEurope = EUROPEAN_LEAGUES.has(dest.league);
-      return {
-        kind,
-        title: isEurope ? "Te llaman de Europa" : "Oferta desde el extranjero",
-        description: isEurope
-          ? `El ${dest.name} (${dest.league}) mandó una oferta formal. Es el salto que todo futbolista de tu país sueña… y también un riesgo: allá la competencia es otra.`
-          : `El ${dest.name} (${dest.league}) quiere llevarte. Salir de tu país es un cambio grande, con más exposición y más exigencia.`,
-        options: [
-          {
-            id: dest.id,
-            label: `Fichar por ${dest.name}`,
-            clubId: dest.id,
-            effect: isEurope ? "El salto a Europa" : "Salir al extranjero",
-            risk: "Más competencia por el puesto",
-            image: PEXELS.celebration,
-          },
-          { id: "stay", label: `Quedarte en ${s.club.name}`, clubId: s.club.id, effect: "Seguir siendo figura acá", risk: "Quizá no vuelvan a llamar" },
-        ],
-      };
-    }
-
-    case "mercado": {
-      const offer = pick(clubPool({ tier, country: s.countryName, abroad, excludeIds: [s.club.id] }));
-      const isStepUp = offer.tier > s.club.tier;
-      return {
-        kind,
-        title: "Mercado de pases",
-        description: `El ${offer.name} (${offer.league}) presentó una oferta por vos.`,
-        options: [
-          {
-            id: offer.id,
-            label: `Fichar por ${offer.name}`,
-            clubId: offer.id,
-            effect: isStepUp ? "Subís de categoría" : "Nuevo proyecto",
-            risk: isStepUp ? "Vas a pelear el puesto" : undefined,
-          },
-          { id: "stay", label: `Quedarte en ${s.club.name}`, clubId: s.club.id, effect: "Continuidad y confianza" },
-        ],
-      };
-    }
-
-    case "competencia": {
-      // El % sale del encaje real con el club, no de un número inventado.
-      const titular = Math.round(clamp(55 + fit * 1.9 + s.form * 6, 15, 88));
-      return {
-        kind,
-        title: "Competencia por el puesto",
-        description: `El ${s.club.name} fichó a otro jugador para tu posición. El técnico dice que el puesto se gana en la cancha.`,
-        options: [
-          { id: "competir", label: "Quedarte a pelearlo", effect: `Titular ${titular}%`, risk: `Suplente ${100 - titular}%`, image: PEXELS.bench },
-          { id: "salida", label: "Buscar salida", effect: "Minutos asegurados en otro club", risk: "Bajás un escalón", image: PEXELS.coach },
-        ],
-      };
-    }
-
-    case "mentor": {
-      return {
-        kind,
-        title: "La joya de la cantera",
-        description: "Un juvenil deslumbra en los entrenamientos y el club te pide que lo guíes. El vestuario lo notaría.",
-        options: [
-          { id: "mentor", label: "Apadrinarlo", effect: "El vestuario te respeta más", risk: "Le cedés algunos minutos", image: PEXELS.coach },
-          { id: "no", label: "Enfocarte en lo tuyo", effect: "Todos los minutos para vos", risk: "Fama de egoísta" },
-        ],
-      };
-    }
-
-    case "seleccion": {
-      return {
-        kind,
-        title: "Te llama la selección",
-        description: `El seleccionador de ${s.countryName} te convocó. Es un orgullo, pero la gira internacional carga las piernas.`,
-        options: [
-          { id: "aceptar", label: "Aceptar la convocatoria", effect: "Reputación mundial", risk: "Más desgaste físico", image: PEXELS.celebration },
-          { id: "rechazar", label: "Priorizar el club", effect: "Llegás entero a la temporada", risk: "Perdés el tren de la selección" },
-        ],
-      };
-    }
-
-    case "capitan": {
-      return {
-        kind,
-        title: "El brazalete",
-        description: `El ${s.club.name} busca capitán y tu nombre está sobre la mesa. Es responsabilidad, presión y también jerarquía.`,
-        options: [
-          { id: "aceptar", label: "Aceptar la capitanía", effect: "Referente del club", risk: "Toda la presión sobre vos", image: PEXELS.coach },
-          { id: "rechazar", label: "Rechazarla", effect: "Jugar sin presión extra" },
-        ],
-      };
-    }
-
-    case "narrativo": {
-      const events = [
-        { title: "Problema fiscal", desc: "Una auditoría a tus finanzas se filtra a la prensa y te persigue todo el año.", penalty: 3 },
-        { title: "Lesión muscular", desc: "Una rotura te deja fuera varios meses en el peor momento.", penalty: 5 },
-        { title: "Cambio de entrenador", desc: "Llega un técnico nuevo que, de entrada, no cuenta con vos.", penalty: 2 },
-        { title: "Estado de gracia", desc: "Todo lo que tocás termina en gol. Llegás al ciclo enchufadísimo.", penalty: -4 },
-      ];
-      const ev = pick(events);
-      return {
-        kind,
-        title: ev.title,
-        description: ev.desc,
-        options: [
-          {
-            id: "aceptar",
-            label: "Seguir adelante",
-            effect: ev.penalty > 0 ? `${-ev.penalty} OVR temporal` : `+${-ev.penalty} OVR`,
-            image: ev.penalty > 0 ? PEXELS.injury : PEXELS.celebration,
-          },
-        ],
-      };
-    }
-
-    case "doble-turno": {
-      const exito = Math.round(clamp(62 + fit * 1.2 - (s.age - 24) * 1.5, 25, 88));
-      return {
-        kind,
-        title: "Doble turno",
-        description: "El preparador físico te ofrece un plan de dos entrenamientos diarios. Podés dar un salto… o romperte.",
-        options: [
-          { id: "fondo", label: "Entrenar a fondo", effect: `Salto de nivel ${exito}%`, risk: `Lesión ${100 - exito}%`, image: PEXELS.training },
-          { id: "carga", label: "Cuidar el cuerpo", effect: "Llegás sano todo el año", risk: "Crecés más lento" },
-        ],
-      };
-    }
-
-    case "declive": {
-      const opts = clubPool({ tier: Math.max(1, tier - 1), country: s.countryName, abroad: false, excludeIds: [s.club.id] }).slice(0, 2);
-      return {
-        kind,
-        title: "El cuerpo ya no responde igual",
-        description: `En el ${s.club.name} empiezan a mirar hacia jugadores más jóvenes. Podés buscar un lugar donde sigas siendo importante.`,
-        options: [
-          ...opts.map((c) => ({ id: c.id, label: `Fichar por ${c.name}`, clubId: c.id, effect: c.league })),
-          { id: "stay", label: `Resistir en ${s.club.name}`, clubId: s.club.id, effect: "Pelear un lugar", risk: "Cada vez menos minutos" },
-        ],
-      };
-    }
-
-    case "retiro-oferta": {
-      return {
-        kind,
-        title: "¿Hasta cuándo?",
-        description: "El cuerpo pesa más que antes y la prensa ya pregunta por tu retiro. Vos sabés cómo te sentís.",
-        options: [
-          { id: "seguir", label: "Seguir compitiendo", effect: "Una etapa más" },
-          { id: "retirar", label: "Colgar los botines", effect: "Cerrar tu carrera" },
-        ],
-      };
-    }
-
-    default:
-      return buildCanteraEvent(s.club, s.countryName);
-  }
-}
-
-/**
- * Destinos del salto al extranjero. Prioriza las grandes ligas europeas —que
- * es lo que promete el evento— y solo cae a cualquier club de fuera si a tu
- * nivel todavía no hay opciones europeas.
- */
-function CLUBS_ABROAD(s: CareerState, tier: number): CareerClub[] {
-  const foreign = clubPool({ tier, country: s.countryName, abroad: true, excludeIds: [s.club.id] }).filter(
-    (c) => c.country !== s.countryName
-  );
-  const european = foreign.filter((c) => EUROPEAN_LEAGUES.has(c.league));
-  if (european.length) return european;
-  if (foreign.length) return foreign;
-  return clubPool({ tier, country: s.countryName, abroad: true, excludeIds: [s.club.id] });
-}
-
-/**
- * Qué evento toca ahora. No es una ruleta: la fase de carrera y tu situación
- * real en el club mandan.
- */
-function pickEventKind(s: CareerState, prevKind: EventKind): EventKind {
   const fit = clubFit(s.ovr, s.club);
-  const abroad = canGoAbroad(s);
-  const playingAbroad = s.club.country !== s.countryName;
 
-  // El salto a Europa es un momento único: se dispara la primera vez que
-  // tenés cartel suficiente y todavía jugás en tu país.
-  if (!playingAbroad && abroad && s.age <= 29 && s.reputation >= 34 && Math.random() < 0.65) {
-    return "europa";
+  // Cantera: el primer contrato.
+  if (s.age === 16) {
+    const clubs = shuffle(canteraClubs(s.countryName)).slice(0, 3);
+    return {
+      kind: "cantera",
+      title: "Oferta de cantera",
+      description: "Tres clubes quieren sumarte a su proyecto juvenil. Elegí dónde empieza tu carrera.",
+      options: clubs.map((c) => ({ id: c.id, label: `Fichar por ${c.name}`, clubId: c.id, effect: c.league })),
+    };
   }
-  // Declive: a partir de cierta edad y con el nivel cayendo.
-  if (s.age >= 31 && s.ovr < s.peakOvr - 4) {
-    if (s.age >= 34 || Math.random() < 0.45) return Math.random() < 0.5 ? "declive" : "retiro-oferta";
+
+  // Volver de una cesión larga.
+  if (s.parentClubId && s.loanYears >= 2) {
+    const parent = findClub(s.parentClubId)!;
+    const alt = pick(shuffle(clubPool({ tier, country: s.countryName, abroad, excludeIds: [s.club.id, parent.id] })));
+    return {
+      kind: "futuro",
+      title: "Termina tu cesión",
+      description: `El préstamo llegó a su fin. El ${parent.name} decide si te reintegra… o si te vende de una vez.`,
+      options: [
+        { id: parent.id, label: `Volver al ${parent.name}`, clubId: parent.id, effect: "Pelear un lugar en tu club" },
+        { id: alt.id, label: `Fichar por ${alt.name}`, clubId: alt.id, effect: alt.league, risk: "Cambio definitivo" },
+      ],
+    };
   }
-  // Selección: si tenés nivel y todavía no sos habitual.
-  if (s.ovr >= 74 && s.caps === 0 && Math.random() < 0.6) return "seleccion";
-  // Capitanía: veterano, con jerarquía y asentado.
-  if (s.age >= 27 && s.reputation >= 45 && fit >= 0 && Math.random() < 0.3) return "capitan";
 
-  // Cuando ya sos mejor que tu club, el mercado se mueve: es el mecanismo por
-  // el que un jugador que rinde termina escalando a equipos grandes en vez de
-  // quedarse toda la carrera en el mismo lugar.
-  const pool: EventKind[] =
-    fit <= -10
-      ? ["competencia", "competencia", "prestamo", "narrativo", "doble-turno"]
-      : fit >= 6
-        ? ["mercado", "mercado", "mercado", "mentor", "narrativo", "doble-turno"]
-        : ["mercado", "mercado", "competencia", "mentor", "narrativo", "doble-turno"];
+  // Si el club te queda grande y sos joven: cesión para sumar minutos.
+  if (fit <= -10 && s.age <= 24 && !s.parentClubId) {
+    const targets = shuffle(clubPool({ tier: Math.max(1, s.club.tier - 1), country: s.countryName, abroad: false, excludeIds: [s.club.id] })).slice(0, 2);
+    return {
+      kind: "futuro",
+      title: "Mercado de pases",
+      description: `En el ${s.club.name} no entrás en los planes. Podés salir cedido a jugar o quedarte a pelearla desde abajo.`,
+      options: [
+        ...targets.map((c) => ({ id: `loan:${c.id}`, label: `Cesión al ${c.name}`, clubId: c.id, effect: `${c.league} · minutos asegurados` })),
+        { id: "stay", label: `Quedarte en ${s.club.name}`, clubId: s.club.id, effect: "Pelear el puesto", risk: "Podés no jugar" },
+      ],
+    };
+  }
 
-  const filtered = pool.filter((k) => k !== prevKind);
-  return pick(filtered.length ? filtered : pool);
+  // ¿Hay ofertas reales este año? En una carrera de verdad no te cambiás de
+  // club cada temporada: el mercado se mueve por vos cuando rendís, cuando se
+  // te acaba el contrato o cuando sobrás en tu equipo. El resto de los años la
+  // decisión es sobre tu ROL en el club, no sobre irte.
+  const contractYear = (s.age - 16) % 3 === 0; // renovación cada ~3 años
+  let offerChance = 0.1;
+  if (fit >= 8) offerChance += 0.3; // te quedó chico el club
+  if (s.reputation >= REP_ELITE) offerChance += 0.2;
+  if (contractYear) offerChance += 0.25;
+  if (s.age >= 34) offerChance -= 0.15;
+  const hasOffers = Math.random() < clamp(offerChance, 0.05, 0.75);
+
+  if (!hasOffers) {
+    // Año sin mercado: se decide el rol dentro del club.
+    const titular = Math.round(clamp(58 + fit * 1.8 + s.form * 6, 20, 90));
+    return {
+      kind: "futuro",
+      title: "Tu lugar en el equipo",
+      description: `No hay ofertas sobre la mesa. En el ${s.club.name} toca definir qué papel vas a tener esta temporada.`,
+      options: [
+        { id: "titular", label: "Exigir ser titular", effect: `Lo conseguís ${titular}%`, risk: `Si no, al banco ${100 - titular}%`, image: PEXELS.bench },
+        { id: "stay", label: "Aceptar tu rol y trabajar", effect: "Minutos estables, sin conflicto" },
+      ],
+    };
+  }
+
+  const offerTier = fit >= 8 ? Math.min(5, tier + 1) : tier;
+  const offers = shuffle(clubPool({ tier: offerTier, country: s.countryName, abroad, excludeIds: [s.club.id] })).slice(0, 2);
+  const isEuroJump = s.club.country === s.countryName && offers.some((c) => EUROPEAN_LEAGUES.has(c.league));
+
+  const options: CareerOption[] = offers.map((c) => {
+    const stepUp = c.tier > s.club.tier;
+    return {
+      id: c.id,
+      label: `Fichar por ${c.name}`,
+      clubId: c.id,
+      effect: stepUp ? `${c.league} · subís de categoría` : c.league,
+      risk: stepUp ? "Vas a pelear el puesto" : undefined,
+    };
+  });
+  options.push({
+    id: "stay",
+    label: `Renovar con ${s.club.name}`,
+    clubId: s.club.id,
+    effect: "Continuidad y confianza",
+  });
+
+  return {
+    kind: "futuro",
+    title: isEuroJump ? "Te llaman de Europa" : "Mercado de pases",
+    description: isEuroJump
+      ? `Llegaron ofertas del fútbol europeo. Es el salto que soñaste… y también donde la competencia es otra.`
+      : `Tu representante trae ofertas sobre la mesa. Decidí dónde seguís esta temporada.`,
+    options,
+  };
+}
+
+/** Carta 2: en qué te enfocás esta temporada (sube tu nivel, con riesgo). */
+function buildDevelopmentCard(s: CareerState): CareerEvent {
+  const fit = clubFit(s.ovr, s.club);
+  const gk = isGoalkeeper(s.position);
+
+  const pool: CareerEvent[] = [];
+
+  // Doble turno — siempre disponible: el clásico riesgo/recompensa.
+  const exito = Math.round(clamp(62 + fit * 1.2 - Math.max(0, s.age - 26) * 2.2, 25, 88));
+  pool.push({
+    kind: "enfoque",
+    title: "Doble turno",
+    description: "El preparador físico te ofrece un plan de dos entrenamientos diarios. Podés dar un salto… o romperte.",
+    options: [
+      { id: "fondo", label: "Entrenar a fondo", effect: `Salto de nivel ${exito}%`, risk: `Lesión ${100 - exito}%`, image: PEXELS.training },
+      { id: "carga", label: "Cuidar el cuerpo", effect: "Llegás sano todo el año", risk: "Crecés más lento" },
+    ],
+  });
+
+  // Trabajo específico del puesto.
+  pool.push({
+    kind: "enfoque",
+    title: gk ? "Trabajo con el entrenador de arqueros" : "Trabajo específico",
+    description: gk
+      ? "Sesiones extra de blocaje, salidas y juego con los pies. Menos vistoso, pero es lo que sostiene una portería."
+      : "Podés pulir la definición para ser más determinante, o trabajar el juego colectivo y hacer mejores a los demás.",
+    options: gk
+      ? [
+          { id: "arco", label: "Especializarte bajo los tres palos", effect: "Más vallas invictas" },
+          { id: "pies", label: "Mejorar tu juego con los pies", effect: "Encajás mejor en equipos grandes" },
+        ]
+      : [
+          { id: "definicion", label: "Afinar la definición", effect: "Más goles esta temporada" },
+          { id: "colectivo", label: "Mejorar el juego colectivo", effect: "Más asistencias y solidez" },
+        ],
+  });
+
+  // Liderazgo: solo cuando ya tenés jerarquía.
+  if (s.age >= 25 && fit >= -4) {
+    pool.push({
+      kind: "enfoque",
+      title: "La joya de la cantera",
+      description: "Un juvenil deslumbra en los entrenamientos y el club te pide que lo guíes. El vestuario lo notaría.",
+      options: [
+        { id: "mentor", label: "Apadrinarlo", effect: "El vestuario te respeta más", risk: "Le cedés algunos minutos", image: PEXELS.coach },
+        { id: "no", label: "Enfocarte en lo tuyo", effect: "Todos los minutos para vos" },
+      ],
+    });
+  }
+
+  // Selección: mientras estés en edad y nivel.
+  if (s.ovr >= 72 && s.age <= 34) {
+    pool.push({
+      kind: "enfoque",
+      title: "Fecha FIFA",
+      description: `El seleccionador de ${s.countryName} te tiene en carpeta. Ir suma prestigio, pero son miles de kilómetros en las piernas.`,
+      options: [
+        { id: "seleccion", label: "Ir con la selección", effect: "Reputación mundial", risk: "Más desgaste", image: PEXELS.celebration },
+        { id: "club", label: "Priorizar el club", effect: "Llegás entero a la temporada" },
+      ],
+    });
+  }
+
+  // Veteranía: cuidarse para estirar la carrera.
+  if (s.age >= DECLINE_AGE) {
+    pool.push({
+      kind: "enfoque",
+      title: "El cuerpo pide otra cosa",
+      description: "A esta altura, entrenar más no siempre es entrenar mejor. Hay que elegir cómo administrarse.",
+      options: [
+        { id: "gimnasio", label: "Plan de prevención", effect: "Menos riesgo de lesión", risk: "Menos explosividad" },
+        { id: "competir", label: "Seguir al máximo", effect: "Rendís como siempre", risk: "Más riesgo de romperte" },
+      ],
+    });
+  }
+
+  return pick(pool);
+}
+
+function buildTurn(s: CareerState, isFirst = false): CareerTurn {
+  return {
+    seasonLabel: seasonLabel(s.age),
+    intro: seasonIntro(s),
+    transfer: buildTransferCard(s),
+    development: isFirst
+      ? {
+          kind: "enfoque",
+          title: "Tus primeros pasos",
+          description: "Antes de debutar, el club quiere saber en qué querés poner el foco este año.",
+          options: isGoalkeeper(s.position)
+            ? [
+                { id: "arco", label: "Vivir bajo los tres palos", effect: "Más vallas invictas" },
+                { id: "pies", label: "Aprender a jugar con los pies", effect: "Encajás mejor en equipos grandes" },
+              ]
+            : [
+                { id: "definicion", label: "Trabajar la definición", effect: "Más goles" },
+                { id: "colectivo", label: "Entender el juego", effect: "Más asistencias" },
+              ],
+        }
+      : buildDevelopmentCard(s),
+  };
 }
 
 // ---------------------------------------------------------------------------
-// Resolución de la decisión → simulación → siguiente evento
+// Resolución del turno
 
-export function resolveOption(s: CareerState, optionId: string): CareerState {
-  const event = s.pendingEvent;
-  if (!event) return s;
+export function chooseTransfer(s: CareerState, optionId: string): CareerState {
+  if (!s.pendingTurn || s.pickedTransfer) return s;
+  return { ...s, pickedTransfer: optionId };
+}
 
-  if (event.kind === "retiro-oferta" && optionId === "retirar") {
-    return { ...s, retired: true, pendingEvent: null };
+export function chooseDevelopment(s: CareerState, optionId: string): CareerState {
+  if (!s.pendingTurn || !s.pickedTransfer || s.pickedDevelopment) return s;
+  return advanceSeason({ ...s, pickedDevelopment: optionId });
+}
+
+/** Aplica la carta de futuro: cambio de club, cesión o continuidad. */
+function applyTransfer(s: CareerState): CareerState {
+  const turn = s.pendingTurn!;
+  const id = s.pickedTransfer!;
+  const opt = turn.transfer.options.find((o) => o.id === id);
+  if (!opt) return s;
+
+  // "Exigir ser titular" se resuelve en el propio evento (no cambia de club),
+  // pero su resultado lo aplica applyDevelopment vía el tiro de suerte.
+  if (id === "stay" || id === "titular") {
+    return { ...s, loanYears: s.parentClubId ? s.loanYears + 1 : 0 };
   }
+  if (id.startsWith("loan:")) {
+    const target = findClub(id.slice(5));
+    if (!target) return s;
+    return { ...s, parentClubId: s.club.id, club: target, loanYears: 1 };
+  }
+  const target = opt.clubId ? findClub(opt.clubId) : null;
+  if (!target) return s;
+  return { ...s, club: target, parentClubId: null, loanYears: 0 };
+}
 
-  let next: CareerState = { ...s };
+/** Aplica la carta de enfoque. Devuelve minutos y, si hubo, el tiro de suerte. */
+function applyDevelopment(s: CareerState): { state: CareerState; minutes: number; luck: LuckRoll | null; bonus: string[] } {
+  const turn = s.pendingTurn!;
+  const id = s.pickedDevelopment!;
+  const card = turn.development;
+  let next = { ...s };
   let minutes = 1;
-  let bonusTrophies: string[] = [];
-  let injured = false;
   let luck: LuckRoll | null = null;
-  const opt = event.options.find((o) => o.id === optionId);
+  const bonus: string[] = [];
 
-  switch (event.kind) {
-    case "cantera":
-    case "prestamo":
-    case "regreso":
-    case "europa":
-    case "mercado":
-    case "declive": {
-      if (opt?.clubId && opt.id !== "stay") {
-        const target = findClub(opt.clubId);
-        if (target) {
-          // Al salir cedido se recuerda el club dueño del pase.
-          next.parentClubId = event.kind === "prestamo" ? s.club.id : null;
-          next.club = target;
-        }
-      } else if (event.kind === "prestamo" || event.kind === "regreso") {
-        next.parentClubId = null;
-      }
-      break;
-    }
-    case "competencia": {
-      if (optionId === "competir") {
-        const titular = Number(event.options[0].effect.replace(/\D/g, ""));
-        const rolled = Math.random() * 100;
-        const success = rolled < titular;
-        luck = {
-          chance: titular,
-          rolled: Math.round(rolled),
-          success,
-          successLabel: "Te ganaste el puesto de titular",
-          failLabel: "Te quedaste en la rotación",
-        };
-        minutes = success ? 1.1 : 0.4;
+  switch (id) {
+    case "fondo": {
+      const exito = Number(card.options[0].effect.replace(/\D/g, ""));
+      const rolled = Math.random() * 100;
+      const success = rolled < exito;
+      luck = {
+        chance: exito,
+        rolled: Math.round(rolled),
+        success,
+        successLabel: "El trabajo extra dio resultado",
+        failLabel: "Te rompiste: lesión por sobrecarga",
+      };
+      if (success) {
+        minutes = 1.1;
+        next.potential = Math.min(99, s.potential + rand(1, 2));
       } else {
-        const dest = pick(clubPool({ tier: Math.max(1, interestTier(s) - 1), country: s.countryName, abroad: canGoAbroad(s), excludeIds: [s.club.id] }));
-        next.club = dest;
-        minutes = 1;
+        minutes = 0.45;
+        next.penaltyOvr = s.penaltyOvr + 3;
+        next.injuries = s.injuries + 1;
       }
       break;
     }
-    case "mentor": {
-      if (optionId === "mentor") {
-        minutes = 0.82;
-        next.reputation = clamp(s.reputation + 4, 0, 100);
-        if (Math.random() < 0.35) bonusTrophies.push("Premio al liderazgo");
-      }
+    case "carga":
+      minutes = 0.9;
       break;
-    }
-    case "seleccion": {
-      if (optionId === "aceptar") {
-        next.caps = s.caps + rand(6, 12);
-        next.reputation = clamp(s.reputation + 8, 0, 100);
-        minutes = 0.92; // desgaste de la gira
-      } else {
-        next.reputation = clamp(s.reputation - 3, 0, 100);
-      }
+    case "definicion":
+    case "arco":
+      next.form = clamp(s.form + 0.35, -1, 1);
       break;
-    }
-    case "capitan": {
-      if (optionId === "aceptar") {
-        next.reputation = clamp(s.reputation + 6, 0, 100);
-        // La presión: puede potenciarte o pesarte.
-        minutes = Math.random() < 0.7 ? 1.08 : 0.9;
-      }
+    case "colectivo":
+    case "pies":
+      minutes = 1.04;
       break;
-    }
-    case "doble-turno": {
-      if (optionId === "fondo") {
-        const exito = Number(event.options[0].effect.replace(/\D/g, ""));
-        const rolled = Math.random() * 100;
-        const success = rolled < exito;
-        luck = {
-          chance: exito,
-          rolled: Math.round(rolled),
-          success,
-          successLabel: "El trabajo extra dio resultado",
-          failLabel: "Te rompiste: lesión por sobrecarga",
-        };
-        if (success) {
-          minutes = 1.12;
-          next.potential = Math.min(99, s.potential + rand(1, 3)); // rompés tu techo
-        } else {
-          minutes = 0.45;
-          injured = true;
-          next.penaltyOvr = s.penaltyOvr + 3;
-        }
-      } else {
-        minutes = 0.88;
-      }
+    case "mentor":
+      minutes = 0.85;
+      next.reputation = clamp(s.reputation + 4, 0, 100);
+      if (Math.random() < 0.3) bonus.push("Premio al liderazgo");
       break;
-    }
-    case "narrativo": {
-      const delta = Number(event.options[0].effect.match(/-?\d+/)?.[0] ?? 0);
-      if (delta < 0) {
-        next.penaltyOvr = s.penaltyOvr + Math.abs(delta);
-        injured = event.title.includes("Lesión");
-        if (injured) minutes = 0.6;
-      } else {
-        next.form = clamp(s.form + 0.5, -1, 1);
-      }
+    case "seleccion":
+      next.caps = s.caps + rand(4, 9);
+      next.reputation = clamp(s.reputation + 7, 0, 100);
+      minutes = 0.92;
       break;
-    }
+    case "club":
+      minutes = 1.05;
+      break;
+    case "gimnasio":
+      minutes = 0.95;
+      next.injuries = Math.max(0, s.injuries - 1);
+      break;
+    case "competir":
+      minutes = 1.05;
+      break;
+  }
+  return { state: next, minutes, luck, bonus };
+}
+
+function advanceSeason(s: CareerState): CareerState {
+  let next = applyTransfer(s);
+  const dev = applyDevelopment(next);
+  next = dev.state;
+
+  let minutes = dev.minutes;
+  let luck = dev.luck;
+
+  // "Exigir ser titular": es una apuesta con porcentaje, igual que el doble
+  // turno. Se resuelve acá porque necesita el estado ya con el club aplicado.
+  if (s.pickedTransfer === "titular") {
+    const card = s.pendingTurn!.transfer;
+    const chance = Number(card.options[0].effect.replace(/\D/g, ""));
+    const rolled = Math.random() * 100;
+    const success = rolled < chance;
+    luck = {
+      chance,
+      rolled: Math.round(rolled),
+      success,
+      successLabel: "Te ganaste el puesto de titular",
+      failLabel: "El técnico te mandó al banco",
+    };
+    minutes *= success ? 1.12 : 0.5;
   }
 
-  // --- Simulación de la etapa -------------------------------------------
-  const result = simulateStage(next, minutes);
+  const result = simulateSeason(next, minutes);
   const ovrBefore = next.ovr;
-  const ovrAfter = clamp(
-    Math.min(next.potential + 2, next.ovr + result.ovrDelta) - next.penaltyOvr,
-    40,
-    99
-  );
+  const ovrAfter = clamp(Math.min(next.potential + 2, next.ovr + result.ovrDelta) - next.penaltyOvr, 40, 99);
 
   const caps = rollCaps(next, result.performance);
   const totalCaps = next.caps + caps;
-  const trophies = [...bonusTrophies, ...rollTrophies(next, result.performance)];
-  if (rollWorldCup(next, totalCaps, result.performance)) trophies.push(MUNDIAL.name);
+  const { won, finalOf } = rollTrophies(next, result.performance);
+  const trophies = [...dev.bonus, ...won];
+
+  // Mundial: cada 4 años, si sos internacional y estás en tu pico.
+  const worldCupYear = (next.age - 16) % 4 === 2;
+  if (worldCupYear && totalCaps > 0 && next.ovr >= 78 && Math.random() < 0.16) {
+    trophies.push(MUNDIAL.name);
+  }
 
   const awardCtx: AwardContext = {
     position: next.position,
@@ -843,6 +825,7 @@ export function resolveOption(s: CareerState, optionId: string): CareerState {
     ovr: ovrAfter,
     gls: result.gls,
     pj: result.pj,
+    cleanSheets: result.cleanSheets,
     performance: result.performance,
     clubTier: next.club.tier,
     reputation: next.reputation,
@@ -853,8 +836,9 @@ export function resolveOption(s: CareerState, optionId: string): CareerState {
   const totalPj = next.totalPj + result.pj;
   const totalGls = next.totalGls + result.gls;
   const totalAst = next.totalAst + result.ast;
+  const totalCS = next.totalCleanSheets + result.cleanSheets;
 
-  const milestoneCtx: MilestoneContext = {
+  const milestones = detectMilestones({
     prevTotalGls: next.totalGls,
     totalGls,
     prevTotalPj: next.totalPj,
@@ -870,16 +854,21 @@ export function resolveOption(s: CareerState, optionId: string): CareerState {
     prevClubTier: s.club.tier,
     clubName: next.club.name,
     wentAbroad: s.club.country === s.countryName && next.club.country !== s.countryName,
-  };
-  const milestones = detectMilestones(milestoneCtx);
+    isGoalkeeper: isGoalkeeper(next.position),
+    prevCleanSheets: next.totalCleanSheets,
+    cleanSheets: totalCS,
+  });
 
   const outcome: StageOutcome = {
     ageFrom: next.age,
-    ageTo: next.age + 2,
+    ageTo: next.age + 1,
+    seasonLabel: seasonLabel(next.age),
     clubName: next.club.name,
+    position: next.position,
     pj: result.pj,
     gls: result.gls,
     ast: result.ast,
+    cleanSheets: result.cleanSheets,
     ovrBefore,
     ovrAfter,
     performance: result.performance,
@@ -887,47 +876,95 @@ export function resolveOption(s: CareerState, optionId: string): CareerState {
     trophies,
     awards,
     milestones,
-    injured,
+    injured: result.injured,
   };
 
   const reputation = updateReputation(next, result, trophies, awards, caps);
-  const newAge = next.age + 2;
+  const newAge = next.age + 1;
 
   const advanced: CareerState = {
     ...next,
     age: newAge,
     ovr: ovrAfter,
     peakOvr: Math.max(next.peakOvr, ovrAfter),
-    marketValue: marketValueFromOvr(ovrAfter, newAge, reputation),
-    peakValue: Math.max(next.peakValue, marketValueFromOvr(ovrAfter, newAge, reputation)),
+    marketValue: marketValueFromOvr(ovrAfter, newAge, reputation, next.club.tier),
+    peakValue: Math.max(next.peakValue, marketValueFromOvr(ovrAfter, newAge, reputation, next.club.tier)),
     totalPj,
     totalGls,
     totalAst,
+    totalCleanSheets: totalCS,
     caps: totalCaps,
     reputation,
-    form: clamp(next.form * 0.5 + (result.performance - 1) * 0.8, -1, 1),
-    penaltyOvr: Math.max(0, next.penaltyOvr - 3),
+    form: clamp(next.form * 0.55 + (result.performance - 1) * 0.7, -1, 1),
+    penaltyOvr: Math.max(0, next.penaltyOvr - 2),
+    injuries: result.injured ? next.injuries + 1 : next.injuries,
     trophies: [...next.trophies, ...trophies.map((label) => ({ label, age: next.age, club: next.club.name }))],
     awards: [...next.awards, ...awards.map((label) => ({ label, age: next.age, club: next.club.name }))],
     history: [
       ...next.history,
-      { age: next.age, club: next.club, ovr: ovrAfter, pj: result.pj, gls: result.gls, ast: result.ast, trophies },
+      {
+        age: next.age,
+        club: next.club,
+        ovr: ovrAfter,
+        pj: result.pj,
+        gls: result.gls,
+        ast: result.ast,
+        cleanSheets: result.cleanSheets,
+        trophies,
+      },
     ],
     lastStage: outcome,
     lastRoll: luck,
+    lastPenalty: null,
+    pickedTransfer: null,
+    pickedDevelopment: null,
+    pendingTurn: null,
+    pendingPenalty: null,
   };
 
-  // Retiro: por edad tope, o por nivel demasiado bajo pasados los 33.
-  if (newAge >= 38 || (newAge >= 33 && ovrAfter < 56)) {
-    return { ...advanced, retired: true, pendingEvent: null };
+  // ¿Se retira? Por edad tope, o por nivel demasiado bajo ya entrado en años.
+  const retiring = newAge >= RETIREMENT_AGE || (newAge >= 35 && ovrAfter < 58);
+
+  // Final continental: el penal se tira ANTES de cerrar la temporada.
+  if (finalOf) {
+    // Un portero cubre menos zonas contra un crack.
+    const zonesCovered = advanced.ovr >= 85 ? 1 : 2;
+    const keeperZones = shuffle([0, 1, 2, 3, 4]).slice(0, zonesCovered);
+    return {
+      ...advanced,
+      pendingPenalty: { competition: finalOf, club: advanced.club.name, keeperZones },
+      retired: retiring,
+    };
   }
 
-  const nextKind = newAge === 18 && advanced.club.tier >= 3 ? "prestamo" : pickEventKind(advanced, event.kind);
-  return { ...advanced, pendingEvent: buildEvent(advanced, nextKind) };
+  if (retiring) return { ...advanced, retired: true };
+  return { ...advanced, pendingTurn: buildTurn(advanced) };
 }
 
-/** Texto narrativo de la última etapa (lo usa la UI). */
-export function lastStageNarrative(s: CareerState): string | null {
-  if (!s.lastStage) return null;
-  return stageNarrative(s.lastStage, s.position);
+/** Resuelve el penal de la final: si metés, levantás el título. */
+export function shootPenalty(s: CareerState, zone: number): CareerState {
+  const pen = s.pendingPenalty;
+  if (!pen) return s;
+  const scored = !pen.keeperZones.includes(zone);
+
+  const next: CareerState = {
+    ...s,
+    pendingPenalty: null,
+    lastPenalty: { competition: pen.competition, club: pen.club, pickedZone: zone, keeperZones: pen.keeperZones, scored },
+  };
+
+  if (scored) {
+    next.trophies = [...s.trophies, { label: pen.competition, age: s.age - 1, club: pen.club }];
+    next.reputation = clamp(s.reputation + 8, 0, 100);
+    if (next.lastStage) {
+      next.lastStage = { ...next.lastStage, trophies: [...next.lastStage.trophies, pen.competition] };
+    }
+    if (next.history.length) {
+      const last = next.history[next.history.length - 1];
+      next.history = [...next.history.slice(0, -1), { ...last, trophies: [...last.trophies, pen.competition] }];
+    }
+  }
+
+  if (s.retired) return next;
+  return { ...next, pendingTurn: buildTurn(next) };
 }

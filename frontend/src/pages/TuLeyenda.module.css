@@ -23,8 +23,50 @@
   flex-shrink: 0;
 }
 
-.topBarStage {
+/* Identidad del jugador siempre a la vista: quién sos, qué edad tenés y
+   dónde jugás, sin tener que mirar el panel de perfil. */
+.topBarInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
   font-size: 13px;
+}
+
+.topBarName {
+  font-weight: 800;
+  color: var(--crema);
+  white-space: nowrap;
+}
+
+.topBarNum {
+  color: var(--gris);
+  font-weight: 700;
+}
+
+.topBarDot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--gris);
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+.topBarAge {
+  color: var(--gris);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.topBarCrest {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.topBarClub {
   color: var(--gris);
   font-weight: 600;
   overflow: hidden;
@@ -32,8 +74,28 @@
   white-space: nowrap;
 }
 
-.topBarRestart {
+/* Cuánto llevás de carrera (16 → 39): da sensación de reloj corriendo. */
+.topBarProgress {
   margin-left: auto;
+  width: clamp(60px, 14vw, 140px);
+  height: 5px;
+  border-radius: var(--r-chip);
+  background: var(--tribuna-alta);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+/* Se anima con scaleX (compositor) en vez de width, que forzaría layout. */
+.topBarProgressFill {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--r-chip);
+  background: linear-gradient(90deg, var(--pasto), var(--oro));
+  transform-origin: left center;
+  transition: transform 0.6s ease;
+}
+
+.topBarRestart {
   flex-shrink: 0;
   background: transparent;
   border: 1px solid var(--linea);
@@ -282,18 +344,21 @@
   position: relative;
   width: 100%;
   aspect-ratio: 2 / 3;
-  background: linear-gradient(180deg, #0f3d22 0%, #0a2a17 100%);
-  border: 2px solid rgba(255, 255, 255, 0.35);
+  background:
+    radial-gradient(ellipse at 50% 40%, rgba(120, 255, 175, 0.09) 0%, transparent 60%),
+    linear-gradient(180deg, #124a2b 0%, #0a2a17 100%);
   border-radius: var(--r-card);
   overflow: hidden;
+  box-shadow: inset 0 0 60px 12px rgba(0, 0, 0, 0.55);
 }
 
-.pitch::before {
-  content: "";
+/* Líneas reales de la cancha dibujadas en SVG (áreas, círculo central,
+   semicírculos), en vez del rectángulo genérico que había antes. */
+.pitchLines {
   position: absolute;
-  inset: 8%;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  border-radius: 6px;
+  inset: 0;
+  width: 100%;
+  height: 100%;
 }
 
 .pitchSlot {
@@ -302,19 +367,33 @@
   width: 46px;
   height: 46px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(4, 20, 12, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.35);
   color: #fff;
   font-size: 11px;
   font-weight: 800;
   padding: 0;
+  backdrop-filter: blur(2px);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.pitchSlot:hover:not(:disabled) {
+  transform: translate(-50%, -50%) scale(1.08);
+  background: rgba(62, 207, 122, 0.35);
 }
 
 .pitchSlotActive {
   background: #fff;
   color: #0a0a0a;
   border-color: #fff;
-  box-shadow: 0 0 0 4px color-mix(in srgb, #fff 30%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--pasto) 45%, transparent);
+}
+
+.positionHint {
+  margin: var(--sp-3) 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--gris);
 }
 
 .identityFooter {
@@ -645,144 +724,178 @@
   font-weight: 700;
 }
 
-.eventBox {
+.badgeIcon {
+  vertical-align: -2px;
+}
+
+/* ---------- Turno: dos decisiones por temporada ---------- */
+
+.turnPanel {
+  grid-column: 1 / -1;
+  background: linear-gradient(160deg, rgba(47, 67, 196, 0.14) 0%, var(--tribuna) 100%);
+  border: 1px solid var(--linea);
+  border-radius: var(--r-card);
+  padding: var(--sp-4) var(--sp-5) var(--sp-5);
+}
+
+.turnHead {
+  margin-bottom: var(--sp-4);
+}
+
+.turnSeason {
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--oro-claro);
+  margin-bottom: 4px;
+}
+
+/* Texto de contexto que abre la temporada: es lo que da sensación de rol. */
+.turnIntro {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--crema);
+  max-width: 70ch;
+}
+
+.turnGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--sp-4);
+}
+
+.decisionCard {
   background: var(--noche);
   border: 1px solid var(--linea);
-  border-radius: var(--r-input);
+  border-radius: var(--r-card);
   padding: var(--sp-4);
 }
 
-.eventTitle {
-  margin: 0 0 6px;
-  font-size: 16px;
+/* La segunda carta se atenúa hasta que resolvés la primera: deja claro que
+   hay un orden, sin esconder la información. */
+.decisionLocked {
+  opacity: 0.55;
 }
 
-.eventDesc {
+.decisionHead {
+  margin-bottom: 6px;
+}
+
+.decisionStep {
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gris);
+  margin-bottom: 2px;
+}
+
+.decisionTitle {
+  margin: 0;
+  font-size: 17px;
+}
+
+.decisionDesc {
   color: var(--gris);
   font-size: 13px;
   line-height: 1.5;
   margin: 0 0 var(--sp-3);
 }
 
-.eventOptions {
+.decisionHint {
+  margin: var(--sp-3) 0 0;
+  font-size: 11px;
+  color: var(--gris);
+  text-align: center;
+}
+
+.optionGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-  gap: var(--sp-3);
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--sp-2);
 }
 
-.badgeIcon {
-  vertical-align: -2px;
-}
-
-/* Panel de decisión: ocupa las dos columnas para que las opciones quepan
-   lado a lado. Es la interacción principal del juego. */
-.decisionPanel {
-  grid-column: 1 / -1;
-  background: linear-gradient(160deg, rgba(47, 67, 196, 0.14) 0%, var(--tribuna) 100%);
-  border: 1px solid var(--linea);
-  border-radius: var(--r-card);
-  padding: var(--sp-4) var(--sp-5);
-}
-
-.clubChoiceGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-  gap: var(--sp-3);
-}
-
-.clubChoiceCard {
+.optionCard {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  background: linear-gradient(160deg, var(--tribuna-alta) 0%, var(--noche) 100%);
-  border: 1px solid var(--linea);
-  border-radius: var(--r-input);
-  padding: var(--sp-4) var(--sp-3);
-  text-align: center;
-  color: var(--crema);
-}
-
-.clubChoiceCard:hover:not(:disabled) {
-  border-color: var(--crema);
-}
-
-.clubChoiceCrest {
-  width: 54px;
-  height: 54px;
-  object-fit: contain;
-  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.5));
-}
-
-.clubChoiceName {
-  font-size: 15px;
-}
-
-.clubChoiceLeague {
-  font-size: 12px;
-  color: var(--gris);
-  font-weight: 600;
-}
-
-.clubChoiceAction {
-  margin-top: 4px;
-  font-size: 11px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--pasto);
-}
-
-.clubChoiceRisk {
-  font-size: 11px;
-  font-weight: 700;
-  color: #ff9aa4;
-}
-
-.eventOption {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  gap: 4px;
+  min-height: 128px;
   justify-content: center;
-  gap: 3px;
-  width: 100%;
-  min-height: 84px;
   background-color: var(--tribuna-alta);
   background-size: cover;
   background-position: center;
   border: 1px solid var(--linea);
   border-radius: var(--r-input);
-  padding: 10px 14px;
-  text-align: left;
+  padding: var(--sp-3) 10px;
+  text-align: center;
+  color: var(--crema);
 }
 
-.eventOption:hover:not(:disabled) {
-  border-color: #fff;
+.optionCard:hover:not(:disabled) {
+  border-color: var(--crema);
 }
 
-.eventOptionLabel {
+.optionCard:disabled {
+  cursor: default;
+}
+
+.optionPicked {
+  border-color: var(--pasto);
+  box-shadow: 0 0 0 1px var(--pasto);
+  opacity: 1;
+}
+
+.optionCrest {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.5));
+}
+
+.optionLabel {
   font-weight: 700;
-  font-size: 14px;
-  color: #fff;
+  font-size: 13px;
+  line-height: 1.3;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 }
 
-.eventOptionEffect {
-  font-size: 12px;
+.optionEffect {
+  font-size: 11px;
   color: var(--pasto);
   font-weight: 700;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 }
 
-.eventOptionRisk {
-  font-size: 12px;
+.optionRisk {
+  font-size: 11px;
   color: #ff9aa4;
   font-weight: 700;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 }
 
+.optionCheck {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--pasto);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 .timelineCol {
   min-width: 0;
+}
+
+/* Con 23 temporadas la lista es larga: se hace scrolleable para que el panel
+   de decisiones siga visible sin empujar la página. */
+.timelineScroll {
+  max-height: 460px;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .timelineHead,

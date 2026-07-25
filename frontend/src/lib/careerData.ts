@@ -290,7 +290,50 @@ export const CLUBS: CareerClub[] = [
   { id: "marseille", name: "Marsella", league: "Ligue 1", country: "Francia", tier: 4, logoUrl: "https://images.fotmob.com/image_resources/logo/teamlogo/8592.png" },
   { id: "monaco", name: "Mónaco", league: "Ligue 1", country: "Francia", tier: 4, logoUrl: "https://images.fotmob.com/image_resources/logo/teamlogo/9829.png" },
   { id: "psg", name: "Paris Saint-Germain", league: "Ligue 1", country: "Francia", tier: 5, logoUrl: "https://images.fotmob.com/image_resources/logo/teamlogo/9847.png" },
+  { id: "brest", name: "Brest", league: "Ligue 1", country: "Francia", tier: 2, logoUrl: "https://images.fotmob.com/image_resources/logo/teamlogo/8521.png" },
+  { id: "paris-fc", name: "Paris FC", league: "Ligue 1", country: "Francia", tier: 1, logoUrl: "https://images.fotmob.com/image_resources/logo/teamlogo/6379.png" },
+  { id: "troyes", name: "Troyes", league: "Ligue 1", country: "Francia", tier: 1, logoUrl: "https://images.fotmob.com/image_resources/logo/teamlogo/10242.png" },
+  { id: "le-mans", name: "Le Mans", league: "Ligue 1", country: "Francia", tier: 1, logoUrl: "https://images.fotmob.com/image_resources/logo/teamlogo/8682.png" },
+
+  // Más Eredivisie: da profundidad a los primeros años en Países Bajos.
+  { id: "heerenveen", name: "SC Heerenveen", league: "Eredivisie", country: "Países Bajos", tier: 1, logoUrl: "https://images.fotmob.com/image_resources/logo/teamlogo/10228.png" },
+  { id: "sparta-rotterdam", name: "Sparta Rotterdam", league: "Eredivisie", country: "Países Bajos", tier: 1, logoUrl: "https://images.fotmob.com/image_resources/logo/teamlogo/8614.png" },
+  { id: "nec", name: "NEC Nijmegen", league: "Eredivisie", country: "Países Bajos", tier: 1, logoUrl: "https://images.fotmob.com/image_resources/logo/teamlogo/8464.png" },
+  { id: "zwolle", name: "PEC Zwolle", league: "Eredivisie", country: "Países Bajos", tier: 1, logoUrl: "https://images.fotmob.com/image_resources/logo/teamlogo/6413.png" },
+  { id: "willem-ii", name: "Willem II", league: "Eredivisie", country: "Países Bajos", tier: 1, logoUrl: "https://images.fotmob.com/image_resources/logo/teamlogo/8525.png" },
+  { id: "excelsior", name: "Excelsior", league: "Eredivisie", country: "Países Bajos", tier: 1, logoUrl: "https://images.fotmob.com/image_resources/logo/teamlogo/10218.png" },
+
+  // Más Liga Portugal
+  { id: "famalicao", name: "Famalicão", league: "Liga Portugal", country: "Portugal", tier: 1, logoUrl: "https://images.fotmob.com/image_resources/logo/teamlogo/1634.png" },
+  { id: "arouca", name: "Arouca", league: "Liga Portugal", country: "Portugal", tier: 1, logoUrl: "https://images.fotmob.com/image_resources/logo/teamlogo/158085.png" },
+  { id: "santa-clara", name: "Santa Clara", league: "Liga Portugal", country: "Portugal", tier: 1, logoUrl: "https://images.fotmob.com/image_resources/logo/teamlogo/1567.png" },
+  { id: "nacional", name: "Nacional", league: "Liga Portugal", country: "Portugal", tier: 1, logoUrl: "https://images.fotmob.com/image_resources/logo/teamlogo/10214.png" },
+  { id: "casa-pia", name: "Casa Pia", league: "Liga Portugal", country: "Portugal", tier: 1, logoUrl: "https://images.fotmob.com/image_resources/logo/teamlogo/212821.png" },
+
+  // Ligas "puente": países con menos equipos pero que abren nacionalidades
+  // jugables y destinos intermedios camino a las grandes ligas.
+  { id: "brugge", name: "Club Brugge", league: "Pro League", country: "Bélgica", tier: 3, logoUrl: "https://images.fotmob.com/image_resources/logo/teamlogo/8342.png" },
+  { id: "union-sg", name: "Union Saint-Gilloise", league: "Pro League", country: "Bélgica", tier: 2, logoUrl: "https://images.fotmob.com/image_resources/logo/teamlogo/7978.png" },
+  { id: "copenhague", name: "FC København", league: "Superliga", country: "Dinamarca", tier: 3, logoUrl: "https://images.fotmob.com/image_resources/logo/teamlogo/8391.png" },
+  { id: "bodo", name: "Bodø/Glimt", league: "Eliteserien", country: "Noruega", tier: 2, logoUrl: "https://images.fotmob.com/image_resources/logo/teamlogo/8402.png" },
+  { id: "galatasaray", name: "Galatasaray", league: "Süper Lig", country: "Turquía", tier: 4, logoUrl: "https://images.fotmob.com/image_resources/logo/teamlogo/8637.png" },
+  { id: "olympiacos", name: "Olympiacos", league: "Superliga Griega", country: "Grecia", tier: 3, logoUrl: "https://images.fotmob.com/image_resources/logo/teamlogo/8638.png" },
+  { id: "slavia", name: "Slavia Praga", league: "Chance Liga", country: "Chequia", tier: 2, logoUrl: "https://images.fotmob.com/image_resources/logo/teamlogo/7787.png" },
 ];
+
+/**
+ * Mezcla una copia del array (Fisher-Yates). Sin esto, los eventos que hacen
+ * `.slice(0, 2)` sobre el pool devolvían SIEMPRE los mismos dos clubes (los
+ * primeros del catálogo), que es justo lo que hacía sentir repetitivo el juego.
+ */
+export function shuffle<T>(arr: T[]): T[] {
+  const out = [...arr];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
 
 export function clubsForTier(tier: number, excludeIds: string[] = []): CareerClub[] {
   const pool = CLUBS.filter((c) => Math.abs(c.tier - tier) <= 1 && !excludeIds.includes(c.id));

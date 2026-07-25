@@ -5,37 +5,6 @@
   gap: 4px;
 }
 
-.svg {
-  width: 100%;
-  max-width: 190px;
-  height: auto;
-}
-
-.zoneWin,
-.zoneLose {
-  fill: none;
-  stroke-width: 9;
-  stroke-linecap: round;
-}
-
-.zoneWin {
-  stroke: var(--pasto);
-}
-
-.zoneLose {
-  stroke: color-mix(in srgb, var(--rojo) 70%, transparent);
-}
-
-.needle {
-  stroke: var(--crema);
-  stroke-width: 2.5;
-  stroke-linecap: round;
-}
-
-.pivot {
-  fill: var(--crema);
-}
-
 .result {
   text-align: center;
 }

@@ -2,19 +2,42 @@ import { motion, useReducedMotion } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { COUNTRIES, CareerClub, PITCH_LAYOUT, PitchPosition, findClub } from "../lib/careerData";
-import { CareerEvent, CareerState, LuckRoll, newCareer, resolveOption } from "../lib/careerEngine";
+import {
+  CareerEvent,
+  CareerState,
+  LuckRoll,
+  RETIREMENT_AGE,
+  chooseDevelopment,
+  chooseTransfer,
+  isGoalkeeper,
+  newCareer,
+  shootPenalty,
+} from "../lib/careerEngine";
 import { StageOutcome, careerEpitaph, scoutingHint, stageNarrative } from "../lib/careerNarrative";
 import { trophyByName } from "../lib/careerTrophies";
 import CountUp from "../components/CountUp";
 import LuckGauge from "../components/LuckGauge";
+import PenaltyShootout from "../components/PenaltyShootout";
+import TrophyCelebration, { CelebrationItem } from "../components/TrophyCelebration";
 import { TrophyGlyph } from "../components/TrophyIcons";
 import { IconStar } from "../components/icons";
 import { formatMoney } from "../lib/money";
 import styles from "./TuLeyenda.module.css";
 
 const STORAGE_KEY = "fm26_tu_leyenda";
+/** Perfil recordado entre partidas: el jugador no reescribe su nombre cada vez. */
+const PROFILE_KEY = "fm26_leyenda_perfil";
 
 type Screen = "start" | "identity" | "career" | "retired" | "summary";
+
+interface SavedProfile {
+  surname: string;
+  number: number;
+  foot: "Izquierda" | "Derecha";
+  countryName: string;
+  countryCode: string;
+  position: PitchPosition | null;
+}
 
 function ovrTier(ovr: number): string {
   if (ovr >= 86) return styles.tierElite;
@@ -24,8 +47,15 @@ function ovrTier(ovr: number): string {
   return styles.tierGray;
 }
 
-function flagUrl(code: string) {
-  return `https://flagcdn.com/w80/${code}.png`;
+const flagUrl = (code: string) => `https://flagcdn.com/w80/${code}.png`;
+
+function reputationLabel(rep: number): string {
+  if (rep >= 85) return "Leyenda mundial";
+  if (rep >= 65) return "Estrella internacional";
+  if (rep >= 45) return "Nombre reconocido";
+  if (rep >= 25) return "Suena en el mercado";
+  if (rep >= 10) return "Promesa local";
+  return "Desconocido";
 }
 
 // Un título se dibuja con su logo real (ligas, copas, Champions, Mundial…) o
@@ -54,111 +84,17 @@ function TrophyBadge({
   );
 }
 
-function reputationLabel(rep: number): string {
-  if (rep >= 85) return "Leyenda mundial";
-  if (rep >= 65) return "Estrella internacional";
-  if (rep >= 45) return "Nombre reconocido";
-  if (rep >= 25) return "Suena en el mercado";
-  if (rep >= 10) return "Promesa local";
-  return "Desconocido";
-}
-
-// Panel de historia: qué pasó en las dos temporadas que acabás de jugar.
-function StageReport({
-  stage,
-  position,
-  luck,
-  reduceMotion,
-}: {
-  stage: StageOutcome;
-  position: PitchPosition;
-  luck: LuckRoll | null;
-  reduceMotion: boolean;
-}) {
-  const delta = stage.ovrAfter - stage.ovrBefore;
-  return (
-    <motion.div
-      className={styles.reportBox}
-      initial={reduceMotion ? undefined : { y: 8 }}
-      animate={{ y: 0 }}
-      transition={{ duration: 0.45 }}
-    >
-      {/* Si la decisión anterior tenía porcentaje, primero se ve cómo cayó. */}
-      {luck && <LuckGauge roll={luck} />}
-
-      <div className={styles.reportHead}>
-        <span className={styles.reportSeason}>
-          {stage.ageFrom}–{stage.ageTo} · {stage.clubName}
-        </span>
-        <span className={`${styles.reportDelta} ${delta >= 0 ? styles.deltaUp : styles.deltaDown}`}>
-          {delta >= 0 ? "+" : ""}
-          {delta} OVR
-        </span>
-      </div>
-
-      <div className={styles.reportStats}>
-        <span>
-          <strong>{stage.pj}</strong> PJ
-        </span>
-        <span>
-          <strong>{stage.gls}</strong> goles
-        </span>
-        <span>
-          <strong>{stage.ast}</strong> asist.
-        </span>
-      </div>
-
-      <p className={styles.reportText}>{stageNarrative(stage, position)}</p>
-
-      {(stage.awards.length > 0 || stage.milestones.length > 0) && (
-        <div className={styles.reportBadges}>
-          {stage.awards.map((a) => (
-            <span key={a} className={styles.awardBadge}>
-              <TrophyBadge label={a} size={14} className={styles.badgeIcon} /> {a}
-            </span>
-          ))}
-          {stage.milestones.map((m) => (
-            <span key={m} className={styles.milestoneBadge}>
-              ★ {m}
-            </span>
-          ))}
-        </div>
-      )}
-    </motion.div>
-  );
-}
-
 // Entrada de pantalla: SOLO desplazamiento, sin fundido. Un `opacity: 0`
-// inicial deja la pantalla entera invisible si el navegador congela los
-// frames (pestaña en segundo plano, ahorro de energía); con transform, el
-// peor caso es que aparezca 12px desplazada pero perfectamente usable.
-const fade = {
-  initial: { y: 12 },
-  animate: { y: 0 },
-};
-
-// Pop sutil cada vez que cambia el valor — se usa en OVR, valor de mercado y
-// PJ/GLS/AST para que se note el avance sin recargar toda la pantalla.
-function AnimatedNumber({ value, className, reduceMotion }: { value: string | number; className?: string; reduceMotion?: boolean }) {
-  return (
-    <motion.span
-      key={value}
-      className={className}
-      initial={reduceMotion ? undefined : { y: -4 }}
-      animate={{ y: 0 }}
-      transition={{ duration: 0.4 }}
-    >
-      {value}
-    </motion.span>
-  );
-}
+// inicial deja la pantalla invisible si el navegador congela los frames.
+const slideIn = { initial: { y: 12 }, animate: { y: 0 } };
 
 export default function TuLeyenda() {
   const [screen, setScreen] = useState<Screen>("start");
   const [career, setCareer] = useState<CareerState | null>(null);
+  const [celebration, setCelebration] = useState<CelebrationItem[] | null>(null);
   const reduceMotion = useReducedMotion();
 
-  // Identidad en construcción
+  // Identidad en construcción (precargada con el último perfil usado).
   const [surname, setSurname] = useState("");
   const [number, setNumber] = useState(10);
   const [foot, setFoot] = useState<"Izquierda" | "Derecha">("Derecha");
@@ -168,19 +104,36 @@ export default function TuLeyenda() {
 
   useEffect(() => {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return;
-    try {
-      const saved = JSON.parse(raw) as CareerState;
-      setCareer(saved);
-      setScreen(saved.retired ? "retired" : "career");
-    } catch {
-      localStorage.removeItem(STORAGE_KEY);
+    if (raw) {
+      try {
+        const saved = JSON.parse(raw) as CareerState;
+        setCareer(saved);
+        setScreen(saved.retired ? "retired" : "career");
+      } catch {
+        localStorage.removeItem(STORAGE_KEY);
+      }
     }
+    loadProfile();
   }, []);
 
   useEffect(() => {
     if (career) localStorage.setItem(STORAGE_KEY, JSON.stringify(career));
   }, [career]);
+
+  function loadProfile() {
+    try {
+      const raw = localStorage.getItem(PROFILE_KEY);
+      if (!raw) return;
+      const p = JSON.parse(raw) as SavedProfile;
+      setSurname(p.surname ?? "");
+      setNumber(p.number ?? 10);
+      setFoot(p.foot ?? "Derecha");
+      if (p.countryName && p.countryCode) setCountry({ name: p.countryName, code: p.countryCode });
+      setPosition(p.position ?? null);
+    } catch {
+      localStorage.removeItem(PROFILE_KEY);
+    }
+  }
 
   const filteredCountries = useMemo(() => {
     const q = countryQuery.trim().toLowerCase();
@@ -189,39 +142,79 @@ export default function TuLeyenda() {
   }, [countryQuery]);
 
   function startNewCareer() {
-    setSurname("");
-    setNumber(10);
-    setFoot("Derecha");
+    // No se limpian los campos: se reusa el último perfil para que no haya que
+    // volver a escribir todo. El jugador puede cambiarlo si quiere.
+    loadProfile();
     setCountryQuery("");
-    setCountry(null);
-    setPosition(null);
     setScreen("identity");
   }
 
   function confirmIdentity() {
     if (!surname.trim() || !country || !position) return;
-    const c = newCareer({
+    const profile: SavedProfile = {
       surname: surname.trim().toUpperCase(),
-      number: Math.max(1, Math.min(99, number)),
+      number,
       foot,
       countryName: country.name,
       countryCode: country.code,
       position,
-    });
-    setCareer(c);
+    };
+    try {
+      localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+    } catch {
+      // localStorage puede fallar en modo privado; no es crítico.
+    }
+    setCareer(
+      newCareer({
+        surname: profile.surname,
+        number: Math.max(1, Math.min(99, number)),
+        foot,
+        countryName: country.name,
+        countryCode: country.code,
+        position,
+      })
+    );
     setScreen("career");
   }
 
-  function choose(optionId: string) {
+  /** Encola la celebración de títulos/premios de la temporada recién jugada. */
+  function queueCelebration(next: CareerState) {
+    const stage = next.lastStage;
+    if (!stage || (stage.trophies.length === 0 && stage.awards.length === 0)) return;
+    setCelebration([
+      ...stage.trophies.map((label): CelebrationItem => ({ label, club: next.club.name, league: next.club.league, kind: "team" })),
+      ...stage.awards.map((label): CelebrationItem => ({ label, club: next.club.name, league: next.club.league, kind: "individual" })),
+    ]);
+  }
+
+  function pickTransfer(optionId: string) {
     if (!career) return;
-    const next = resolveOption(career, optionId);
+    setCareer(chooseTransfer(career, optionId));
+  }
+
+  function pickDevelopment(optionId: string) {
+    if (!career) return;
+    const next = chooseDevelopment(career, optionId);
     setCareer(next);
+    // El penal de la final tiene prioridad: primero se define el título.
+    if (!next.pendingPenalty) {
+      queueCelebration(next);
+      if (next.retired) setScreen("retired");
+    }
+  }
+
+  function takePenalty(zone: number) {
+    if (!career) return;
+    const next = shootPenalty(career, zone);
+    setCareer(next);
+    queueCelebration(next);
     if (next.retired) setScreen("retired");
   }
 
   function playAgain() {
     localStorage.removeItem(STORAGE_KEY);
     setCareer(null);
+    setCelebration(null);
     setScreen("start");
   }
 
@@ -234,18 +227,15 @@ export default function TuLeyenda() {
 
   return (
     <div>
-      <TopBar
-        stageLabel={career && inGame ? `${career.surname} · ${career.age} años · ${career.club.name}` : undefined}
-        onRestart={career ? restart : undefined}
-      />
-      {/* Sin AnimatePresence a nivel de pantalla: `mode="wait"` retrasa el
-          montaje de la pantalla siguiente hasta terminar la animación de
-          salida, y si el navegador congela los frames (pestaña en segundo
-          plano) el juego se queda trabado. Cada pantalla anima solo su
-          entrada — más robusto y sin el salto entre etapas. */}
-      <motion.div key={screen} {...(reduceMotion ? {} : fade)} transition={{ duration: 0.45 }}>
+      <TopBar career={career && inGame ? career : null} onRestart={career ? restart : undefined} />
+
+      <motion.div key={screen} {...(reduceMotion ? {} : slideIn)} transition={{ duration: 0.45 }}>
         {screen === "start" && (
-          <StartScreen onStart={startNewCareer} hasSaved={!!career} onContinue={() => setScreen(career?.retired ? "retired" : "career")} />
+          <StartScreen
+            onStart={startNewCareer}
+            hasSaved={!!career}
+            onContinue={() => setScreen(career?.retired ? "retired" : "career")}
+          />
         )}
         {screen === "identity" && (
           <IdentityScreen
@@ -267,30 +257,60 @@ export default function TuLeyenda() {
           />
         )}
         {screen === "career" && career && (
-          <CareerScreen career={career} onChoose={choose} reduceMotion={!!reduceMotion} />
+          <CareerScreen
+            career={career}
+            onTransfer={pickTransfer}
+            onDevelopment={pickDevelopment}
+            reduceMotion={!!reduceMotion}
+          />
         )}
         {screen === "retired" && career && (
           <RetiredScreen career={career} onSummary={() => setScreen("summary")} onPlayAgain={playAgain} />
         )}
         {screen === "summary" && career && <SummaryScreen career={career} onPlayAgain={playAgain} />}
       </motion.div>
+
+      {career?.pendingPenalty && <PenaltyShootout penalty={career.pendingPenalty} onShoot={takePenalty} />}
+      {celebration && <TrophyCelebration items={celebration} onDone={() => setCelebration(null)} />}
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
 
-function TopBar({ stageLabel, onRestart }: { stageLabel?: string; onRestart?: () => void }) {
+function TopBar({ career, onRestart }: { career: CareerState | null; onRestart?: () => void }) {
   return (
     <div className={styles.topBar}>
       <span className={styles.topBarBrand}>
         <IconStar size={18} />
         Tu Leyenda
       </span>
-      {stageLabel && <span className={styles.topBarStage}>{stageLabel}</span>}
+
+      {career && (
+        <div className={styles.topBarInfo}>
+          <span className={styles.topBarName}>
+            {career.surname} <span className={styles.topBarNum}>#{career.number}</span>
+          </span>
+          <span className={styles.topBarDot} />
+          <span className={styles.topBarAge}>{career.age} años</span>
+          <span className={styles.topBarDot} />
+          <img src={career.club.logoUrl} alt="" className={styles.topBarCrest} />
+          <span className={styles.topBarClub}>{career.club.name}</span>
+        </div>
+      )}
+
+      {career && (
+        <div className={styles.topBarProgress} title={`Carrera: ${career.age} de ${RETIREMENT_AGE} años`}>
+          <div
+            className={styles.topBarProgressFill}
+            style={{ transform: `scaleX(${Math.min(1, (career.age - 16) / (RETIREMENT_AGE - 16))})` }}
+          />
+        </div>
+      )}
+
       {onRestart && (
         <button className={styles.topBarRestart} onClick={onRestart}>
-          Reiniciar carrera
+          Reiniciar
         </button>
       )}
     </div>
@@ -352,12 +372,7 @@ function IdentityScreen(p: IdentityProps) {
         <div className={styles.identityCol}>
           <h2 className={styles.colTitle}>Identidad</h2>
           <div className={styles.jerseyWrap}>
-            <motion.div
-              className={styles.jersey}
-              animate={{ scale: [0.97, 1] }}
-              transition={{ duration: 0.5 }}
-              key={p.number}
-            >
+            <motion.div className={styles.jersey} animate={{ scale: [0.97, 1] }} transition={{ duration: 0.5 }} key={p.number}>
               <span className={styles.jerseySurname}>{p.surname || "APELLIDO"}</span>
               <span className={styles.jerseyNumber}>{p.number}</span>
             </motion.div>
@@ -368,13 +383,7 @@ function IdentityScreen(p: IdentityProps) {
           </label>
           <label className={styles.field}>
             <span>Número</span>
-            <input
-              type="number"
-              min={1}
-              max={99}
-              value={p.number}
-              onChange={(e) => p.setNumber(Number(e.target.value) || 1)}
-            />
+            <input type="number" min={1} max={99} value={p.number} onChange={(e) => p.setNumber(Number(e.target.value) || 1)} />
           </label>
           <div className={styles.field}>
             <span>Pierna hábil</span>
@@ -414,18 +423,14 @@ function IdentityScreen(p: IdentityProps) {
 
         <div className={styles.identityCol}>
           <h2 className={styles.colTitle}>Posición</h2>
-          <div className={styles.pitch}>
-            {PITCH_LAYOUT.map((slot) => (
-              <button
-                key={slot.pos}
-                className={`${styles.pitchSlot} ${p.position === slot.pos ? styles.pitchSlotActive : ""}`}
-                style={{ left: `${slot.x}%`, top: `${slot.y}%` }}
-                onClick={() => p.setPosition(slot.pos)}
-              >
-                {slot.pos}
-              </button>
-            ))}
-          </div>
+          <PitchPicker position={p.position} setPosition={p.setPosition} />
+          {p.position && (
+            <p className={styles.positionHint}>
+              {isGoalkeeper(p.position)
+                ? "Como portero, tu carrera se mide en vallas invictas y atajadas, no en goles."
+                : "Tu puesto define qué se espera de vos: goles, asistencias o solidez."}
+            </p>
+          )}
         </div>
       </div>
 
@@ -441,69 +446,150 @@ function IdentityScreen(p: IdentityProps) {
   );
 }
 
-// Todas las opciones se ven a la vez, una al lado de la otra. Antes eran una
-// pila arrastrable, pero el gesto de arrastrar para ver la siguiente terminaba
-// disparando el click y elegías sin querer: con las cartas desplegadas no hay
-// ambigüedad entre "mirar" y "elegir".
-function EventOptions({ event, onChoose, reduceMotion }: { event: CareerEvent; onChoose: (id: string) => void; reduceMotion: boolean }) {
-  const isClubChoice = event.options.length > 1 && event.options.every((o) => o.clubId);
-
-  if (isClubChoice) {
-    return (
-      <div className={styles.clubChoiceGrid}>
-        {event.options.map((opt, i) => {
-          const club = opt.clubId ? findClub(opt.clubId) : undefined;
-          if (!club) return null;
-          // Solo se anima el desplazamiento, nunca la opacidad: si el navegador
-          // congela los frames, la carta queda visible y clickeable.
-          return (
-            <motion.button
-              key={opt.id}
-              className={styles.clubChoiceCard}
-              onClick={() => onChoose(opt.id)}
-              initial={reduceMotion ? undefined : { y: 12 }}
-              animate={{ y: 0 }}
-              transition={{ duration: 0.35, delay: reduceMotion ? 0 : i * 0.07 }}
-              whileHover={reduceMotion ? undefined : { y: -4 }}
-              whileTap={reduceMotion ? undefined : { scale: 0.98 }}
-            >
-              <img src={club.logoUrl} alt="" className={styles.clubChoiceCrest} />
-              <strong className={styles.clubChoiceName}>{club.name}</strong>
-              <span className={styles.clubChoiceLeague}>{club.league}</span>
-              <span className={styles.clubChoiceAction}>{opt.label}</span>
-              {opt.risk && <span className={styles.clubChoiceRisk}>{opt.risk}</span>}
-            </motion.button>
-          );
-        })}
-      </div>
-    );
-  }
-
+/** Cancha de selección de puesto, con líneas reales dibujadas en SVG. */
+function PitchPicker({ position, setPosition }: { position: PitchPosition | null; setPosition: (p: PitchPosition) => void }) {
   return (
-    <div className={styles.eventOptions}>
-      {event.options.map((opt, i) => (
-        <motion.button
-          key={opt.id}
-          className={styles.eventOption}
-          onClick={() => onChoose(opt.id)}
-          initial={reduceMotion ? undefined : { y: 10 }}
-          animate={{ y: 0 }}
-          transition={{ duration: 0.35, delay: reduceMotion ? 0 : i * 0.07 }}
-          whileHover={reduceMotion ? undefined : { scale: 1.015 }}
-          whileTap={reduceMotion ? undefined : { scale: 0.98 }}
-          style={opt.image ? { backgroundImage: `linear-gradient(90deg, rgba(11,18,32,.94), rgba(11,18,32,.55)), url(${opt.image})` } : undefined}
+    <div className={styles.pitch}>
+      <svg viewBox="0 0 100 150" className={styles.pitchLines} preserveAspectRatio="none">
+        {/* Franjas del césped */}
+        {Array.from({ length: 8 }).map((_, i) => (
+          <rect
+            key={i}
+            x="0"
+            y={i * 18.75}
+            width="100"
+            height="18.75"
+            fill={i % 2 === 0 ? "rgba(255,255,255,0.035)" : "transparent"}
+          />
+        ))}
+        <g fill="none" stroke="rgba(235,255,240,0.45)" strokeWidth="0.8">
+          <rect x="3" y="3" width="94" height="144" rx="1.5" />
+          <line x1="3" y1="75" x2="97" y2="75" />
+          <circle cx="50" cy="75" r="14" />
+          {/* Área rival (arriba) */}
+          <rect x="25" y="3" width="50" height="22" />
+          <rect x="38" y="3" width="24" height="9" />
+          {/* Área propia (abajo) */}
+          <rect x="25" y="125" width="50" height="22" />
+          <rect x="38" y="138" width="24" height="9" />
+          <path d="M38 25 A14 14 0 0 0 62 25" />
+          <path d="M38 125 A14 14 0 0 1 62 125" />
+        </g>
+        <g fill="rgba(235,255,240,0.6)">
+          <circle cx="50" cy="75" r="1" />
+          <circle cx="50" cy="17" r="0.9" />
+          <circle cx="50" cy="133" r="0.9" />
+        </g>
+      </svg>
+
+      {PITCH_LAYOUT.map((slot) => (
+        <button
+          key={slot.pos}
+          className={`${styles.pitchSlot} ${position === slot.pos ? styles.pitchSlotActive : ""}`}
+          style={{ left: `${slot.x}%`, top: `${slot.y}%` }}
+          onClick={() => setPosition(slot.pos)}
         >
-          <span className={styles.eventOptionLabel}>{opt.label}</span>
-          <span className={styles.eventOptionEffect}>{opt.effect}</span>
-          {opt.risk && <span className={styles.eventOptionRisk}>{opt.risk}</span>}
-        </motion.button>
+          {slot.pos}
+        </button>
       ))}
     </div>
   );
 }
 
-function CareerScreen({ career, onChoose, reduceMotion }: { career: CareerState; onChoose: (id: string) => void; reduceMotion: boolean }) {
-  const event = career.pendingEvent;
+// ---------------------------------------------------------------------------
+
+function OptionCard({
+  opt,
+  onPick,
+  picked,
+  disabled,
+  reduceMotion,
+  index,
+}: {
+  opt: CareerEvent["options"][number];
+  onPick: (id: string) => void;
+  picked: boolean;
+  disabled: boolean;
+  reduceMotion: boolean;
+  index: number;
+}) {
+  const club = opt.clubId && opt.id !== "stay" && opt.id !== "titular" ? findClub(opt.clubId.replace(/^loan:/, "")) : null;
+
+  return (
+    <motion.button
+      className={`${styles.optionCard} ${picked ? styles.optionPicked : ""}`}
+      onClick={() => onPick(opt.id)}
+      disabled={disabled}
+      initial={reduceMotion ? undefined : { y: 10 }}
+      animate={{ y: 0 }}
+      transition={{ duration: 0.3, delay: reduceMotion ? 0 : index * 0.06 }}
+      whileHover={reduceMotion || disabled ? undefined : { y: -3 }}
+      whileTap={reduceMotion || disabled ? undefined : { scale: 0.98 }}
+      style={opt.image ? { backgroundImage: `linear-gradient(180deg, rgba(11,18,32,.86), rgba(11,18,32,.95)), url(${opt.image})` } : undefined}
+    >
+      {club && <img src={club.logoUrl} alt="" className={styles.optionCrest} />}
+      <span className={styles.optionLabel}>{opt.label}</span>
+      <span className={styles.optionEffect}>{opt.effect}</span>
+      {opt.risk && <span className={styles.optionRisk}>{opt.risk}</span>}
+      {picked && <span className={styles.optionCheck}>Elegido ✓</span>}
+    </motion.button>
+  );
+}
+
+function DecisionCard({
+  step,
+  event,
+  picked,
+  locked,
+  onPick,
+  reduceMotion,
+}: {
+  step: string;
+  event: CareerEvent;
+  picked: string | null;
+  locked: boolean;
+  onPick: (id: string) => void;
+  reduceMotion: boolean;
+}) {
+  return (
+    <div className={`${styles.decisionCard} ${locked ? styles.decisionLocked : ""}`}>
+      <div className={styles.decisionHead}>
+        <span className={styles.decisionStep}>{step}</span>
+        <h3 className={styles.decisionTitle}>{event.title}</h3>
+      </div>
+      <p className={styles.decisionDesc}>{event.description}</p>
+      <div className={styles.optionGrid}>
+        {event.options.map((opt, i) => (
+          <OptionCard
+            key={opt.id}
+            opt={opt}
+            index={i}
+            onPick={onPick}
+            picked={picked === opt.id}
+            disabled={locked || picked !== null}
+            reduceMotion={reduceMotion}
+          />
+        ))}
+      </div>
+      {locked && <p className={styles.decisionHint}>Definí primero tu futuro</p>}
+    </div>
+  );
+}
+
+function CareerScreen({
+  career,
+  onTransfer,
+  onDevelopment,
+  reduceMotion,
+}: {
+  career: CareerState;
+  onTransfer: (id: string) => void;
+  onDevelopment: (id: string) => void;
+  reduceMotion: boolean;
+}) {
+  const turn = career.pendingTurn;
+  const gk = isGoalkeeper(career.position);
+
   return (
     <div className={styles.careerScreen}>
       <div className={styles.profileCol}>
@@ -515,16 +601,17 @@ function CareerScreen({ career, onChoose, reduceMotion }: { career: CareerState;
             <div className={styles.profileInfo}>
               <div className={styles.profileChips}>
                 <img src={flagUrl(career.countryCode)} alt="" width={18} height={13} />
-                <span className={styles.posChip}>#{career.number} {career.position}</span>
+                <span className={styles.posChip}>
+                  #{career.number} {career.position}
+                </span>
               </div>
               <div className={styles.profileMeta}>
                 <span className={styles.profileAge}>EDAD {career.age}</span>
-                <span className={styles.profileValue}>
-                  VALOR <AnimatedNumber value={formatMoney(career.marketValue)} reduceMotion={reduceMotion} />
-                </span>
+                <span className={styles.profileValue}>VALOR {formatMoney(career.marketValue)}</span>
               </div>
             </div>
           </div>
+
           <div className={styles.profileClub}>
             <img src={career.club.logoUrl} alt="" className={styles.clubCrest} />
             <span>
@@ -540,18 +627,37 @@ function CareerScreen({ career, onChoose, reduceMotion }: { career: CareerState;
                 <CountUp to={career.totalPj} duration={0.9} />
               </span>
             </div>
-            <div className={styles.statBox}>
-              <span className={styles.statLabel}>GLS</span>
-              <span className={styles.statValue}>
-                <CountUp to={career.totalGls} duration={0.9} />
-              </span>
-            </div>
-            <div className={styles.statBox}>
-              <span className={styles.statLabel}>AST</span>
-              <span className={styles.statValue}>
-                <CountUp to={career.totalAst} duration={0.9} />
-              </span>
-            </div>
+            {gk ? (
+              <>
+                <div className={styles.statBox}>
+                  <span className={styles.statLabel}>Vallas</span>
+                  <span className={styles.statValue}>
+                    <CountUp to={career.totalCleanSheets} duration={0.9} />
+                  </span>
+                </div>
+                <div className={styles.statBox}>
+                  <span className={styles.statLabel}>Sel.</span>
+                  <span className={styles.statValue}>
+                    <CountUp to={career.caps} duration={0.9} />
+                  </span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className={styles.statBox}>
+                  <span className={styles.statLabel}>GLS</span>
+                  <span className={styles.statValue}>
+                    <CountUp to={career.totalGls} duration={0.9} />
+                  </span>
+                </div>
+                <div className={styles.statBox}>
+                  <span className={styles.statLabel}>AST</span>
+                  <span className={styles.statValue}>
+                    <CountUp to={career.totalAst} duration={0.9} />
+                  </span>
+                </div>
+              </>
+            )}
           </div>
 
           <div className={styles.repRow}>
@@ -574,7 +680,7 @@ function CareerScreen({ career, onChoose, reduceMotion }: { career: CareerState;
               <span className={styles.emptyCase}>Vitrina vacía</span>
             ) : (
               <div className={styles.trophyIcons}>
-                {career.trophies.slice(-6).map((tr, i) => (
+                {career.trophies.slice(-8).map((tr, i) => (
                   <TrophyBadge
                     key={i}
                     label={tr.label}
@@ -583,18 +689,13 @@ function CareerScreen({ career, onChoose, reduceMotion }: { career: CareerState;
                     className={styles.trophyIcon}
                   />
                 ))}
-                {career.trophies.length > 6 && <span className={styles.trophyMore}>+{career.trophies.length - 6}</span>}
+                {career.trophies.length > 8 && <span className={styles.trophyMore}>+{career.trophies.length - 8}</span>}
               </div>
             )}
           </div>
 
           {career.lastStage && (
-            <StageReport
-              stage={career.lastStage}
-              position={career.position}
-              luck={career.lastRoll}
-              reduceMotion={reduceMotion}
-            />
+            <StageReport stage={career.lastStage} luck={career.lastRoll} reduceMotion={reduceMotion} />
           )}
         </div>
       </div>
@@ -605,65 +706,165 @@ function CareerScreen({ career, onChoose, reduceMotion }: { career: CareerState;
           <span>Club</span>
           <span>OVR</span>
           <span>PJ</span>
-          <span>GLS</span>
-          <span>AST</span>
+          <span>{gk ? "VI" : "GLS"}</span>
+          <span>{gk ? "SEL" : "AST"}</span>
         </div>
-        {career.history.map((h, i) => (
-          <motion.div
-            key={i}
-            className={`${styles.timelineRow} ${i === career.history.length - 1 ? styles.timelineRowCurrent : ""}`}
-            initial={reduceMotion ? undefined : { x: -8 }}
-            animate={{ x: 0 }}
-            transition={{ duration: 0.4, delay: reduceMotion ? 0 : Math.min(i * 0.05, 0.4) }}
-          >
-            <span className={styles.timelineAge}>{h.age}</span>
-            <span className={styles.timelineClub}>
-              <img src={h.club.logoUrl} alt="" className={styles.timelineCrest} />
-              {h.club.name}
-              {h.trophies.map((t, ti) => (
-                <TrophyBadge key={ti} label={t} league={h.club.league} size={15} className={styles.timelineTrophy} title={t} />
-              ))}
-            </span>
-            <span className={`${styles.timelineOvr} ${ovrTier(h.ovr)}`}>{h.ovr}</span>
-            <span>{h.pj}</span>
-            <span>{h.gls}</span>
-            <span>{h.ast}</span>
-          </motion.div>
-        ))}
-        <div className={styles.timelineRow}>
-          <span className={styles.timelineAge}>{career.age}</span>
-          <span className={styles.timelineClubPending}>Eligiendo club…</span>
+        <div className={styles.timelineScroll}>
+          {career.history.map((h, i) => (
+            <motion.div
+              key={i}
+              className={`${styles.timelineRow} ${i === career.history.length - 1 ? styles.timelineRowCurrent : ""}`}
+              initial={reduceMotion ? undefined : { x: -6 }}
+              animate={{ x: 0 }}
+              transition={{ duration: 0.3, delay: reduceMotion ? 0 : Math.min(i * 0.02, 0.3) }}
+            >
+              <span className={styles.timelineAge}>{h.age}</span>
+              <span className={styles.timelineClub}>
+                <img src={h.club.logoUrl} alt="" className={styles.timelineCrest} />
+                {h.club.name}
+                {h.trophies.map((t, ti) => (
+                  <TrophyBadge key={ti} label={t} league={h.club.league} size={14} className={styles.timelineTrophy} title={t} />
+                ))}
+              </span>
+              <span className={`${styles.timelineOvr} ${ovrTier(h.ovr)}`}>{h.ovr}</span>
+              <span>{h.pj}</span>
+              <span>{gk ? h.cleanSheets : h.gls}</span>
+              <span>{gk ? "—" : h.ast}</span>
+            </motion.div>
+          ))}
+          {!career.retired && (
+            <div className={styles.timelineRow}>
+              <span className={styles.timelineAge}>{career.age}</span>
+              <span className={styles.timelineClubPending}>Temporada por jugar…</span>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* La decisión ocupa todo el ancho: es la interacción principal y así
-          las opciones caben lado a lado, sin pilas ni arrastres. */}
-      {event && (
+      {turn && (
         <motion.div
-          key={event.title + career.age}
-          className={styles.decisionPanel}
+          key={turn.seasonLabel}
+          className={styles.turnPanel}
           initial={reduceMotion ? undefined : { y: 10 }}
           animate={{ y: 0 }}
           transition={{ duration: 0.4 }}
         >
-          <h3 className={styles.eventTitle}>{event.title}</h3>
-          <p className={styles.eventDesc}>{event.description}</p>
-          <EventOptions event={event} onChoose={onChoose} reduceMotion={reduceMotion} />
+          <div className={styles.turnHead}>
+            <span className={styles.turnSeason}>{turn.seasonLabel}</span>
+            <p className={styles.turnIntro}>{turn.intro}</p>
+          </div>
+
+          <div className={styles.turnGrid}>
+            <DecisionCard
+              step="1 · Tu futuro"
+              event={turn.transfer}
+              picked={career.pickedTransfer}
+              locked={false}
+              onPick={onTransfer}
+              reduceMotion={reduceMotion}
+            />
+            <DecisionCard
+              step="2 · Tu enfoque"
+              event={turn.development}
+              picked={career.pickedDevelopment}
+              locked={!career.pickedTransfer}
+              onPick={onDevelopment}
+              reduceMotion={reduceMotion}
+            />
+          </div>
         </motion.div>
       )}
     </div>
   );
 }
 
+function StageReport({ stage, luck, reduceMotion }: { stage: StageOutcome; luck: LuckRoll | null; reduceMotion: boolean }) {
+  const delta = stage.ovrAfter - stage.ovrBefore;
+  const gk = isGoalkeeper(stage.position);
+  return (
+    <motion.div
+      className={styles.reportBox}
+      initial={reduceMotion ? undefined : { y: 8 }}
+      animate={{ y: 0 }}
+      transition={{ duration: 0.45 }}
+    >
+      {luck && <LuckGauge roll={luck} reduceMotion={reduceMotion} />}
+
+      <div className={styles.reportHead}>
+        <span className={styles.reportSeason}>
+          {stage.seasonLabel} · {stage.clubName}
+        </span>
+        <span className={`${styles.reportDelta} ${delta >= 0 ? styles.deltaUp : styles.deltaDown}`}>
+          {delta >= 0 ? "+" : ""}
+          {delta} OVR
+        </span>
+      </div>
+
+      <div className={styles.reportStats}>
+        <span>
+          <strong>
+            <CountUp to={stage.pj} duration={0.7} />
+          </strong>{" "}
+          PJ
+        </span>
+        {gk ? (
+          <span>
+            <strong>
+              <CountUp to={stage.cleanSheets} duration={0.7} />
+            </strong>{" "}
+            vallas
+          </span>
+        ) : (
+          <>
+            <span>
+              <strong>
+                <CountUp to={stage.gls} duration={0.7} />
+              </strong>{" "}
+              goles
+            </span>
+            <span>
+              <strong>
+                <CountUp to={stage.ast} duration={0.7} />
+              </strong>{" "}
+              asist.
+            </span>
+          </>
+        )}
+      </div>
+
+      <p className={styles.reportText}>{stageNarrative(stage)}</p>
+
+      {(stage.awards.length > 0 || stage.milestones.length > 0) && (
+        <div className={styles.reportBadges}>
+          {stage.awards.map((a) => (
+            <span key={a} className={styles.awardBadge}>
+              <TrophyBadge label={a} size={14} className={styles.badgeIcon} /> {a}
+            </span>
+          ))}
+          {stage.milestones.map((m) => (
+            <span key={m} className={styles.milestoneBadge}>
+              ★ {m}
+            </span>
+          ))}
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
 function RetiredScreen({ career, onSummary, onPlayAgain }: { career: CareerState; onSummary: () => void; onPlayAgain: () => void }) {
+  const gk = isGoalkeeper(career.position);
   return (
     <div className={styles.startScreen}>
       <div className={styles.startInner}>
-        <p className={styles.eyebrow}>{career.surname} · {career.history.length} etapas</p>
+        <p className={styles.eyebrow}>
+          {career.surname} · {career.history.length} temporadas
+        </p>
         <h1 className={styles.startTitle}>Tu carrera llegó a su fin</h1>
         <p className={styles.startDesc}>
-          Colgaste los botines a los {career.age} años con {career.totalGls} goles y {career.totalAst} asistencias,
-          un pico de {career.peakOvr} OVR y {career.trophies.length} trofeo{career.trophies.length !== 1 ? "s" : ""} en la vitrina.
+          Colgaste los botines a los {career.age} años con{" "}
+          {gk ? `${career.totalCleanSheets} vallas invictas` : `${career.totalGls} goles y ${career.totalAst} asistencias`}, un
+          pico de {career.peakOvr} OVR y {career.trophies.length} trofeo{career.trophies.length !== 1 ? "s" : ""} en la vitrina.
         </p>
         <p className={styles.epitaph}>
           {careerEpitaph({
@@ -689,13 +890,15 @@ function RetiredScreen({ career, onSummary, onPlayAgain }: { career: CareerState
 }
 
 function SummaryScreen({ career, onPlayAgain }: { career: CareerState; onPlayAgain: () => void }) {
+  const gk = isGoalkeeper(career.position);
   const byClub = useMemo(() => {
-    const map = new Map<string, { club: CareerClub; pj: number; gls: number; ast: number; trophies: number }>();
+    const map = new Map<string, { club: CareerClub; pj: number; gls: number; ast: number; cs: number; trophies: number }>();
     for (const h of career.history) {
-      const cur = map.get(h.club.id) ?? { club: h.club, pj: 0, gls: 0, ast: 0, trophies: 0 };
+      const cur = map.get(h.club.id) ?? { club: h.club, pj: 0, gls: 0, ast: 0, cs: 0, trophies: 0 };
       cur.pj += h.pj;
       cur.gls += h.gls;
       cur.ast += h.ast;
+      cur.cs += h.cleanSheets;
       cur.trophies += h.trophies.length;
       map.set(h.club.id, cur);
     }
@@ -707,34 +910,23 @@ function SummaryScreen({ career, onPlayAgain }: { career: CareerState; onPlayAga
       <h1 className={styles.identityTitle}>Resumen de carrera</h1>
       <p className={styles.startDesc}>
         {career.surname} #{career.number} · {career.position} ·{" "}
-        <img src={flagUrl(career.countryCode)} alt="" width={16} height={12} style={{ verticalAlign: "middle" }} /> {career.countryName}
+        <img src={flagUrl(career.countryCode)} alt="" width={16} height={12} style={{ verticalAlign: "middle" }} />{" "}
+        {career.countryName}
       </p>
 
       <div className={styles.summaryStats}>
-        <div className={styles.summaryStat}>
-          <span className={styles.summaryStatLabel}>OVR máximo</span>
-          <span className={styles.summaryStatValue}>{career.peakOvr}</span>
-        </div>
-        <div className={styles.summaryStat}>
-          <span className={styles.summaryStatLabel}>Valor máximo</span>
-          <span className={styles.summaryStatValue}>{formatMoney(career.peakValue)}</span>
-        </div>
-        <div className={styles.summaryStat}>
-          <span className={styles.summaryStatLabel}>Partidos</span>
-          <span className={styles.summaryStatValue}>{career.totalPj}</span>
-        </div>
-        <div className={styles.summaryStat}>
-          <span className={styles.summaryStatLabel}>Goles</span>
-          <span className={styles.summaryStatValue}>{career.totalGls}</span>
-        </div>
-        <div className={styles.summaryStat}>
-          <span className={styles.summaryStatLabel}>Asistencias</span>
-          <span className={styles.summaryStatValue}>{career.totalAst}</span>
-        </div>
-        <div className={styles.summaryStat}>
-          <span className={styles.summaryStatLabel}>Convocatorias</span>
-          <span className={styles.summaryStatValue}>{career.caps}</span>
-        </div>
+        <SummaryStat label="OVR máximo" value={career.peakOvr} />
+        <SummaryStat label="Valor máximo" text={formatMoney(career.peakValue)} />
+        <SummaryStat label="Partidos" value={career.totalPj} />
+        {gk ? (
+          <SummaryStat label="Vallas invictas" value={career.totalCleanSheets} />
+        ) : (
+          <>
+            <SummaryStat label="Goles" value={career.totalGls} />
+            <SummaryStat label="Asistencias" value={career.totalAst} />
+          </>
+        )}
+        <SummaryStat label="Convocatorias" value={career.caps} />
       </div>
 
       <h2 className={styles.colTitle}>Trofeos y premios</h2>
@@ -772,8 +964,8 @@ function SummaryScreen({ career, onPlayAgain }: { career: CareerState; onPlayAga
             </div>
             <div className={styles.clubCardStats}>
               <span>{c.pj} PJ</span>
-              <span>{c.gls} GLS</span>
-              <span>{c.ast} AST</span>
+              {gk ? <span>{c.cs} VI</span> : <span>{c.gls} GLS</span>}
+              {!gk && <span>{c.ast} AST</span>}
               {c.trophies > 0 && <span>🏆 {c.trophies}</span>}
             </div>
           </div>
@@ -788,6 +980,17 @@ function SummaryScreen({ career, onPlayAgain }: { career: CareerState; onPlayAga
           Volver a Juegos
         </Link>
       </div>
+    </div>
+  );
+}
+
+function SummaryStat({ label, value, text }: { label: string; value?: number; text?: string }) {
+  return (
+    <div className={styles.summaryStat}>
+      <span className={styles.summaryStatLabel}>{label}</span>
+      <span className={styles.summaryStatValue}>
+        {text ?? (value !== undefined ? <CountUp to={value} duration={1.1} separator="," /> : null)}
+      </span>
     </div>
   );
 }

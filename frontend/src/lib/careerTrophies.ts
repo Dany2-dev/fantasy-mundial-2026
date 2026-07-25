@@ -67,7 +67,22 @@ export const MEJOR_JOVEN: TrophyDef = { id: "mejor-joven", name: "Mejor jugador 
 export const MEJOR_DEFENSA: TrophyDef = { id: "mejor-defensa", name: "Mejor defensa de la liga", scope: "individual", icon: "star" };
 export const LIDERAZGO: TrophyDef = { id: "liderazgo", name: "Premio al liderazgo", scope: "individual", icon: "star" };
 
-const EUROPEAN = new Set(["LaLiga", "Premier League", "Bundesliga", "Serie A", "Ligue 1", "Eredivisie", "Liga Portugal"]);
+const EUROPEAN = new Set([
+  "LaLiga",
+  "Premier League",
+  "Bundesliga",
+  "Serie A",
+  "Ligue 1",
+  "Eredivisie",
+  "Liga Portugal",
+  // Ligas puente: también juegan competiciones UEFA.
+  "Pro League",
+  "Superliga",
+  "Eliteserien",
+  "Süper Lig",
+  "Superliga Griega",
+  "Chance Liga",
+]);
 const CONMEBOL = new Set(["Brasileirão"]);
 const CONCACAF = new Set(["Liga MX", "MLS"]);
 
