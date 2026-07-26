@@ -1,8 +1,14 @@
 # Fantasy Mundial 2026 — Proyecto Integrador DDI 2026
 
-Fantasy del Mundial 2026 con mecánica de colección de cartas estilo FUT: sobres,
-colección, once ideal, ligas privadas con **exclusividad de cartas por liga** e
-intercambios entre mánagers.
+Fantasy de fútbol con mecánica de colección de cartas estilo FUT: sobres,
+colección, once ideal, ligas privadas con **exclusividad de cartas por liga**,
+mercado de fichajes (agentes libres, ventas, cláusulas de rescisión) e
+intercambios entre mánagers. Incluye además **Tu Leyenda**, un simulador de
+carrera de futbolista.
+
+Los datos de competencias, equipos y jugadores son reales (fuente: FotMob), y
+toda la economía del juego está en **euros**, a la misma escala que el valor de
+mercado real de cada jugador.
 
 > **Materia:** Diseño de Interfaces 8C · **Entregables oficiales:** Figma + Documento técnico + Defensa.
 > Este repositorio es el **prototipo funcional** que se presenta ante el sínodo (Criterio 4).
@@ -72,9 +78,45 @@ Frontend en <http://localhost:8080> (nginx sirve el build y hace proxy de `/api`
 
 ## Flujo principal (para la demo)
 
-1. Registrarse → recibes 15,000 monedas.
-2. Crear una liga privada (o unirse con código de invitación).
-3. Abrir sobres (Bronce/Plata/Oro) — las cartas son **exclusivas por liga**: si un
-   amigo ya tiene a Mbappé en tu liga, no te puede salir en un sobre.
+1. Registrarse con email, o entrar con **Google** (ver configuración más abajo).
+2. Crear una liga privada (o unirse con código de invitación). Cada mánager
+   arranca con un presupuesto de **€50M en esa liga** — el dinero no cruza entre
+   ligas, cada una es una economía cerrada.
+3. Abrir sobres (Bronce €8M / Plata €15M / Oro €30M / Legendario €60M) — las
+   cartas son **exclusivas por liga**: si un amigo ya tiene a Mbappé en tu liga,
+   no te puede salir en un sobre.
 4. Armar tu once con formación y capitán.
-5. Proponer intercambios (carta + monedas) a otros mánagers de la liga.
+5. Fichar en el **Mercado**, que tiene cuatro vías:
+   - **Agentes libres:** cada 24 h la liga saca 12 jugadores sin dueño que
+     cualquiera puede fichar al contado.
+   - **Clausulazo:** pagar la cláusula de un jugador de otro mánager para
+     llevártelo sin su permiso (protegido los primeros 7 días tras un fichaje).
+   - **Ventas:** publicar una carta a precio fijo.
+   - **Intercambios:** carta por carta, con euros de por medio si hace falta.
+6. Subir la cláusula de tus cracks para blindarlos.
+
+### Tu Leyenda
+
+Simulador de carrera aparte del fantasy. Creás un futbolista (nombre, dorsal,
+país y puesto) y la carrera avanza **en tramos de dos años, de los 16 a los 38**.
+Cada tramo presenta dos decisiones —una de futuro (fichaje, cesión, renovación) y
+otra de enfoque— con clubes y competencias reales, títulos, premios individuales
+y un minijuego de penal que define finales.
+
+## Variables de entorno del backend
+
+Copiar `backend/.env.example` a `backend/.env` y rellenar:
+
+| Variable | Para qué |
+|---|---|
+| `DATABASE_URL` | Cadena de conexión de PostgreSQL |
+| `JWT_SECRET` | Firma de los tokens de sesión |
+| `PORT` | Puerto de la API (4000 por defecto) |
+| `SYNC_TOKEN` | Protege el endpoint que dispara la sincronización con FotMob |
+| `GOOGLE_CLIENT_ID` | ID de cliente OAuth (tipo *aplicación web*). **Opcional:** si se deja vacío, el botón de "Entrar con Google" simplemente no se muestra y el acceso por email sigue funcionando |
+
+Para el acceso con Google hay que registrar el origen del frontend
+(`http://localhost:5173` en desarrollo, la URL del App Service en producción) en
+**Orígenes autorizados de JavaScript** de la credencial. No hace falta *client
+secret*: el backend solo verifica el token de identidad, nunca intercambia
+códigos.

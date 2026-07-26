@@ -14,14 +14,16 @@
 │ [ email____________ ]   │
 │ [ contraseña_______ ]   │
 │ (Entrar)                │  ← CTA lleno, ancho completo
-│ ¿No tienes cuenta? Crear│  ← link, cambia el form (no navega)
+│ ──────── o ────────     │  ← separador
+│ (Entrar con Google)     │  ← botón oficial de Google; se oculta
+│ ¿No tienes cuenta? Crear│    si el servidor no tiene client id
 └─────────────────────────┘
 ```
 
 ## 2. Inicio
 ```
 ┌─────────────────────────┐
-│ Hola, Diego   🪙 15,000 │  ← header con monedas siempre visibles
+│ Hola, Diego     €50M    │  ← header con el presupuesto de la liga activa
 │ [Liga: Los Compas ▾]    │  ← selector de liga activa
 │ ┌─────────────────────┐ │
 │ │ 🏆 Vas 2º de 6      │ │  ← tarjeta de posición (tap → Ligas)
@@ -36,13 +38,14 @@
 ```
 Tienda:                     Reveal:
 ┌───────────────┐          ┌───────────────┐
-│ [Bronce 2500] │          │   (fondo con  │
-│ [Plata  5000] │          │    glow por   │
-│ [Oro    9000] │   →      │    rareza)    │
-│  saldo: 🪙    │          │  🃏 🃏 🃏     │ ← volteo secuencial
-└───────────────┘          │ (Ver colección)│
-                           └───────────────┘
+│ [Bronce   €8M]│          │   (fondo con  │
+│ [Plata   €15M]│          │    glow por   │
+│ [Oro     €30M]│   →      │    rareza)    │
+│ [Legend. €60M]│          │  🃏 🃏 🃏     │ ← volteo secuencial
+│  saldo: €__M  │          │ (Ver colección)│
+└───────────────┘          └───────────────┘
 ```
+Oro y Legendario garantizan al menos una carta élite de la competencia.
 
 ## 4. Colección
 ```
@@ -70,23 +73,60 @@ Sheet inferior al tocar slot: cartas filtradas por posición.
 ## 6. Mercado
 ```
 ┌─────────────────────────┐
-│ [Cartas][Recibidas][Enviadas]  ← tabs
+│ [Libres][Clausulazo]    │  ← tabs (+ Ventas, Recibidas, Enviadas)
+│ ⏱ Nuevo mercado en 6 h  │  ← solo en Agentes libres
 │ ┌────┐ ┌────┐           │
-│ │🃏 de│ │🃏 de│          │  ← dueño visible en cada carta
-│ │ Fer │ │ Leo │          │
+│ │ 🃏 │ │ 🃏 │           │  ← sin dueño en Libres;
+│ │Fichar│ │Fichar│        │    con dueño visible en Clausulazo
+│ │ €12M │ │ €4M  │        │
 │ └────┘ └────┘           │
 └─────────────────────────┘
-Modal de oferta: mi carta ▾ + monedas [___] → (Enviar oferta)
+Modal de oferta: mi carta ▾ + euros [___] → (Enviar oferta)
 ```
+Cuatro vías de fichaje en el mismo lugar: agentes libres (lote de 12 que se
+renueva cada 24 h), clausulazo, compra de una publicación e intercambio.
+
+## 6b. Detalle de carta (modal)
+```
+┌─────────────────────────┐
+│ 🃏  Nombre              │  ← cabecera teñida por rareza
+│     Club · edad         │
+│ [Media][Valor][Cláusula]│  ← los 3 datos que deciden
+│ ── Blindar ──           │
+│ (+€1M)(+€5M)(+€10M)     │  ← atajos, evita teclear ceros
+│ [____] (Subir)          │
+│ Quedaría en €XX M       │  ← vista previa antes de pagar
+│ ── Vender ──            │
+│ (Valor)(+25%)(+50%)     │
+│ [____] (Vender)         │
+└─────────────────────────┘
+```
+
+## 6c. Tu Leyenda
+```
+Identidad:                       Carrera:
+┌───────────────────────┐   ┌──────────────┬──────────────┐
+│ ① Identidad  ② País   │   │ Ficha (OVR,  │  Historial   │
+│ ③ Posición            │   │ club, stats) │  16 ○ ○ ○    │
+│ [camiseta] [lista]    │   ├──────────────┤  18 ○ ○ ○    │
+│ [apellido] [cancha]   │   │ 1 · Futuro   │  20 …        │
+│  (Confirmar identidad)│   │ 2 · Enfoque  │              │
+└───────────────────────┘   └──────────────┴──────────────┘
+```
+El número de cada paso se rellena al completarse: indica qué falta para poder
+empezar. En la carrera, lo único que scrollea es la tabla del historial.
 
 ## 7. Ligas
 ```
 ┌─────────────────────────┐
 │ [Mis ligas]  [+ Crear] [Unirme]
 │ ── Clasificación ──     │
-│ 1. Leo      1,240 pts   │
-│ 2. Diego    1,180 pts ← tú (resaltado)
-│ 3. Fer        950 pts   │
+│ # Mánager  Pts Cartas Valor Patrimonio
+│ 1 Leo    1,240  18  €410M  €455M
+│ 2 Diego  1,180  16  €380M  €402M ← tú (resaltado)
+│ 3 Fer      950  15  €300M  €338M
 │ Código: ABX4T9 (copiar) │
 └─────────────────────────┘
 ```
+*Valor* = valor de mercado de la plantilla. *Patrimonio* = plantilla + lo que
+queda en caja; es el que ordena el desempate.

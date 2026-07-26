@@ -55,13 +55,25 @@ az webapp create -g rg-fantasy -p plan-fantasy -n fantasy-back-danyl \
   --container-image-name ghcr.io/<usuario>/<repo>-back:latest
 az webapp config appsettings set -g rg-fantasy -n fantasy-back-danyl --settings \
   DATABASE_URL="postgresql://fantasy:<PASSWORD>@fantasy-db-danyl.postgres.database.azure.com:5432/fantasy?sslmode=require" \
-  JWT_SECRET="<SECRETO-LARGO>" PORT=4000 WEBSITES_PORT=4000
+  JWT_SECRET="<SECRETO-LARGO>" PORT=4000 WEBSITES_PORT=4000 \
+  GOOGLE_CLIENT_ID="<ID>.apps.googleusercontent.com"
 
 az webapp create -g rg-fantasy -p plan-fantasy -n fantasy-front-danyl \
   --container-image-name ghcr.io/<usuario>/<repo>-front:latest
 az webapp config appsettings set -g rg-fantasy -n fantasy-front-danyl --settings \
   BACKEND_URL="https://fantasy-back-danyl.azurewebsites.net" WEBSITES_PORT=80
 ```
+
+> `GOOGLE_CLIENT_ID` es el ID de cliente OAuth (tipo *aplicación web*) que habilita
+> el acceso con Google. Es **opcional**: sin él, el botón no se muestra y el acceso
+> por email sigue funcionando. No lleva *client secret* asociado — el backend solo
+> verifica el token de identidad. Hay que registrar la URL del front
+> (`https://fantasy-front-danyl-....azurewebsites.net`, sin barra final) en
+> **Orígenes autorizados de JavaScript** de la credencial.
+>
+> El esquema de la base **no requiere paso manual**: el contenedor del backend
+> ejecuta `prisma db push` antes de arrancar la API, así que cada despliegue
+> sincroniza las tablas por su cuenta.
 
 > Si el paquete de GHCR queda privado: en GitHub → Package → Settings → hazlo público,
 > o configura credenciales de registry en el App Service.
