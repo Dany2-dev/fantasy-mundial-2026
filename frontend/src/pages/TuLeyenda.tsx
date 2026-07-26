@@ -7,6 +7,7 @@ import {
   CareerState,
   LuckRoll,
   RETIREMENT_AGE,
+  STAGE_YEARS,
   chooseDevelopment,
   chooseTransfer,
   isGoalkeeper,
@@ -368,14 +369,36 @@ interface IdentityProps {
   onConfirm: () => void;
 }
 
+/**
+ * Cabecera de cada columna. El número no es adorno: son los tres datos
+ * obligatorios y la marca dice cuáles ya están, que es justo lo que decide si
+ * el botón de empezar se habilita.
+ */
+function StepTitle({ n, children, done }: { n: number; children: string; done: boolean }) {
+  return (
+    <h2 className={styles.stepTitle} data-done={done ? "sí" : undefined}>
+      <span className={styles.stepNum} aria-hidden="true">
+        {done ? "✓" : n}
+      </span>
+      {children}
+    </h2>
+  );
+}
+
 function IdentityScreen(p: IdentityProps) {
-  const ready = p.surname.trim().length >= 2 && !!p.country && !!p.position;
+  const nameDone = p.surname.trim().length >= 2;
+  const ready = nameDone && !!p.country && !!p.position;
   return (
     <div className={styles.identityScreen}>
       <h1 className={styles.identityTitle}>Definí tu identidad</h1>
+      <p className={styles.identityLead}>
+        Tres decisiones y arranca la carrera: cómo te llamás, de dónde venís y en qué puesto jugás.
+      </p>
       <div className={styles.identityGrid}>
         <div className={styles.identityCol}>
-          <h2 className={styles.colTitle}>Identidad</h2>
+          <StepTitle n={1} done={nameDone}>
+            Identidad
+          </StepTitle>
           <div className={styles.jerseyWrap}>
             <motion.div className={styles.jersey} animate={{ scale: [0.97, 1] }} transition={{ duration: 0.5 }} key={p.number}>
               <span className={styles.jerseySurname}>{p.surname || "APELLIDO"}</span>
@@ -404,7 +427,9 @@ function IdentityScreen(p: IdentityProps) {
         </div>
 
         <div className={styles.identityCol}>
-          <h2 className={styles.colTitle}>Nacionalidad</h2>
+          <StepTitle n={2} done={!!p.country}>
+            Nacionalidad
+          </StepTitle>
           <input
             className={styles.search}
             placeholder="Buscar país"
@@ -427,7 +452,9 @@ function IdentityScreen(p: IdentityProps) {
         </div>
 
         <div className={styles.identityCol}>
-          <h2 className={styles.colTitle}>Posición</h2>
+          <StepTitle n={3} done={!!p.position}>
+            Posición
+          </StepTitle>
           <PitchPicker position={p.position} setPosition={p.setPosition} />
           {p.position && (
             <p className={styles.positionHint}>
@@ -929,30 +956,82 @@ function RetiredScreen({ career, onSummary, onPlayAgain }: { career: CareerState
   );
 }
 
+/**
+ * Agrupa edades en tramos seguidos: [26,28,36,38] → "26–28, 36–38". Dos etapas
+ * son seguidas si se llevan STAGE_YEARS, que es lo que dura cada turno.
+ */
+function formatAges(ages: number[]): string {
+  const sorted = [...ages].sort((a, b) => a - b);
+  const runs: [number, number][] = [];
+  for (const age of sorted) {
+    const last = runs[runs.length - 1];
+    if (last && age - last[1] <= STAGE_YEARS) last[1] = age;
+    else runs.push([age, age]);
+  }
+  return runs.map(([a, b]) => (a === b ? `${a}` : `${a}–${b}`)).join(", ");
+}
+
+/** Una etapa de la carrera: un club, con lo que hiciste y ganaste ahí. */
+interface ClubSpell {
+  club: CareerClub;
+  pj: number;
+  gls: number;
+  ast: number;
+  cs: number;
+  /** Edades EXACTAS en que jugaste ahí. Se guardan todas porque se puede
+      volver a un club después de irse, y un simple mín–máx diría "26–38"
+      cuando en medio estuviste en otros tres equipos. */
+  ages: number[];
+  /** Títulos del club, agrupados: "Ligue 1 ×5" dice más que cinco chapas iguales. */
+  titles: { label: string; count: number }[];
+}
+
 function SummaryScreen({ career, onPlayAgain }: { career: CareerState; onPlayAgain: () => void }) {
   const gk = isGoalkeeper(career.position);
-  const byClub = useMemo(() => {
-    const map = new Map<string, { club: CareerClub; pj: number; gls: number; ast: number; cs: number; trophies: number }>();
+
+  const spells = useMemo<ClubSpell[]>(() => {
+    const map = new Map<string, ClubSpell>();
     for (const h of career.history) {
-      const cur = map.get(h.club.id) ?? { club: h.club, pj: 0, gls: 0, ast: 0, cs: 0, trophies: 0 };
+      const cur = map.get(h.club.id) ?? { club: h.club, pj: 0, gls: 0, ast: 0, cs: 0, ages: [], titles: [] };
       cur.pj += h.pj;
       cur.gls += h.gls;
       cur.ast += h.ast;
       cur.cs += h.cleanSheets;
-      cur.trophies += h.trophies.length;
+      cur.ages.push(h.age);
       map.set(h.club.id, cur);
     }
+    // Los títulos se enganchan por NOMBRE de club: es lo que guarda CareerTrophy.
+    for (const tr of career.trophies) {
+      const spell = [...map.values()].find((s) => s.club.name === tr.club);
+      if (!spell) continue;
+      const existing = spell.titles.find((t) => t.label === tr.label);
+      if (existing) existing.count += 1;
+      else spell.titles.push({ label: tr.label, count: 1 });
+    }
+    for (const s of map.values()) s.titles.sort((a, b) => b.count - a.count);
     return Array.from(map.values());
-  }, [career.history]);
+  }, [career.history, career.trophies]);
+
+  const totalTitles = career.trophies.length;
+  const years = career.age - 16;
 
   return (
     <div className={styles.summaryScreen}>
-      <h1 className={styles.identityTitle}>Resumen de carrera</h1>
-      <p className={styles.startDesc}>
-        {career.surname} #{career.number} · {career.position} ·{" "}
-        <img src={flagUrl(career.countryCode)} alt="" width={16} height={12} style={{ verticalAlign: "middle" }} />{" "}
-        {career.countryName}
-      </p>
+      {/* La placa: el nombre y el dorsal son la identidad que construiste, así
+          que abren la pantalla en vez de un título genérico. */}
+      <header className={styles.plate}>
+        <span className={styles.plateNumber} aria-hidden="true">
+          {career.number}
+        </span>
+        <div className={styles.plateText}>
+          <span className={styles.plateEyebrow}>Carrera terminada</span>
+          <h1 className={styles.plateName}>{career.surname}</h1>
+          <p className={styles.plateMeta}>
+            <img src={flagUrl(career.countryCode)} alt="" width={18} height={13} />
+            {career.countryName} · {career.position} · {years} años de profesional
+          </p>
+        </div>
+      </header>
 
       <div className={styles.summaryStats}>
         <SummaryStat label="OVR máximo" value={career.peakOvr} />
@@ -967,50 +1046,82 @@ function SummaryScreen({ career, onPlayAgain }: { career: CareerState; onPlayAga
           </>
         )}
         <SummaryStat label="Convocatorias" value={career.caps} />
+        <SummaryStat label="Títulos" value={totalTitles} />
       </div>
 
-      <h2 className={styles.colTitle}>Trofeos y premios</h2>
-      {career.trophies.length === 0 && career.awards.length === 0 ? (
-        <p className={styles.emptyCase}>Vitrina vacía</p>
-      ) : (
-        <div className={styles.trophyList}>
-          {career.trophies.map((tr, i) => (
-            <span key={i} className={styles.trophyPill}>
-              <TrophyBadge
-                label={tr.label}
-                league={byClub.find((c) => c.club.name === tr.club)?.club.league ?? career.club.league}
-                size={16}
-                className={styles.trophyPillIcon}
-              />
-              {tr.label} · {tr.club} ({tr.age})
-            </span>
-          ))}
-          {career.awards.map((a, i) => (
-            <span key={`a${i}`} className={styles.trophyPill}>
-              <TrophyBadge label={a.label} size={16} className={styles.trophyPillIcon} />
-              {a.label} · {a.club} ({a.age})
-            </span>
-          ))}
-        </div>
+      {/* Los premios individuales van aparte de los títulos de club: son del
+          jugador, no del equipo, y son lo más raro de toda la pantalla. */}
+      {career.awards.length > 0 && (
+        <section className={styles.awardsBand}>
+          <h2 className={styles.sectionTitle}>Premios individuales</h2>
+          <div className={styles.awardList}>
+            {career.awards.map((a, i) => (
+              <span key={i} className={styles.awardPill}>
+                <TrophyBadge label={a.label} size={18} className={styles.awardIcon} />
+                <span className={styles.awardName}>{a.label}</span>
+                <span className={styles.awardWhen}>{a.age} años</span>
+              </span>
+            ))}
+          </div>
+        </section>
       )}
 
-      <h2 className={styles.colTitle}>Por club</h2>
-      <div className={styles.clubBreakdown}>
-        {byClub.map((c) => (
-          <div key={c.club.id} className={styles.clubCard}>
-            <div className={styles.clubCardHead}>
-              <img src={c.club.logoUrl} alt="" className={styles.clubCrest} />
-              <strong>{c.club.name}</strong>
-            </div>
-            <div className={styles.clubCardStats}>
-              <span>{c.pj} PJ</span>
-              {gk ? <span>{c.cs} VI</span> : <span>{c.gls} GLS</span>}
-              {!gk && <span>{c.ast} AST</span>}
-              {c.trophies > 0 && <span>🏆 {c.trophies}</span>}
-            </div>
+      <section>
+        <h2 className={styles.sectionTitle}>Tu carrera, club por club</h2>
+        {spells.length === 0 ? (
+          <p className={styles.emptyCase}>No llegaste a debutar.</p>
+        ) : (
+          <div className={styles.spellGrid}>
+            {spells.map((s) => (
+              <article key={s.club.id} className={styles.spellCard}>
+                {/* El escudo, en grande y casi transparente, identifica la
+                    tarjeta de un vistazo sin competir con los datos. */}
+                {s.club.logoUrl && <img src={s.club.logoUrl} alt="" className={styles.spellWatermark} aria-hidden="true" />}
+
+                <div className={styles.spellHead}>
+                  {s.club.logoUrl && <img src={s.club.logoUrl} alt="" className={styles.spellCrest} />}
+                  <div className={styles.spellId}>
+                    <h3 className={styles.spellClub}>{s.club.name}</h3>
+                    <span className={styles.spellLeague}>{s.club.league}</span>
+                  </div>
+                  <span className={styles.spellYears} title="Edad a la que jugaste ahí">
+                    {formatAges(s.ages)}
+                  </span>
+                </div>
+
+                <dl className={styles.spellStats}>
+                  <div>
+                    <dt>PJ</dt>
+                    <dd className="tabular">{s.pj}</dd>
+                  </div>
+                  <div>
+                    <dt>{gk ? "VI" : "GLS"}</dt>
+                    <dd className="tabular">{gk ? s.cs : s.gls}</dd>
+                  </div>
+                  <div>
+                    <dt>{gk ? "PJ/VI" : "AST"}</dt>
+                    <dd className="tabular">{gk ? (s.cs ? Math.round(s.pj / s.cs) : "—") : s.ast}</dd>
+                  </div>
+                </dl>
+
+                <div className={styles.spellTitles}>
+                  {s.titles.length === 0 ? (
+                    <span className={styles.spellNoTitles}>Sin títulos aquí</span>
+                  ) : (
+                    s.titles.map((t) => (
+                      <span key={t.label} className={styles.titleChip}>
+                        <TrophyBadge label={t.label} league={s.club.league} size={15} className={styles.titleChipIcon} />
+                        {t.label}
+                        {t.count > 1 && <b className={styles.titleCount}>×{t.count}</b>}
+                      </span>
+                    ))
+                  )}
+                </div>
+              </article>
+            ))}
           </div>
-        ))}
-      </div>
+        )}
+      </section>
 
       <div className={styles.startActions}>
         <button className="primary" onClick={onPlayAgain}>

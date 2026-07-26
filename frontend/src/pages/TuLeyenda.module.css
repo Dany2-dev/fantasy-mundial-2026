@@ -189,23 +189,75 @@
 
 /* ---------- Identidad ---------- */
 
+/* Tarjeta contenida en vez de a todo lo ancho: con 1469px las tres columnas
+   quedaban separadísimas y la de identidad, que es corta, dejaba un hueco
+   enorme. Acotada y centrada, todo queda a mano y entra sin scroll. */
 .identityScreen {
+  max-width: 1080px;
+  margin-inline: auto;
   background: var(--noche);
   border-radius: var(--r-card);
-  padding: var(--sp-6) var(--sp-5);
+  padding: var(--sp-5);
   color: var(--crema);
 }
 
 .identityTitle {
   font-family: var(--font-display);
-  font-size: 26px;
-  margin: 0 0 var(--sp-5);
+  font-size: clamp(26px, 2.6vw, 34px);
+  line-height: 1.05;
+  margin: 0 0 6px;
+}
+
+.identityLead {
+  margin: 0 0 var(--sp-4);
+  font-size: 14px;
+  color: var(--gris);
+  max-width: 62ch;
+}
+
+/* Cabecera de paso. El número se rellena en dorado al completarse: la fila de
+   tres cabeceras funciona como indicador de lo que falta para poder empezar. */
+.stepTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--gris);
+  margin: 0 0 var(--sp-4);
+}
+
+.stepNum {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1px solid var(--linea);
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--gris);
+  font-variant-numeric: tabular-nums;
+}
+
+.stepTitle[data-done] {
+  color: var(--crema);
+}
+
+.stepTitle[data-done] .stepNum {
+  color: var(--noche);
+  background: var(--oro);
+  border-color: var(--oro);
 }
 
 .identityGrid {
   display: grid;
-  grid-template-columns: 1fr 1.3fr 1fr;
-  gap: var(--sp-6);
+  grid-template-columns: 0.9fr 1.15fr 0.85fr;
+  gap: var(--sp-5);
+  align-items: start;
 }
 
 @media (max-width: 960px) {
@@ -230,7 +282,7 @@
 .jerseyWrap {
   display: flex;
   justify-content: center;
-  margin-bottom: var(--sp-5);
+  margin-bottom: var(--sp-4);
 }
 
 /* Polo negro con ribete dorado. El ribete son bandas de fondo colocadas a la
@@ -240,8 +292,9 @@
   --jc1: #12141a;
   --jtrim: #c9a227;
   position: relative;
-  width: 220px;
-  height: 220px;
+  /* Escala con el alto de la ventana, igual que la cancha. */
+  width: min(168px, 20vh);
+  height: min(168px, 20vh);
   background: linear-gradient(160deg, color-mix(in srgb, var(--jc1) 88%, white 12%) 0%, var(--jc1) 55%, #08090d 100%);
   clip-path: polygon(20% 0%, 35% 0%, 50% 16%, 65% 0%, 80% 0%, 100% 22%, 84% 36%, 76% 30%, 76% 100%, 24% 100%, 24% 30%, 16% 36%, 0% 22%);
   display: flex;
@@ -276,7 +329,7 @@
 .jerseyNumber {
   position: relative;
   font-family: var(--font-display);
-  font-size: 56px;
+  font-size: 44px;
   color: #fff;
   line-height: 1;
   text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
@@ -285,8 +338,8 @@
 .field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-bottom: var(--sp-4);
+  gap: 5px;
+  margin-bottom: var(--sp-3);
   font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
@@ -337,13 +390,44 @@
   margin-bottom: var(--sp-3);
 }
 
+/* Se estira hasta donde llega la cancha de al lado, así las tres columnas
+   terminan a la misma altura en vez de dejar un escalón. */
 .countryGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  align-content: start;
   gap: 6px;
-  max-height: 360px;
+  /* A la altura de la cancha de al lado, para que las tres columnas terminen
+     más o menos donde mismo. */
+  max-height: min(42vh, 392px);
   overflow-y: auto;
-  padding-right: 4px;
+  padding-right: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--crema) 22%, transparent) transparent;
+}
+
+.countryGrid::-webkit-scrollbar {
+  width: 8px;
+}
+
+.countryGrid::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.countryGrid::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--crema) 20%, transparent);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.countryGrid::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--oro) 55%, transparent);
+  background-clip: padding-box;
+}
+
+.countryGrid::-webkit-scrollbar-button {
+  display: none;
 }
 
 .countryItem {
@@ -382,9 +466,18 @@
   color: var(--pasto);
 }
 
+/* La cancha es lo más alto de la pantalla de identidad y arrastra a las otras
+   dos columnas: se le pone tope para que la tarjeta entera entre en pantalla
+   en vez de obligar a scrollear. `margin-inline: auto` la mantiene centrada
+   cuando el tope la hace más estrecha que su columna. */
 .pitch {
   position: relative;
   width: 100%;
+  /* El tope va en ANCHO y no en alto porque manda el aspect-ratio: limitando
+     el ancho se limita el alto a 1.5×. Atado a vh, la cancha encoge en
+     pantallas bajas y la tarjeta sigue entrando entera. */
+  max-width: min(100%, 300px, 30vh);
+  margin-inline: auto;
   aspect-ratio: 2 / 3;
   background:
     radial-gradient(ellipse at 50% 40%, rgba(120, 255, 175, 0.09) 0%, transparent 60%),
@@ -441,7 +534,7 @@
 .identityFooter {
   display: flex;
   justify-content: space-between;
-  margin-top: var(--sp-6);
+  margin-top: var(--sp-5);
 }
 
 /* ---------- Carrera ---------- */
@@ -1381,56 +1474,265 @@
   font-size: 22px;
 }
 
-.trophyList {
+/* ---------- Resumen: la placa del jugador ---------- */
+
+/* El dorsal va enorme y hueco, como el vinilo de una camiseta, con el nombre
+   encima. Es el mismo artefacto que el jugador configuró al empezar, así que
+   cierra la carrera con la imagen con la que la abrió. */
+.plate {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-5);
+  padding: var(--sp-5) 0 var(--sp-6);
+  border-bottom: 1px solid var(--linea);
+}
+
+.plateNumber {
+  font-family: var(--font-display);
+  font-size: clamp(72px, 12vw, 132px);
+  line-height: 0.8;
+  color: transparent;
+  -webkit-text-stroke: 2px color-mix(in srgb, var(--oro) 55%, transparent);
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.plateText {
+  min-width: 0;
+}
+
+.plateEyebrow {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gris);
+  margin-bottom: 6px;
+}
+
+.plateName {
+  font-family: var(--font-display);
+  font-size: clamp(38px, 6vw, 68px);
+  line-height: 0.95;
+  letter-spacing: -0.01em;
+  margin: 0 0 8px;
+  color: var(--crema);
+  overflow-wrap: anywhere;
+}
+
+.plateMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--gris);
+}
+
+.sectionTitle {
+  font-family: var(--font-display);
+  font-size: 20px;
+  margin: 0 0 var(--sp-4);
+  color: var(--crema);
+}
+
+/* ---------- Premios individuales ---------- */
+
+.awardsBand {
+  margin-bottom: var(--sp-6);
+}
+
+.awardList {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-bottom: var(--sp-6);
 }
 
-.trophyPill {
+/* Dorados y no grises: son lo más raro de la pantalla y deben leerse así. */
+.awardPill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  background: var(--tribuna);
-  border: 1px solid var(--linea);
+  gap: 8px;
+  padding: 7px 14px;
   border-radius: var(--r-chip);
-  padding: 6px 14px;
   font-size: 13px;
+  background: color-mix(in srgb, var(--oro) 12%, var(--tribuna));
+  border: 1px solid color-mix(in srgb, var(--oro) 40%, transparent);
+}
+
+.awardIcon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.awardName {
+  font-weight: 700;
+  color: var(--oro-claro);
+}
+
+.awardWhen {
+  color: var(--gris);
   font-weight: 600;
 }
 
-.trophyPillIcon {
-  width: 16px;
-  height: 16px;
-  object-fit: contain;
-}
+/* ---------- Carrera club por club ---------- */
 
-.clubBreakdown {
+.spellGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: var(--sp-3);
+  grid-template-columns: repeat(auto-fill, minmax(268px, 1fr));
+  gap: var(--sp-4);
   margin-bottom: var(--sp-6);
 }
 
-.clubCard {
+.spellCard {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
   background: var(--tribuna);
   border: 1px solid var(--linea);
-  border-radius: var(--r-input);
-  padding: var(--sp-3);
+  border-radius: var(--r-card);
+  padding: var(--sp-4);
 }
 
-.clubCardHead {
+/* El escudo, gigante y casi transparente, sale por la esquina: identifica la
+   tarjeta al instante sin robarle contraste a los datos. */
+.spellWatermark {
+  position: absolute;
+  top: -22px;
+  right: -26px;
+  width: 132px;
+  height: 132px;
+  object-fit: contain;
+  opacity: 0.07;
+  pointer-events: none;
+}
+
+.spellHead {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: var(--sp-3);
 }
 
-.clubCardStats {
-  display: flex;
-  gap: var(--sp-3);
-  font-size: 13px;
+.spellCrest {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.spellId {
+  min-width: 0;
+  flex: 1;
+}
+
+.spellClub {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--crema);
+}
+
+.spellLeague {
+  font-size: 12px;
   color: var(--gris);
   font-weight: 600;
+}
+
+/* Los años en que estuviste ahí: convierte la rejilla en una cronología. */
+.spellYears {
+  flex-shrink: 0;
+  align-self: flex-start;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--oro-claro);
+  background: color-mix(in srgb, var(--oro) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--oro) 30%, transparent);
+  border-radius: var(--r-chip);
+  padding: 3px 9px;
+  font-variant-numeric: tabular-nums;
+}
+
+.spellStats {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  margin: 0;
+  background: var(--linea);
+  border: 1px solid var(--linea);
+  border-radius: var(--r-input);
+  overflow: hidden;
+}
+
+.spellStats > div {
+  background: var(--tribuna-alta);
+  padding: 8px 6px;
+  text-align: center;
+}
+
+.spellStats dt {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gris);
+}
+
+.spellStats dd {
+  margin: 2px 0 0;
+  font-family: var(--font-display);
+  font-size: 19px;
+  line-height: 1.1;
+  color: var(--crema);
+}
+
+.spellTitles {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: auto;
+}
+
+.titleChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: var(--r-chip);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--crema);
+  background: var(--tribuna-alta);
+  border: 1px solid var(--linea);
+}
+
+.titleChipIcon {
+  width: 15px;
+  height: 15px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+/* Cinco Ligue 1 seguidas se cuentan, no se repiten cinco veces. */
+.titleCount {
+  color: var(--oro-claro);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.spellNoTitles {
+  font-size: 12px;
+  color: var(--gris);
+  font-style: italic;
 }
