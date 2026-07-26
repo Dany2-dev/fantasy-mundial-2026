@@ -1,0 +1,35 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  margin-top: var(--sp-4);
+}
+
+/* Línea con la "o" centrada: separa el acceso por email del de Google. */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  color: var(--tinta-suave);
+  font-size: 13px;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--borde);
+}
+
+/* Google inyecta su propio iframe aquí; solo lo centramos. */
+.button {
+  display: flex;
+  justify-content: center;
+  min-height: 44px;
+}
+
+.failed {
+  margin-top: var(--sp-3);
+  text-align: center;
+}

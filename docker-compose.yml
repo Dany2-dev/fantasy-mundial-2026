@@ -25,6 +25,8 @@ services:
     environment:
       DATABASE_URL: postgresql://fantasy:fantasy@db:5432/fantasy
       JWT_SECRET: cambia-esto-en-la-defensa
+      # Se toma del .env de la máquina; si está vacío, el botón de Google no aparece.
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       PORT: "4000"
     ports:
       - "4000:4000"

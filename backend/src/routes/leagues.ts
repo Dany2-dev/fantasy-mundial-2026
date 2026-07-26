@@ -4,7 +4,7 @@ import { prisma } from "../lib/prisma";
 import { AuthRequest, requireAuth } from "../middleware/auth";
 import { currentGameweek } from "../services/gameweeks";
 import { gwLabel } from "../lib/rounds";
-import { STARTING_COINS } from "../services/economy";
+import { STARTING_COINS, valueFromOverall } from "../services/economy";
 import { grantStarterPack } from "../services/starterPack";
 
 const router = Router();
@@ -108,12 +108,19 @@ router.get("/:id", async (req, res) => {
 
   const owned = await prisma.ownedPlayer.findMany({
     where: { leagueId: league.id },
-    include: { player: { select: { rating: true } } },
+    include: { player: { select: { rating: true, basePrice: true } } },
   });
 
   const standings = league.members
     .map((m) => {
       const cards = owned.filter((o) => o.userId === m.userId);
+      // Valor de plantilla en EUROS (valor de mercado real de cada carta). Antes
+      // sumaba `rating`, así que un club salía valiendo "250" — un número sin
+      // unidad que no cuadraba con ningún otro importe del juego.
+      const squadValue = cards.reduce(
+        (acc, o) => acc + (o.player.basePrice > 0 ? o.player.basePrice : valueFromOverall(o.player.rating)),
+        0
+      );
       return {
         userId: m.userId,
         name: m.user.name,
@@ -121,10 +128,13 @@ router.get("/:id", async (req, res) => {
           .filter((s) => s.userId === m.userId)
           .reduce((acc, s) => acc + s.points, 0),
         cardCount: cards.length,
-        teamValue: cards.reduce((acc, o) => acc + o.player.rating, 0),
+        teamValue: squadValue,
+        // Patrimonio = plantilla + lo que le queda en caja. Es el número que de
+        // verdad ordena quién va ganando el mercado.
+        netWorth: squadValue + m.coins,
       };
     })
-    .sort((a, b) => b.points - a.points || b.teamValue - a.teamValue);
+    .sort((a, b) => b.points - a.points || b.netWorth - a.netWorth);
 
   const gameweek = await currentGameweek(league.competitionId);
   const myMembership = league.members.find((m) => m.userId === userId);

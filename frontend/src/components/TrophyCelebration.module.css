@@ -1,0 +1,72 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(3, 5, 12, 0.82);
+  padding: var(--sp-4);
+  cursor: pointer;
+}
+
+.card {
+  position: relative;
+  width: min(360px, 100%);
+  background: linear-gradient(180deg, var(--tribuna-alta) 0%, var(--noche) 100%);
+  border: 1px solid var(--linea);
+  border-radius: var(--r-card);
+  padding: var(--sp-5) var(--sp-5) var(--sp-4);
+  text-align: center;
+  cursor: default;
+  box-shadow: var(--shadow-lift);
+}
+
+.counter {
+  position: absolute;
+  top: var(--sp-3);
+  right: var(--sp-4);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gris);
+}
+
+.playerWrap {
+  margin: 0 auto;
+}
+
+.eyebrow {
+  color: var(--gris);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 11px;
+  margin: 0 0 4px;
+}
+
+.heading {
+  font-family: var(--font-display);
+  font-size: clamp(22px, 5vw, 28px);
+  margin: 0 0 4px;
+  line-height: 1.15;
+}
+
+.subtitle {
+  color: var(--crema);
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0 0 var(--sp-4);
+}
+
+.continueBtn {
+  background: transparent;
+  border: 1px solid var(--linea);
+  color: var(--crema);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 8px 20px;
+}
+
+.continueBtn:hover:not(:disabled) {
+  border-color: var(--crema);
+}

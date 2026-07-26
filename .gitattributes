@@ -1,0 +1,6 @@
+# Los scripts de shell DEBEN tener finales de línea LF: con CRLF fallan dentro
+# de contenedores Linux/Alpine (bad interpreter / \r en variables).
+*.sh text eol=lf
+
+# El dump SQL se trata como binario para que git no altere sus finales de línea.
+backend/azure_seed.sql -text

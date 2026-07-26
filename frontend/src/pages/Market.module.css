@@ -31,6 +31,59 @@
   gap: var(--sp-3);
 }
 
+/* ---- Agentes libres ---------------------------------------------------- */
+
+.agentsHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--sp-3);
+}
+
+.agentsTimer {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: var(--r-chip);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--wc-rojo);
+  background: color-mix(in srgb, var(--wc-rojo) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--wc-rojo) 28%, transparent);
+  white-space: nowrap;
+}
+
+.agentGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--sp-3);
+}
+
+.agentCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+/* La carta entera abre el detalle; el botón de fichar queda aparte para que
+   no se fiche sin querer al querer mirar al jugador. */
+.agentCardBtn {
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  display: block;
+}
+
+.agentSign {
+  width: 100%;
+  font-size: 13px;
+  padding: 8px 10px;
+}
+
 .tradeList {
   display: flex;
   flex-direction: column;
