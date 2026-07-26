@@ -1,3 +1,4 @@
+import "./env"; // primero: hay módulos que leen process.env al cargarse
 import compression from "compression";
 import cors from "cors";
 import express from "express";
