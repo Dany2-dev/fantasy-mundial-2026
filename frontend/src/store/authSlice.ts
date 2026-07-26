@@ -37,6 +37,17 @@ export const register = createAsyncThunk(
   }
 );
 
+// El `credential` es el JWT que emite Google Identity Services en el navegador.
+// No se guarda: se cambia por nuestro propio token de sesión y se descarta.
+export const loginWithGoogle = createAsyncThunk("auth/google", async (credential: string) => {
+  const data = await api<AuthResponse>("/auth/google", {
+    method: "POST",
+    body: JSON.stringify({ credential }),
+  });
+  setToken(data.token);
+  return data.user;
+});
+
 export const fetchMe = createAsyncThunk("auth/me", async () => {
   const data = await api<{ user: User }>("/auth/me");
   return data.user;
@@ -54,7 +65,7 @@ const authSlice = createSlice({
     },
   },
   extraReducers(builder) {
-    for (const thunk of [login, register, fetchMe]) {
+    for (const thunk of [login, register, loginWithGoogle, fetchMe]) {
       builder
         .addCase(thunk.pending, (state) => {
           state.status = "loading";

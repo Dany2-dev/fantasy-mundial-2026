@@ -3,6 +3,7 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { FormEvent, useLayoutEffect, useRef, useState } from "react";
 import { Navigate } from "react-router-dom";
+import GoogleSignIn from "../components/GoogleSignIn";
 import { IconCards, IconClock, IconCoin, IconExchange, IconPack, IconShield } from "../components/icons";
 import DomeGallery from "../components/landing/DomeGallery";
 import FeatureBlock from "../components/landing/FeatureBlock";
@@ -70,8 +71,9 @@ const DEMO_SQUAD: Player[] = [
 
 // Catálogo real (mismos fotmobId que backend/src/lib/catalog.ts) para mostrar
 // escudos y nombres reales de competencias sin necesitar sesión iniciada.
+// El Mundial 2026 ya terminó, así que salió del catálogo: el backend tampoco
+// lo ofrece al crear liga (competencias sin partidos pendientes se filtran).
 const LEAGUES = [
-  { id: 77, name: "Mundial" },
   { id: 230, name: "Liga MX" },
   { id: 47, name: "Premier League" },
   { id: 87, name: "LaLiga" },
@@ -257,7 +259,7 @@ export default function Auth() {
       {/* ===== Dome de competencias ===== */}
       <section className={styles.domeSection}>
         <span className={styles.eyebrow}>Elige tu reto</span>
-        <h2 className={styles.domeHeading}>12 competencias para hacer historia</h2>
+        <h2 className={styles.domeHeading}>{LEAGUES.length} competencias para hacer historia</h2>
         <p className={styles.domeSubtitle}>Arrastra para explorar y toca un escudo para verlo de cerca.</p>
         <div className={styles.domeWrap}>
           <DomeGallery
@@ -498,6 +500,8 @@ export default function Auth() {
                     )}
                     <span className={styles.btnGlow} aria-hidden="true" />
                   </button>
+
+                  <GoogleSignIn label={mode === "register" ? "signup_with" : "signin_with"} />
                 </form>
               )}
             </div>

@@ -2,6 +2,8 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  /** Foto de Google, si la cuenta entró por ahí. */
+  avatarUrl?: string | null;
 }
 
 export interface Team {
@@ -65,11 +67,23 @@ export interface Standing {
   name: string;
   points: number;
   cardCount: number;
+  /** Valor de mercado de la plantilla, en euros. */
   teamValue: number;
+  /** Plantilla + presupuesto en caja, en euros. */
+  netWorth: number;
 }
 
 export interface MarketCard extends Player {
   owner: { id: string; name: string };
+}
+
+/** Jugador sin dueño que la liga saca al mercado durante 24 h. */
+export interface FreeAgent {
+  id: string;
+  playerId: number;
+  price: number;
+  expiresAt: string;
+  player: Player;
 }
 
 export interface GameweekScore {

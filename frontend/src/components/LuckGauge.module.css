@@ -1,0 +1,32 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.result {
+  text-align: center;
+}
+
+.win,
+.lose {
+  display: block;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.win {
+  color: var(--pasto);
+}
+
+.lose {
+  color: var(--rojo);
+}
+
+.detail {
+  display: block;
+  font-size: 11px;
+  color: var(--gris);
+  margin-top: 2px;
+}

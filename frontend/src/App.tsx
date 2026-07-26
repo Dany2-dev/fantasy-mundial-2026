@@ -21,6 +21,7 @@ const Packs = lazy(() => import("./pages/Packs"));
 const Play = lazy(() => import("./pages/Play"));
 const Rivals = lazy(() => import("./pages/Rivals"));
 const Squad = lazy(() => import("./pages/Squad"));
+const TuLeyenda = lazy(() => import("./pages/TuLeyenda"));
 
 const PageFallback = () => <p style={{ textAlign: "center", padding: 48 }}>Cargando…</p>;
 
@@ -56,6 +57,7 @@ export default function App() {
             <Route path="/rivales" element={<Rivals />} />
             <Route path="/historial" element={<History />} />
             <Route path="/jugar" element={<Play />} />
+            <Route path="/leyenda" element={<TuLeyenda />} />
           </Route>
         ) : (
           <Route path="*" element={<Navigate to="/acceso" replace />} />

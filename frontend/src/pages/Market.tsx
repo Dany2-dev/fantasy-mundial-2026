@@ -1,17 +1,36 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
-import { IconCoin } from "../components/icons";
+import { IconClock, IconCoin } from "../components/icons";
 import PlayerCard from "../components/PlayerCard";
 import PlayerDetailModal from "../components/PlayerDetailModal";
 import { formatMoney } from "../lib/money";
 import { fetchCollection } from "../store/collectionSlice";
 import { fetchLeagues } from "../store/leagueSlice";
 import { useAppDispatch, useAppSelector } from "../store/store";
-import { Listing, MarketCard, Trade } from "../types";
+import { FreeAgent, Listing, MarketCard, Trade } from "../types";
 import styles from "./Market.module.css";
 
-type Tab = "cartas" | "ventas" | "recibidas" | "enviadas";
+type Tab = "libres" | "cartas" | "ventas" | "recibidas" | "enviadas";
+
+/** Cuenta atrás legible hasta el próximo lote de agentes libres. */
+function useCountdown(target: string | null) {
+  const [left, setLeft] = useState("");
+  useEffect(() => {
+    if (!target) return setLeft("");
+    const tick = () => {
+      const ms = new Date(target).getTime() - Date.now();
+      if (ms <= 0) return setLeft("¡ya casi!");
+      const h = Math.floor(ms / 3_600_000);
+      const m = Math.floor((ms % 3_600_000) / 60_000);
+      setLeft(h > 0 ? `${h} h ${m} min` : `${m} min`);
+    };
+    tick();
+    const id = setInterval(tick, 30_000);
+    return () => clearInterval(id);
+  }, [target]);
+  return left;
+}
 
 export default function Market() {
   const dispatch = useAppDispatch();
@@ -23,8 +42,11 @@ export default function Market() {
   );
   const myCards = useAppSelector((s) => s.collection.items);
 
-  const [tab, setTab] = useState<Tab>("cartas");
+  const [tab, setTab] = useState<Tab>("libres");
   const [market, setMarket] = useState<MarketCard[]>([]);
+  const [agents, setAgents] = useState<FreeAgent[]>([]);
+  const [refreshesAt, setRefreshesAt] = useState<string | null>(null);
+  const [signing, setSigning] = useState<number | null>(null);
   const [listings, setListings] = useState<Listing[]>([]);
   const [trades, setTrades] = useState<Trade[]>([]);
   const [openPlayerId, setOpenPlayerId] = useState<number | null>(null);
@@ -44,10 +66,19 @@ export default function Market() {
     api<{ trades: Trade[] }>(`/trades?leagueId=${activeLeagueId}`)
       .then((d) => setTrades(d.trades))
       .catch(() => setTrades([]));
+    api<{ agents: FreeAgent[]; refreshesAt: string | null }>(`/free-agents?leagueId=${activeLeagueId}`)
+      .then((d) => {
+        setAgents(d.agents);
+        setRefreshesAt(d.refreshesAt);
+      })
+      .catch(() => setAgents([]));
     dispatch(fetchCollection(activeLeagueId));
   }, [activeLeagueId, dispatch]);
 
   useEffect(refresh, [refresh]);
+
+  // Se llama antes de cualquier return temprano: es un hook.
+  const countdown = useCountdown(refreshesAt);
 
   async function sendOffer() {
     if (!activeLeagueId || !target || offeredId === "") return;
@@ -98,6 +129,22 @@ export default function Market() {
     }
   }
 
+  async function signAgent(playerId: number, price: number) {
+    if (!activeLeagueId) return;
+    setMsg(null);
+    setSigning(playerId);
+    try {
+      await api("/free-agents/sign", { method: "POST", body: JSON.stringify({ leagueId: activeLeagueId, playerId }) });
+      setMsg({ kind: "ok", text: `¡Fichado! Se fueron ${formatMoney(price)} de tu presupuesto.` });
+      refresh();
+      dispatch(fetchLeagues()); // refresca el presupuesto de la liga
+    } catch (e) {
+      setMsg({ kind: "error", text: e instanceof Error ? e.message : "No se pudo fichar" });
+    } finally {
+      setSigning(null);
+    }
+  }
+
   if (!activeLeagueId) {
     return (
       <div className={styles.empty}>
@@ -121,6 +168,7 @@ export default function Market() {
       <div className={styles.tabs} role="tablist">
         {(
           [
+            ["libres", `Agentes libres (${agents.length})`],
             ["cartas", `Clausulazo (${market.length})`],
             ["ventas", `Ventas (${listings.length})`],
             ["recibidas", `Recibidas (${received.length})`],
@@ -140,6 +188,53 @@ export default function Market() {
       </div>
 
       {msg && <p className={msg.kind === "ok" ? "ok-text" : "error-text"}>{msg.text}</p>}
+
+      {tab === "libres" && (
+        <>
+          <div className={styles.agentsHead}>
+            <p className="caption">
+              Jugadores sin dueño en tu liga. Se van al primero que pague, y el lote se renueva entero cada 24 h.
+            </p>
+            {countdown && (
+              <span className={styles.agentsTimer} title="Tiempo hasta el próximo lote">
+                <IconClock size={14} /> Nuevo mercado en {countdown}
+              </span>
+            )}
+          </div>
+
+          {agents.length === 0 && (
+            <p className="muted">Ya no quedan jugadores libres en esta liga. Todo lo reparten los mánagers.</p>
+          )}
+
+          <div className={styles.agentGrid}>
+            {agents.map((a) => {
+              const tooExpensive = a.price > budget;
+              return (
+                <div key={a.id} className={styles.agentCard}>
+                  <button
+                    className={styles.agentCardBtn}
+                    onClick={() => {
+                      setOpenPlayerId(a.playerId);
+                      setMsg(null);
+                    }}
+                    aria-label={`Ver a ${a.player.name}`}
+                  >
+                    <PlayerCard player={a.player} />
+                  </button>
+                  <button
+                    className={`primary ${styles.agentSign}`}
+                    onClick={() => signAgent(a.playerId, a.price)}
+                    disabled={signing !== null || tooExpensive}
+                    title={tooExpensive ? "No te alcanza el presupuesto de esta liga" : undefined}
+                  >
+                    {signing === a.playerId ? "Fichando…" : `Fichar · ${formatMoney(a.price)}`}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
 
       {tab === "cartas" && (
         <>

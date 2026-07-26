@@ -3,6 +3,7 @@ import { FormEvent, MouseEvent, useEffect, useState } from "react";
 import { api } from "../api/client";
 import FlipReveal from "../components/FlipReveal";
 import { IconCheck, IconShield, IconTrophy, IconUsers } from "../components/icons";
+import { formatMoney } from "../lib/money";
 import { fetchCollection } from "../store/collectionSlice";
 import { createLeague, joinLeague, setActiveLeague } from "../store/leagueSlice";
 import { useAppDispatch, useAppSelector } from "../store/store";
@@ -332,6 +333,7 @@ export default function Leagues() {
                   <th className={styles.num}>Puntos</th>
                   <th className={styles.num}>Cartas</th>
                   <th className={styles.num}>Valor</th>
+                  <th className={styles.num}>Patrimonio</th>
                 </tr>
               </thead>
               <tbody>
@@ -357,7 +359,10 @@ export default function Leagues() {
                       {s.cardCount}
                     </td>
                     <td className={`${styles.num} tabular`} data-label="Valor">
-                      {s.teamValue.toLocaleString("es-MX")}
+                      {formatMoney(s.teamValue)}
+                    </td>
+                    <td className={`${styles.num} tabular`} data-label="Patrimonio">
+                      {formatMoney(s.netWorth)}
                     </td>
                   </motion.tr>
                 ))}
@@ -365,7 +370,8 @@ export default function Leagues() {
             </table>
           </div>
           <p className={`caption ${styles.foot}`}>
-            Valor = suma de medias de tus cartas. Los puntos llegarán con las jornadas del torneo.
+            Valor = valor de mercado de tu plantilla. Patrimonio suma además lo que te queda en caja. Los puntos llegarán
+            con las jornadas del torneo.
           </p>
         </section>
       )}
