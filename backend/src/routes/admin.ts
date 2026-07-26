@@ -52,6 +52,7 @@ type LoadStatus = {
   finishedAt: string | null;
   totalStatements: number;
   done: number;
+  deletes: { table: string; rowsDeleted: number }[];
   errors: { index: number; message: string }[];
 };
 
@@ -61,6 +62,7 @@ const status: LoadStatus = {
   finishedAt: null,
   totalStatements: 0,
   done: 0,
+  deletes: [],
   errors: [],
 };
 
@@ -70,11 +72,13 @@ async function runLoad(statements: string[]) {
   status.finishedAt = null;
   status.totalStatements = statements.length;
   status.done = 0;
+  status.deletes = [];
   status.errors = [];
 
   try {
     for (const t of REF_TABLES_IN_DELETE_ORDER) {
-      await prisma.$executeRawUnsafe(`DELETE FROM "${t}";`);
+      const rowsDeleted = await prisma.$executeRawUnsafe(`DELETE FROM "${t}";`);
+      status.deletes.push({ table: t, rowsDeleted: Number(rowsDeleted) });
     }
     for (let i = 0; i < statements.length; i++) {
       try {
@@ -125,7 +129,8 @@ router.get("/load-status", (req, res) => {
 
 router.get("/reference-counts", async (req, res) => {
   if (!checkAuth(req)) return res.status(401).json({ error: "No autorizado" });
-  const [competitions, teams, players, gameweeks, matches, stats] = await Promise.all([
+  const [leagues, competitions, teams, players, gameweeks, matches, stats] = await Promise.all([
+    prisma.league.count(),
     prisma.competition.count(),
     prisma.team.count(),
     prisma.player.count(),
@@ -135,6 +140,7 @@ router.get("/reference-counts", async (req, res) => {
   ]);
   const priceAgg = await prisma.player.aggregate({ _min: { basePrice: true }, _max: { basePrice: true } });
   res.json({
+    leagues,
     competitions,
     teams,
     players,
