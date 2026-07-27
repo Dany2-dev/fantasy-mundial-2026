@@ -19,6 +19,7 @@ const Rivals = lazy(() => import("./pages/Rivals"));
 const Squad = lazy(() => import("./pages/Squad"));
 const Shop = lazy(() => import("./pages/Shop"));
 const PayPalCallback = lazy(() => import("./pages/PayPalCallback"));
+const TuLeyenda = lazy(() => import("./pages/TuLeyenda"));
 
 const PageFallback = () => <p style={{ textAlign: "center", padding: 48 }}>Cargando…</p>;
 
@@ -56,6 +57,7 @@ export default function App() {
             <Route path="/historial" element={<History />} />
             <Route path="/jugar" element={<Play />} />
             <Route path="/shop" element={<Shop />} />
+            <Route path="/leyenda" element={<TuLeyenda />} />
           </Route>
         ) : (
           <Route path="*" element={<Navigate to="/acceso" replace />} />

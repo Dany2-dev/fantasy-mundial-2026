@@ -1,11 +1,14 @@
+import "./env"; // primero: hay módulos que leen process.env al cargarse
 import compression from "compression";
 import cors from "cors";
 import express from "express";
 import { startScheduler } from "./scheduler";
+import adminRouter from "./routes/admin";
 import authRouter from "./routes/auth";
 import clauseRouter from "./routes/clause";
 import collectionRouter from "./routes/collection";
 import competitionsRouter from "./routes/competitions";
+import freeAgentsRouter from "./routes/freeAgents";
 import leaguesRouter from "./routes/leagues";
 import listingsRouter from "./routes/listings";
 import matchesRouter from "./routes/matches";
@@ -45,6 +48,8 @@ app.use("/api/checkout", checkoutRouter);
 app.use("/api/roulette", rouletteRouter);
 app.use("/api/penalties", penaltiesRouter);
 app.use("/api/blackjack", blackjackRouter);
+app.use("/api/free-agents", freeAgentsRouter);
+app.use("/api/admin", adminRouter);
 
 // Manejador de errores: nunca filtrar detalles internos al cliente
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

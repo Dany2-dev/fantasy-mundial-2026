@@ -3,7 +3,7 @@ import { api } from "../api/client";
 import { formatMoney } from "../lib/money";
 import { fetchLeagues } from "../store/leagueSlice";
 import { useAppDispatch, useAppSelector } from "../store/store";
-import { PlayerDetail } from "../types";
+import { PlayerDetail, rarityOf } from "../types";
 import Flag from "./Flag";
 import { IconClose, IconCoin, IconShield } from "./icons";
 import PlayerCard from "./PlayerCard";
@@ -16,6 +16,16 @@ interface Props {
   onChanged?: () => void;
   onProposeTrade?: (playerId: number, ownerId: string) => void;
 }
+
+/** Atajos para subir cláusula sin teclear siete ceros. */
+const RAISE_PRESETS = [1_000_000, 5_000_000, 10_000_000, 25_000_000];
+/** Atajos de precio de venta, relativos al valor de mercado del jugador. */
+const SELL_PRESETS = [
+  { label: "Valor", factor: 1 },
+  { label: "+25%", factor: 1.25 },
+  { label: "+50%", factor: 1.5 },
+  { label: "Doble", factor: 2 },
+];
 
 function formatDate(iso: string | null) {
   if (!iso) return "";
@@ -99,39 +109,53 @@ export default function PlayerDetailModal({ playerId, leagueId, onClose, onChang
 
         {!loading && detail && (
           <>
-            <div className={styles.head}>
+            {/* Banda superior teñida por la rareza de la carta: le da identidad
+                al modal y separa la identidad del jugador de las acciones. */}
+            <header className={styles.head} data-rarity={rarityOf(detail.player.rating)}>
               <div className={styles.headCard}>
                 <PlayerCard player={detail.player} />
               </div>
               <div className={styles.headInfo}>
-                <h3>{detail.player.name}</h3>
+                <span className={styles.posChip}>{detail.player.position}</span>
+                <h3 className={styles.name}>{detail.player.name}</h3>
                 <p className={styles.headSub}>
                   <Flag team={detail.player.team} size={18} /> {detail.player.team.name}
                   {detail.player.age ? ` · ${detail.player.age} años` : ""}
                 </p>
 
-                {detail.ownership ? (
-                  <div className={styles.ownerBlock}>
-                    <span className="caption">
-                      {detail.ownership.isMine ? "Es tuyo" : `Dueño: ${detail.ownership.owner.name}`}
+                <div className={styles.ownerBlock}>
+                  {detail.ownership ? (
+                    <span className={detail.ownership.isMine ? styles.mineTag : styles.ownerTag}>
+                      {detail.ownership.isMine ? "En tu club" : detail.ownership.owner.name}
                     </span>
-                    <span className={styles.clauseTag}>
-                      <IconCoin size={14} /> Cláusula {formatMoney(detail.ownership.clause)}
+                  ) : (
+                    <span className={styles.freeTag}>Agente libre</span>
+                  )}
+                  {detail.ownership?.protected && (
+                    <span className={styles.protectedTag}>
+                      <IconShield size={13} /> Protegido hasta {formatDate(detail.ownership.protectedUntil)}
                     </span>
-                    {detail.ownership.protected && (
-                      <span className={styles.protectedTag}>
-                        <IconShield size={13} /> Protegido hasta {formatDate(detail.ownership.protectedUntil)}
-                      </span>
-                    )}
-                    {detail.listing && (
-                      <span className={styles.listedTag}>
-                        En venta por {formatMoney(detail.listing.price)}
-                      </span>
-                    )}
-                  </div>
-                ) : (
-                  <p className="caption">Todavía está libre en esta liga.</p>
-                )}
+                  )}
+                  {detail.listing && <span className={styles.listedTag}>En venta · {formatMoney(detail.listing.price)}</span>}
+                </div>
+              </div>
+            </header>
+
+            {/* Los tres números que de verdad importan para decidir. */}
+            <div className={styles.facts}>
+              <div className={styles.fact}>
+                <span className={styles.factLabel}>Media</span>
+                <strong className={`${styles.factValue} tabular`}>{detail.player.rating}</strong>
+              </div>
+              <div className={styles.fact}>
+                <span className={styles.factLabel}>Valor de mercado</span>
+                <strong className={`${styles.factValue} tabular`}>{formatMoney(detail.player.basePrice)}</strong>
+              </div>
+              <div className={styles.fact}>
+                <span className={styles.factLabel}>Cláusula</span>
+                <strong className={`${styles.factValue} ${styles.factClause} tabular`}>
+                  {detail.ownership ? formatMoney(detail.ownership.clause) : "—"}
+                </strong>
               </div>
             </div>
 
@@ -139,43 +163,98 @@ export default function PlayerDetailModal({ playerId, leagueId, onClose, onChang
 
             {detail.ownership?.isMine && (
               <div className={styles.actions}>
-                <div className={styles.actionRow}>
-                  <label className={styles.field}>
-                    <span className="caption">Subir tu cláusula (tienes {formatMoney(coins)})</span>
-                    <div className={styles.inputBtn}>
-                      <input
-                        type="number"
-                        min={1}
-                        value={raiseAmount}
-                        onChange={(e) => setRaiseAmount(Math.max(1, Number(e.target.value)))}
-                      />
-                      <button className="ghost" onClick={raise} disabled={busy || raiseAmount > coins}>
-                        Subir
+                <div className={styles.actionBlock}>
+                  <div className={styles.actionHead}>
+                    <span className={styles.actionTitle}>Blindar</span>
+                    <span className={styles.budget}>
+                      <IconCoin size={13} /> {formatMoney(coins)}
+                    </span>
+                  </div>
+                  <p className={styles.actionHint}>
+                    Subir la cláusula cuesta ese mismo dinero, pero encarece el clausulazo de tus rivales.
+                  </p>
+                  {/* Atajos: teclear "10000000" a mano era el paso más torpe del modal. */}
+                  <div className={styles.presets}>
+                    {RAISE_PRESETS.map((amount) => (
+                      <button
+                        key={amount}
+                        type="button"
+                        className={`${styles.preset} ${raiseAmount === amount ? styles.presetOn : ""}`}
+                        onClick={() => setRaiseAmount(amount)}
+                        disabled={amount > coins}
+                      >
+                        +{formatMoney(amount)}
                       </button>
-                    </div>
-                  </label>
+                    ))}
+                  </div>
+                  <div className={styles.inputBtn}>
+                    <input
+                      type="number"
+                      min={1}
+                      step={500_000}
+                      value={raiseAmount}
+                      onChange={(e) => setRaiseAmount(Math.max(1, Number(e.target.value)))}
+                      aria-label="Cuánto subir la cláusula"
+                    />
+                    <button className="ghost" onClick={raise} disabled={busy || raiseAmount > coins}>
+                      Subir
+                    </button>
+                  </div>
+                  <p className={styles.preview}>
+                    Quedaría en <strong>{formatMoney(detail.ownership.clause + raiseAmount)}</strong>
+                    {raiseAmount > coins && <span className={styles.warn}> · no te alcanza</span>}
+                  </p>
                 </div>
 
-                <div className={styles.actionRow}>
+                <div className={styles.actionBlock}>
                   {detail.listing ? (
-                    <button className="danger" onClick={cancelSale} disabled={busy}>
-                      Quitar de venta ({formatMoney(detail.listing.price)})
-                    </button>
+                    <>
+                      <span className={styles.actionTitle}>En venta</span>
+                      <p className={styles.actionHint}>
+                        Publicado por {formatMoney(detail.listing.price)}. Cualquier mánager de la liga puede comprarlo.
+                      </p>
+                      <button className="danger" onClick={cancelSale} disabled={busy}>
+                        Quitar de venta
+                      </button>
+                    </>
                   ) : (
-                    <label className={styles.field}>
-                      <span className="caption">Poner en venta</span>
+                    <>
+                      <span className={styles.actionTitle}>Vender</span>
+                      <p className={styles.actionHint}>
+                        Se publica en el mercado al precio que pongas. Vale {formatMoney(detail.player.basePrice)}.
+                      </p>
+                      <div className={styles.presets}>
+                        {SELL_PRESETS.map(({ label, factor }) => (
+                          <button
+                            key={label}
+                            type="button"
+                            className={styles.preset}
+                            onClick={() => setSellPrice(Math.max(1, Math.round(detail.player.basePrice * factor)))}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
                       <div className={styles.inputBtn}>
                         <input
                           type="number"
                           min={1}
+                          step={500_000}
                           value={sellPrice}
                           onChange={(e) => setSellPrice(Math.max(1, Number(e.target.value)))}
+                          aria-label="Precio de venta"
                         />
                         <button className="primary" onClick={sell} disabled={busy}>
                           Vender
                         </button>
                       </div>
-                    </label>
+                      <p className={styles.preview}>
+                        Pides <strong>{formatMoney(sellPrice)}</strong> ·{" "}
+                        {sellPrice >= detail.player.basePrice
+                          ? `${Math.round((sellPrice / Math.max(1, detail.player.basePrice)) * 100)}% de su valor`
+                          : "por debajo de su valor"}
+                      </p>
+                    </>
                   )}
                 </div>
               </div>

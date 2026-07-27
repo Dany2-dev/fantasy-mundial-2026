@@ -1,0 +1,1738 @@
+/* Tu Leyenda vive en tema oscuro propio (fiel a la referencia: negro +
+   blanco + acentos de color), distinto del resto de la app en modo claro. */
+
+.topBar {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  background: var(--tribuna);
+  border: 1px solid var(--linea);
+  border-radius: var(--r-input);
+  padding: 10px var(--sp-4);
+  margin-bottom: var(--sp-3);
+  color: var(--crema);
+}
+
+.topBarBrand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-display);
+  font-size: 15px;
+  color: var(--oro-claro);
+  flex-shrink: 0;
+}
+
+/* Identidad del jugador siempre a la vista: quién sos, qué edad tenés y
+   dónde jugás, sin tener que mirar el panel de perfil. */
+.topBarInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 13px;
+}
+
+.topBarName {
+  font-weight: 800;
+  color: var(--crema);
+  white-space: nowrap;
+}
+
+.topBarNum {
+  color: var(--gris);
+  font-weight: 700;
+}
+
+.topBarDot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--gris);
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+.topBarAge {
+  color: var(--gris);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.topBarCrest {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.topBarClub {
+  color: var(--gris);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Cuánto llevás de carrera (16 → 39): da sensación de reloj corriendo. */
+.topBarProgress {
+  margin-left: auto;
+  width: clamp(60px, 14vw, 140px);
+  height: 5px;
+  border-radius: var(--r-chip);
+  background: var(--tribuna-alta);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+/* Se anima con scaleX (compositor) en vez de width, que forzaría layout. */
+.topBarProgressFill {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--r-chip);
+  background: linear-gradient(90deg, var(--pasto), var(--oro));
+  transform-origin: left center;
+  transition: transform 0.6s ease;
+}
+
+.topBarRestart {
+  flex-shrink: 0;
+  background: transparent;
+  border: 1px solid var(--linea);
+  color: var(--gris);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 12px;
+}
+
+.topBarRestart:hover:not(:disabled) {
+  border-color: var(--rojo);
+  color: var(--rojo);
+}
+
+.startScreen {
+  position: relative;
+  min-height: calc(100vh - 180px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at top, var(--tribuna-alta) 0%, var(--noche) 55%, #05070d 100%);
+  border-radius: var(--r-card);
+  padding: clamp(var(--sp-6), 8vh, var(--sp-8)) var(--sp-5);
+  color: var(--crema);
+  overflow: hidden;
+}
+
+/* Líneas de cancha muy tenues detrás del texto: llenan el vacío del fondo sin
+   competir con el título. Decorativas, por eso no llevan marcado propio. */
+.startScreen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle at 50% 50%, transparent 118px, var(--linea) 119px, transparent 121px),
+    linear-gradient(90deg, transparent calc(50% - 0.5px), var(--linea) 50%, transparent calc(50% + 0.5px));
+  opacity: 0.28;
+  pointer-events: none;
+}
+
+.startInner {
+  position: relative;
+  max-width: 880px;
+  text-align: center;
+}
+
+.eyebrow {
+  color: var(--oro-claro);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 13px;
+  margin-bottom: var(--sp-4);
+}
+
+.startTitle {
+  font-family: var(--font-display);
+  font-size: clamp(44px, 7vw, 86px);
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  margin: 0 0 var(--sp-5);
+  color: var(--crema);
+}
+
+.startDesc {
+  color: var(--gris);
+  font-size: clamp(17px, 1.6vw, 21px);
+  line-height: 1.6;
+  max-width: 62ch;
+  margin: 0 auto var(--sp-7);
+}
+
+.startActions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+}
+
+/* El CTA es el único punto de entrada al juego: se le da tamaño de héroe. */
+.startActions button {
+  font-size: 17px;
+  padding: 15px 38px;
+}
+
+.linkBack {
+  color: var(--gris);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+/* ---------- Identidad ---------- */
+
+/* Tarjeta contenida en vez de a todo lo ancho: con 1469px las tres columnas
+   quedaban separadísimas y la de identidad, que es corta, dejaba un hueco
+   enorme. Acotada y centrada, todo queda a mano y entra sin scroll. */
+.identityScreen {
+  max-width: 1080px;
+  margin-inline: auto;
+  background: var(--noche);
+  border-radius: var(--r-card);
+  padding: var(--sp-5);
+  color: var(--crema);
+}
+
+.identityTitle {
+  font-family: var(--font-display);
+  font-size: clamp(26px, 2.6vw, 34px);
+  line-height: 1.05;
+  margin: 0 0 6px;
+}
+
+.identityLead {
+  margin: 0 0 var(--sp-4);
+  font-size: 14px;
+  color: var(--gris);
+  max-width: 62ch;
+}
+
+/* Cabecera de paso. El número se rellena en dorado al completarse: la fila de
+   tres cabeceras funciona como indicador de lo que falta para poder empezar. */
+.stepTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--gris);
+  margin: 0 0 var(--sp-4);
+}
+
+.stepNum {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1px solid var(--linea);
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--gris);
+  font-variant-numeric: tabular-nums;
+}
+
+.stepTitle[data-done] {
+  color: var(--crema);
+}
+
+.stepTitle[data-done] .stepNum {
+  color: var(--noche);
+  background: var(--oro);
+  border-color: var(--oro);
+}
+
+.identityGrid {
+  display: grid;
+  grid-template-columns: 0.9fr 1.15fr 0.85fr;
+  gap: var(--sp-5);
+  align-items: start;
+}
+
+@media (max-width: 960px) {
+  .identityGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.identityCol {
+  min-width: 0;
+}
+
+.colTitle {
+  font-size: 15px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--gris);
+  margin: 0 0 var(--sp-4);
+}
+
+.jerseyWrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: var(--sp-4);
+}
+
+/* Polo negro con ribete dorado. El ribete son bandas de fondo colocadas a la
+   altura del puño y del bajo; como el clip-path recorta también a los hijos y
+   pseudoelementos, las bandas siguen solas la silueta de la camiseta. */
+.jersey {
+  --jc1: #12141a;
+  --jtrim: #c9a227;
+  position: relative;
+  /* Escala con el alto de la ventana, igual que la cancha. */
+  width: min(168px, 20vh);
+  height: min(168px, 20vh);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--jc1) 88%, white 12%) 0%, var(--jc1) 55%, #08090d 100%);
+  clip-path: polygon(20% 0%, 35% 0%, 50% 16%, 65% 0%, 80% 0%, 100% 22%, 84% 36%, 76% 30%, 76% 100%, 24% 100%, 24% 30%, 16% 36%, 0% 22%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  box-shadow: var(--shadow-card);
+}
+
+.jersey::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    /* bajo de la camiseta */ linear-gradient(var(--jtrim), var(--jtrim)) 0 97% / 100% 3.5% no-repeat,
+    /* puño izquierdo */ linear-gradient(var(--jtrim), var(--jtrim)) 0 30% / 22% 4% no-repeat,
+    /* puño derecho */ linear-gradient(var(--jtrim), var(--jtrim)) 100% 30% / 22% 4% no-repeat,
+    /* canesú del cuello */ linear-gradient(var(--jtrim), var(--jtrim)) 50% 15% / 34% 3% no-repeat;
+}
+
+.jerseySurname {
+  position: relative;
+  font-family: var(--font-sport);
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  color: var(--jtrim, #c9a227);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+
+.jerseyNumber {
+  position: relative;
+  font-family: var(--font-display);
+  font-size: 44px;
+  color: #fff;
+  line-height: 1;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: var(--sp-3);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--gris);
+}
+
+.field input {
+  background: var(--tribuna);
+  border: 1px solid var(--linea);
+  color: var(--crema);
+  border-radius: var(--r-input);
+  padding: 10px 12px;
+  font-size: 15px;
+  text-transform: none;
+}
+
+.toggleRow {
+  display: flex;
+  gap: var(--sp-2);
+}
+
+.toggle,
+.toggleActive {
+  flex: 1;
+  border-radius: var(--r-chip);
+  padding: 9px 12px;
+  font-size: 14px;
+  border: 1px solid var(--linea);
+  background: var(--tribuna);
+  color: var(--gris);
+}
+
+.toggleActive {
+  background: #fff;
+  color: #0a0a0a;
+  border-color: #fff;
+}
+
+.search {
+  width: 100%;
+  background: var(--tribuna);
+  border: 1px solid var(--linea);
+  color: var(--crema);
+  border-radius: var(--r-input);
+  padding: 10px 12px;
+  font-size: 15px;
+  margin-bottom: var(--sp-3);
+}
+
+/* Se estira hasta donde llega la cancha de al lado, así las tres columnas
+   terminan a la misma altura en vez de dejar un escalón. */
+.countryGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-content: start;
+  gap: 6px;
+  /* A la altura de la cancha de al lado, para que las tres columnas terminen
+     más o menos donde mismo. */
+  max-height: min(42vh, 392px);
+  overflow-y: auto;
+  padding-right: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--crema) 22%, transparent) transparent;
+}
+
+.countryGrid::-webkit-scrollbar {
+  width: 8px;
+}
+
+.countryGrid::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.countryGrid::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--crema) 20%, transparent);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.countryGrid::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--oro) 55%, transparent);
+  background-clip: padding-box;
+}
+
+.countryGrid::-webkit-scrollbar-button {
+  display: none;
+}
+
+.countryItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--crema);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 10px;
+  border-radius: var(--r-input);
+  text-align: left;
+  justify-content: flex-start;
+}
+
+.countryItem img {
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.countryItem span:nth-child(2) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.countryActive {
+  background: color-mix(in srgb, #fff 12%, transparent);
+  border-color: #fff;
+}
+
+.countryCheck {
+  margin-left: auto;
+  color: var(--pasto);
+}
+
+/* La cancha es lo más alto de la pantalla de identidad y arrastra a las otras
+   dos columnas: se le pone tope para que la tarjeta entera entre en pantalla
+   en vez de obligar a scrollear. `margin-inline: auto` la mantiene centrada
+   cuando el tope la hace más estrecha que su columna. */
+.pitch {
+  position: relative;
+  width: 100%;
+  /* El tope va en ANCHO y no en alto porque manda el aspect-ratio: limitando
+     el ancho se limita el alto a 1.5×. Atado a vh, la cancha encoge en
+     pantallas bajas y la tarjeta sigue entrando entera. */
+  max-width: min(100%, 300px, 30vh);
+  margin-inline: auto;
+  aspect-ratio: 2 / 3;
+  background:
+    radial-gradient(ellipse at 50% 40%, rgba(120, 255, 175, 0.09) 0%, transparent 60%),
+    linear-gradient(180deg, #124a2b 0%, #0a2a17 100%);
+  border-radius: var(--r-card);
+  overflow: hidden;
+  box-shadow: inset 0 0 60px 12px rgba(0, 0, 0, 0.55);
+}
+
+/* Líneas reales de la cancha dibujadas en SVG (áreas, círculo central,
+   semicírculos), en vez del rectángulo genérico que había antes. */
+.pitchLines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.pitchSlot {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: rgba(4, 20, 12, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 0;
+  backdrop-filter: blur(2px);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.pitchSlot:hover:not(:disabled) {
+  transform: translate(-50%, -50%) scale(1.08);
+  background: rgba(62, 207, 122, 0.35);
+}
+
+.pitchSlotActive {
+  background: #fff;
+  color: #0a0a0a;
+  border-color: #fff;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--pasto) 45%, transparent);
+}
+
+.positionHint {
+  margin: var(--sp-3) 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--gris);
+}
+
+.identityFooter {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--sp-5);
+}
+
+/* ---------- Carrera ---------- */
+
+.careerScreen {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  align-items: start;
+  gap: var(--sp-4);
+  background: var(--noche);
+  border-radius: var(--r-card);
+  padding: var(--sp-4);
+  color: var(--crema);
+}
+
+/* En escritorio la partida entra ENTERA en una pantalla: no se debe hacer
+   scroll para llegar a las decisiones. El alto se fija descontando el resto
+   de la interfaz y cada columna hace su propio scroll interno.
+   171px = cabecera 58 + padding sup. 24 + barra 45 + su margen 12 + padding inf. 32.
+   Solo se aplica si la ventana es lo bastante alta; por debajo de eso vale más
+   dejar que la página crezca que aplastar las cartas. */
+/* El corte estaba en 901x700 y dejaba fuera ventanas de portátil normales
+   (p. ej. 897 de ancho), que caían al apilado móvil con el historial encogido
+   en una caja de tres filas. Se baja para que la vista de una pantalla cubra
+   esos tamaños. */
+@media (min-width: 840px) and (min-height: 620px) {
+  .careerScreen {
+    height: calc(100dvh - 171px);
+    /* Áreas EXPLÍCITAS a propósito. Con colocación automática el navegador se
+       inventaba una tercera columna y acababa con el perfil a la derecha y el
+       historial aplastado en una caja diminuta. Nombrando las áreas no queda
+       nada al algoritmo. */
+    /* Ancho intermedio (~840-1200): media columna son ~360px, donde las dos
+       cartas de decisión se apilan y el panel pide el triple de alto del que
+       hay. Así que aquí las decisiones van abajo A TODO EL ANCHO —ahí las
+       cartas caben en fila— y el historial ocupa el alto que sobra arriba.
+       Nada scrollea. La variante de historial a toda la altura llega en el
+       bloque de 1200px, donde media columna ya da de sí. */
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) minmax(0, auto);
+    grid-template-areas:
+      "perfil historial"
+      "decision decision";
+    /* El `start` del caso móvil impediría que las columnas llenen su fila. */
+    align-items: stretch;
+    overflow: hidden;
+  }
+
+  /* Se califican con el padre a propósito: la regla base de .turnPanel
+     (grid-column: 1 / -1, para el caso de una sola columna) vive más abajo en
+     el archivo y con igual especificidad ganaría por orden, estirando el panel
+     sobre las dos columnas. */
+
+  /* Izquierda arriba: quién sos. */
+  .careerScreen .profileCol {
+    grid-area: perfil;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+
+  /* Izquierda abajo: qué decidís. Las dos filas se reparten el alto en
+     fracciones, así que ninguna puede empujar a la otra fuera de pantalla. */
+  /* El panel LLENA su fila, pero repartiendo el alto entre sus cartas en vez de
+     dejar un hueco muerto debajo: se estira él y se estiran las opciones con
+     él. Antes pasaba una de dos — o se estiraba el panel y quedaba un vacío
+     enorme bajo las cartas, o se ajustaba al contenido y el vacío quedaba
+     igual pero como fondo de la columna. Con la cadena flex de aquí abajo el
+     espacio sobrante se convierte en cartas más grandes. */
+  .careerScreen .turnPanel {
+    grid-area: decision;
+    min-height: 0;
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    /* Red de seguridad, no comportamiento esperado: con el compactado de abajo
+       el panel entra en su fila y no scrollea. Si algún turno se pasara,
+       preferimos una barra a `hidden`, que dejaría una opción recortada e
+       imposible de pulsar. */
+    overflow-y: auto;
+    /* Menos relleno que en móvil: cada píxel que suelta aquí es un píxel que
+       gana la ficha de arriba. */
+    padding: var(--sp-3) var(--sp-4) var(--sp-4);
+  }
+
+  .careerScreen .turnGrid {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .careerScreen .decisionCard {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  /* Las opciones se quedan el alto que sobre dentro de su carta. */
+  .careerScreen .optionGrid {
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* Misma idea para la ficha: nunca se estira ni scrollea. */
+  .careerScreen .profileCol {
+    align-self: start;
+    max-height: 100%;
+  }
+
+  /* La tabla es lo que el jugador recorre, así que tiene alto mínimo propio:
+     sin esto, en anchos intermedios el informe de temporada se comía la
+     columna y dejaba la tabla en 66px, inservible. El informe cede primero. */
+  .careerScreen .timelineScroll {
+    min-height: 190px;
+  }
+
+  .careerScreen .reportBox {
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  /* Derecha: el historial completo, a toda la altura. */
+  .careerScreen .timelineCol {
+    grid-area: historial;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  /* Ritmo vertical más apretado en toda la ficha. El relleno inferior va aún
+     más corto porque el último bloque (vitrina) ya no lleva margen propio. */
+  .careerScreen .profileCard {
+    padding: var(--sp-3) var(--sp-3) var(--sp-2);
+  }
+
+  .careerScreen .profileHead,
+  .careerScreen .profileClub,
+  .careerScreen .repRow,
+  .careerScreen .statsRow {
+    margin-bottom: var(--sp-2);
+  }
+
+  .careerScreen .trophyCase {
+    margin-bottom: 0;
+  }
+
+  /* ---- Bloque de decisión compactado -----------------------------------
+     Todo lo de aquí abajo existe para que las dos cartas y sus opciones
+     entren en media columna sin barra de scroll. Los tamaños base siguen
+     valiendo en móvil, donde hay ancho de sobra. */
+
+  .careerScreen .turnHead {
+    margin-bottom: var(--sp-2);
+  }
+
+  .careerScreen .turnIntro {
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .careerScreen .turnGrid {
+    gap: var(--sp-2);
+  }
+
+  .careerScreen .decisionCard {
+    padding: var(--sp-3);
+  }
+
+  /* El relato se recorta a dos líneas: es contexto, no instrucciones, y sin
+     tope una tirada larga empujaba las opciones fuera de pantalla. */
+  .careerScreen .decisionDesc {
+    font-size: 12px;
+    line-height: 1.4;
+    margin-bottom: var(--sp-2);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* 94px de mínimo (en vez de 140) es lo que permite que hasta TRES opciones
+     quepan en una sola fila dentro de una carta a media columna. Con 112 las
+     cartas de tres opciones pasaban a dos filas y el panel se desbordaba. */
+  .careerScreen .optionGrid {
+    grid-template-columns: repeat(auto-fit, minmax(94px, 1fr));
+    gap: 6px;
+  }
+
+  .careerScreen .optionCard {
+    min-height: 76px;
+    padding: 10px 8px;
+    gap: 3px;
+  }
+
+  /* En columna estrecha lo que engorda la opción no es el mínimo, es el texto
+     envolviendo en tres líneas y el escudo a tamaño de póster. Bajando escudo
+     e interlineado la opción pasa de ~208px a ~170 sin perder nada legible. */
+  .careerScreen .optionCrest {
+    width: 30px;
+    height: 30px;
+  }
+
+  .careerScreen .optionLabel {
+    font-size: 12px;
+    line-height: 1.2;
+  }
+
+  .careerScreen .optionEffect,
+  .careerScreen .optionRisk {
+    font-size: 10px;
+    line-height: 1.25;
+  }
+}
+
+/* 1500px es el ancho a partir del cual media columna pasa de ~660px, que es lo
+   que necesitan las dos cartas de decisión para ir en fila (2x300 + hueco).
+   Solo entonces el historial puede quedarse la columna derecha ENTERA de
+   arriba abajo, que es como mejor se lee. Se probó con 1200 y no daba: a
+   1280 la columna izquierda son 545px, las cartas se apilaban y las opciones
+   volvían a caer fuera de pantalla. */
+@media (min-width: 1500px) and (min-height: 620px) {
+  .careerScreen {
+    grid-template-rows: minmax(0, auto) minmax(0, 1fr);
+    grid-template-areas:
+      "perfil historial"
+      "decision historial";
+  }
+
+}
+
+/* La ficha se reparte en dos —identidad a la izquierda, números a la derecha—
+   en cuanto su columna pasa de ~450px. Apilada pide 338px de alto; repartida
+   baja a ~200 y deja ese espacio al historial. Por debajo de 1100 no se aplica
+   porque las dos mitades saldrían tan estrechas que el texto envolvería y no se
+   ganaría nada. */
+@media (min-width: 1100px) and (min-height: 620px) {
+  .careerScreen .profileCard {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 0 var(--sp-4);
+    align-content: start;
+  }
+
+  .careerScreen .profileHead,
+  .careerScreen .profileClub {
+    grid-column: 1;
+  }
+
+  .careerScreen .statsRow,
+  .careerScreen .repRow,
+  .careerScreen .trophyCase {
+    grid-column: 2;
+  }
+
+  /* Último de su columna: sin margen no descuadra la rejilla. */
+  .careerScreen .profileClub {
+    margin-bottom: 0;
+  }
+}
+
+/* Complementario exacto del bloque de una pantalla: si se solapan, esta regla
+   gana por orden y deja la rejilla en una sola columna aunque la vista de
+   escritorio estuviera activa. */
+@media (max-width: 839px) {
+  .careerScreen {
+    grid-template-columns: 1fr;
+  }
+}
+
+.profileCard {
+  background: var(--tribuna);
+  border: 1px solid var(--linea);
+  border-radius: var(--r-card);
+  padding: var(--sp-4);
+}
+
+.profileHead {
+  display: flex;
+  gap: var(--sp-3);
+  align-items: center;
+  margin-bottom: var(--sp-4);
+}
+
+.ovrBadge {
+  width: 64px;
+  height: 64px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 26px;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.tierGray {
+  background: linear-gradient(160deg, #7a8291, #4a5261);
+}
+.tierOrange {
+  background: linear-gradient(160deg, #ff8a3d, #b3480f);
+}
+.tierBlue {
+  background: linear-gradient(160deg, #5b8fd6, #2a4d8c);
+}
+.tierGold {
+  background: linear-gradient(160deg, #f0c24b, #b3800f);
+}
+.tierElite {
+  background: linear-gradient(160deg, #a06bff, #5c2fb3);
+}
+
+.profileInfo {
+  min-width: 0;
+}
+
+.profileChips {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.posChip {
+  background: color-mix(in srgb, var(--wc-rojo) 25%, transparent);
+  color: #ff8f96;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: var(--r-chip);
+}
+
+.profileMeta {
+  display: flex;
+  gap: var(--sp-3);
+  font-size: 12px;
+  color: var(--gris);
+  font-weight: 700;
+}
+
+.profileClub {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  padding-bottom: var(--sp-3);
+  border-bottom: 1px solid var(--linea);
+  margin-bottom: var(--sp-3);
+}
+
+.profileClubLeague {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--gris);
+  text-transform: none;
+}
+
+.clubCrest {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  flex-shrink: 0;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.4));
+}
+
+.timelineCrest {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.statsRow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+}
+
+.statBox {
+  background: var(--tribuna-alta);
+  border-radius: var(--r-input);
+  padding: 10px;
+  text-align: center;
+}
+
+.statLabel {
+  display: block;
+  font-size: 10px;
+  color: var(--gris);
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
+.statValue {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 20px;
+}
+
+/* Reputación: la barra que explica por qué te buscan (o te ignoran). */
+.repRow {
+  margin-bottom: var(--sp-4);
+}
+
+.repHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.repValue {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--oro-claro);
+}
+
+.repTrack {
+  height: 6px;
+  background: var(--tribuna-alta);
+  border-radius: var(--r-chip);
+  overflow: hidden;
+}
+
+.repFill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--wc-azul-vivo), var(--oro));
+  border-radius: var(--r-chip);
+}
+
+.repHint {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: var(--gris);
+  line-height: 1.4;
+}
+
+/* Informe de la etapa: el relato de lo que acabás de vivir. */
+.reportBox {
+  background: linear-gradient(160deg, rgba(47, 67, 196, 0.16) 0%, var(--noche) 100%);
+  border: 1px solid var(--linea);
+  border-radius: var(--r-input);
+  padding: var(--sp-3) var(--sp-4);
+  margin-bottom: var(--sp-3);
+}
+
+.reportHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  margin-bottom: 8px;
+}
+
+.reportSeason {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--gris);
+}
+
+.reportDelta {
+  font-family: var(--font-display);
+  font-size: 15px;
+}
+
+.deltaUp {
+  color: var(--pasto);
+}
+
+.deltaDown {
+  color: var(--rojo);
+}
+
+/* Desglose del crecimiento: qué te dio el año y qué te dio tu decisión. */
+.ovrBreakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  font-size: 11px;
+  color: var(--gris);
+  margin-bottom: 8px;
+}
+
+.ovrBreakdown strong {
+  color: var(--crema);
+  font-family: var(--font-display);
+  font-size: 13px;
+}
+
+.ovrBonusChip strong {
+  color: var(--pasto);
+}
+
+.reportStats {
+  display: flex;
+  gap: var(--sp-4);
+  font-size: 12px;
+  color: var(--gris);
+  margin-bottom: 8px;
+}
+
+.reportStats strong {
+  font-family: var(--font-display);
+  font-size: 16px;
+  color: var(--crema);
+  margin-right: 3px;
+}
+
+.reportText {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--crema);
+}
+
+.reportBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.awardBadge,
+.milestoneBadge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: var(--r-chip);
+}
+
+.awardBadge {
+  background: color-mix(in srgb, var(--oro) 22%, transparent);
+  color: var(--oro-claro);
+  border: 1px solid color-mix(in srgb, var(--oro) 45%, transparent);
+}
+
+.milestoneBadge {
+  background: color-mix(in srgb, var(--wc-azul-vivo) 24%, transparent);
+  color: #b9c6ff;
+  border: 1px solid color-mix(in srgb, var(--wc-azul-vivo) 45%, transparent);
+}
+
+.epitaph {
+  font-size: 15px;
+  font-style: italic;
+  color: var(--oro-claro);
+  line-height: 1.6;
+  margin: 0 0 var(--sp-5);
+}
+
+.trophyCase {
+  padding-bottom: var(--sp-4);
+  border-bottom: 1px solid var(--linea);
+  margin-bottom: var(--sp-4);
+}
+
+.emptyCase {
+  color: var(--gris);
+  font-size: 13px;
+}
+
+.trophyCount {
+  font-weight: 700;
+  color: var(--oro-claro);
+}
+
+.trophyIcons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.trophyIcon {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  background: var(--tribuna-alta);
+  border-radius: 6px;
+  padding: 3px;
+}
+
+.trophyMore {
+  font-size: 12px;
+  color: var(--gris);
+  font-weight: 700;
+}
+
+.badgeIcon {
+  vertical-align: -2px;
+}
+
+/* ---------- Turno: dos decisiones por temporada ---------- */
+
+.turnPanel {
+  grid-column: 1 / -1;
+  background: linear-gradient(160deg, rgba(47, 67, 196, 0.14) 0%, var(--tribuna) 100%);
+  border: 1px solid var(--linea);
+  border-radius: var(--r-card);
+  padding: var(--sp-4) var(--sp-5) var(--sp-5);
+}
+
+.turnHead {
+  margin-bottom: var(--sp-4);
+}
+
+.turnSeason {
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--oro-claro);
+  margin-bottom: 4px;
+}
+
+/* Texto de contexto que abre la temporada: es lo que da sensación de rol. */
+.turnIntro {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--crema);
+  max-width: 70ch;
+}
+
+.turnGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--sp-4);
+}
+
+.decisionCard {
+  background: var(--noche);
+  border: 1px solid var(--linea);
+  border-radius: var(--r-card);
+  padding: var(--sp-4);
+}
+
+/* La segunda carta se atenúa hasta que resolvés la primera: deja claro que
+   hay un orden, sin esconder la información. */
+.decisionLocked {
+  opacity: 0.55;
+}
+
+.decisionHead {
+  margin-bottom: 6px;
+}
+
+.decisionStep {
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gris);
+  margin-bottom: 2px;
+}
+
+.decisionTitle {
+  margin: 0;
+  font-size: 17px;
+}
+
+.decisionDesc {
+  color: var(--gris);
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0 0 var(--sp-3);
+}
+
+.decisionHint {
+  margin: var(--sp-3) 0 0;
+  font-size: 11px;
+  color: var(--gris);
+  text-align: center;
+}
+
+.optionGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--sp-2);
+}
+
+.optionCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-height: 128px;
+  justify-content: center;
+  background-color: var(--tribuna-alta);
+  background-size: cover;
+  background-position: center;
+  border: 1px solid var(--linea);
+  border-radius: var(--r-input);
+  padding: var(--sp-3) 10px;
+  text-align: center;
+  color: var(--crema);
+}
+
+.optionCard:hover:not(:disabled) {
+  border-color: var(--crema);
+}
+
+.optionCard:disabled {
+  cursor: default;
+}
+
+.optionPicked {
+  border-color: var(--pasto);
+  box-shadow: 0 0 0 1px var(--pasto);
+  opacity: 1;
+}
+
+.optionCrest {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.5));
+}
+
+.optionLabel {
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 1.3;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+
+.optionEffect {
+  font-size: 11px;
+  color: var(--pasto);
+  font-weight: 700;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+
+.optionRisk {
+  font-size: 11px;
+  color: #ff9aa4;
+  font-weight: 700;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+
+.optionCheck {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--pasto);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.timelineCol {
+  min-width: 0;
+}
+
+/* La barra del sistema (blanca, gruesa, con flechas) desentona con el tema
+   oscuro del juego. Se estiliza en todas las zonas que pueden scrollear dentro
+   de Tu Leyenda: fina, sin flechas, con el pulgar redondeado y translúcido
+   sobre la propia superficie. `scrollbar-width`/`scrollbar-color` cubren
+   Firefox; el bloque ::-webkit- cubre Chrome y Edge. */
+.timelineScroll,
+.careerScreen .profileCol,
+.careerScreen .turnPanel,
+.careerScreen .reportBox {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--crema) 22%, transparent) transparent;
+}
+
+.timelineScroll::-webkit-scrollbar,
+.careerScreen .profileCol::-webkit-scrollbar,
+.careerScreen .turnPanel::-webkit-scrollbar,
+.careerScreen .reportBox::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.timelineScroll::-webkit-scrollbar-track,
+.careerScreen .profileCol::-webkit-scrollbar-track,
+.careerScreen .turnPanel::-webkit-scrollbar-track,
+.careerScreen .reportBox::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.timelineScroll::-webkit-scrollbar-thumb,
+.careerScreen .profileCol::-webkit-scrollbar-thumb,
+.careerScreen .turnPanel::-webkit-scrollbar-thumb,
+.careerScreen .reportBox::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--crema) 20%, transparent);
+  border-radius: 999px;
+  /* El borde transparente deja aire a los lados sin necesitar otro elemento. */
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.timelineScroll::-webkit-scrollbar-thumb:hover,
+.careerScreen .profileCol::-webkit-scrollbar-thumb:hover,
+.careerScreen .turnPanel::-webkit-scrollbar-thumb:hover,
+.careerScreen .reportBox::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--oro) 55%, transparent);
+  background-clip: padding-box;
+}
+
+/* Sin esto Chrome pinta los botones de flecha arriba y abajo. */
+.timelineScroll::-webkit-scrollbar-button,
+.careerScreen .profileCol::-webkit-scrollbar-button,
+.careerScreen .turnPanel::-webkit-scrollbar-button,
+.careerScreen .reportBox::-webkit-scrollbar-button {
+  display: none;
+}
+
+/* Con 23 temporadas la lista es larga: se hace scrolleable para que el panel
+   de decisiones siga visible sin empujar la página. En escritorio toma la
+   altura que sobra (flex hijo de .timelineCol); en móvil se limita a mano
+   porque ahí la página sí scrollea de forma natural. */
+.timelineScroll {
+  flex: 1;
+  min-height: 0;
+  max-height: 460px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+@media (min-width: 840px) and (min-height: 620px) {
+  .timelineScroll {
+    max-height: none;
+  }
+}
+
+.timelineHead,
+.timelineRow {
+  display: grid;
+  grid-template-columns: 56px 1fr 56px 44px 44px 44px;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.timelineHead {
+  color: var(--gris);
+  font-weight: 800;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.timelineRow {
+  background: var(--tribuna);
+  border-radius: var(--r-input);
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+.timelineRowCurrent {
+  background: color-mix(in srgb, var(--wc-rojo) 22%, var(--tribuna));
+  border: 1px solid var(--wc-rojo);
+}
+
+.timelineAge {
+  font-family: var(--font-display);
+  font-size: 15px;
+}
+
+.timelineClub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.timelineClubPending {
+  color: var(--gris);
+  font-style: italic;
+}
+
+.timelineTrophy {
+  width: 15px;
+  height: 15px;
+  object-fit: contain;
+  margin-left: 4px;
+  flex-shrink: 0;
+}
+
+.timelineOvr {
+  width: 34px;
+  height: 22px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+/* ---------- Resumen ---------- */
+
+.summaryScreen {
+  background: var(--noche);
+  border-radius: var(--r-card);
+  padding: var(--sp-6) var(--sp-5);
+  color: var(--crema);
+}
+
+.summaryStats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--sp-3);
+  margin: var(--sp-5) 0 var(--sp-6);
+}
+
+.summaryStat {
+  background: var(--tribuna);
+  border: 1px solid var(--linea);
+  border-radius: var(--r-input);
+  padding: var(--sp-3);
+  text-align: center;
+}
+
+.summaryStatLabel {
+  display: block;
+  font-size: 11px;
+  color: var(--gris);
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.summaryStatValue {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 22px;
+}
+
+/* ---------- Resumen: la placa del jugador ---------- */
+
+/* El dorsal va enorme y hueco, como el vinilo de una camiseta, con el nombre
+   encima. Es el mismo artefacto que el jugador configuró al empezar, así que
+   cierra la carrera con la imagen con la que la abrió. */
+.plate {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-5);
+  padding: var(--sp-5) 0 var(--sp-6);
+  border-bottom: 1px solid var(--linea);
+}
+
+.plateNumber {
+  font-family: var(--font-display);
+  font-size: clamp(72px, 12vw, 132px);
+  line-height: 0.8;
+  color: transparent;
+  -webkit-text-stroke: 2px color-mix(in srgb, var(--oro) 55%, transparent);
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.plateText {
+  min-width: 0;
+}
+
+.plateEyebrow {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gris);
+  margin-bottom: 6px;
+}
+
+.plateName {
+  font-family: var(--font-display);
+  font-size: clamp(38px, 6vw, 68px);
+  line-height: 0.95;
+  letter-spacing: -0.01em;
+  margin: 0 0 8px;
+  color: var(--crema);
+  overflow-wrap: anywhere;
+}
+
+.plateMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--gris);
+}
+
+.sectionTitle {
+  font-family: var(--font-display);
+  font-size: 20px;
+  margin: 0 0 var(--sp-4);
+  color: var(--crema);
+}
+
+/* ---------- Premios individuales ---------- */
+
+.awardsBand {
+  margin-bottom: var(--sp-6);
+}
+
+.awardList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Dorados y no grises: son lo más raro de la pantalla y deben leerse así. */
+.awardPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  border-radius: var(--r-chip);
+  font-size: 13px;
+  background: color-mix(in srgb, var(--oro) 12%, var(--tribuna));
+  border: 1px solid color-mix(in srgb, var(--oro) 40%, transparent);
+}
+
+.awardIcon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.awardName {
+  font-weight: 700;
+  color: var(--oro-claro);
+}
+
+.awardWhen {
+  color: var(--gris);
+  font-weight: 600;
+}
+
+/* ---------- Carrera club por club ---------- */
+
+.spellGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(268px, 1fr));
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-6);
+}
+
+.spellCard {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  background: var(--tribuna);
+  border: 1px solid var(--linea);
+  border-radius: var(--r-card);
+  padding: var(--sp-4);
+}
+
+/* El escudo, gigante y casi transparente, sale por la esquina: identifica la
+   tarjeta al instante sin robarle contraste a los datos. */
+.spellWatermark {
+  position: absolute;
+  top: -22px;
+  right: -26px;
+  width: 132px;
+  height: 132px;
+  object-fit: contain;
+  opacity: 0.07;
+  pointer-events: none;
+}
+
+.spellHead {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.spellCrest {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.spellId {
+  min-width: 0;
+  flex: 1;
+}
+
+.spellClub {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--crema);
+}
+
+.spellLeague {
+  font-size: 12px;
+  color: var(--gris);
+  font-weight: 600;
+}
+
+/* Los años en que estuviste ahí: convierte la rejilla en una cronología. */
+.spellYears {
+  flex-shrink: 0;
+  align-self: flex-start;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--oro-claro);
+  background: color-mix(in srgb, var(--oro) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--oro) 30%, transparent);
+  border-radius: var(--r-chip);
+  padding: 3px 9px;
+  font-variant-numeric: tabular-nums;
+}
+
+.spellStats {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  margin: 0;
+  background: var(--linea);
+  border: 1px solid var(--linea);
+  border-radius: var(--r-input);
+  overflow: hidden;
+}
+
+.spellStats > div {
+  background: var(--tribuna-alta);
+  padding: 8px 6px;
+  text-align: center;
+}
+
+.spellStats dt {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gris);
+}
+
+.spellStats dd {
+  margin: 2px 0 0;
+  font-family: var(--font-display);
+  font-size: 19px;
+  line-height: 1.1;
+  color: var(--crema);
+}
+
+.spellTitles {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: auto;
+}
+
+.titleChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: var(--r-chip);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--crema);
+  background: var(--tribuna-alta);
+  border: 1px solid var(--linea);
+}
+
+.titleChipIcon {
+  width: 15px;
+  height: 15px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+/* Cinco Ligue 1 seguidas se cuentan, no se repiten cinco veces. */
+.titleCount {
+  color: var(--oro-claro);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.spellNoTitles {
+  font-size: 12px;
+  color: var(--gris);
+  font-style: italic;
+}

@@ -3,6 +3,8 @@ export interface User {
   name: string;
   email: string;
   coins: number;
+  /** Foto de Google, si la cuenta entró por ahí. */
+  avatarUrl?: string | null;
 }
 
 export interface Team {
@@ -66,11 +68,23 @@ export interface Standing {
   name: string;
   points: number;
   cardCount: number;
+  /** Valor de mercado de la plantilla, en euros. */
   teamValue: number;
+  /** Plantilla + presupuesto en caja, en euros. */
+  netWorth: number;
 }
 
 export interface MarketCard extends Player {
   owner: { id: string; name: string };
+}
+
+/** Jugador sin dueño que la liga saca al mercado durante 24 h. */
+export interface FreeAgent {
+  id: string;
+  playerId: number;
+  price: number;
+  expiresAt: string;
+  player: Player;
 }
 
 export interface GameweekScore {
@@ -116,6 +130,25 @@ export interface Match {
   // Minuto en vivo ("45'", "90+2'") — FotMob ya lo provee; el endpoint lo
   // expondrá después. Mientras tanto llega undefined y la UI muestra solo "EN VIVO".
   liveMinute?: string | null;
+}
+
+// Estadística bilateral de un partido (posesión, tiros...). El endpoint
+// GET /matches/:id/stats aún no existe en el back; la UI la oculta mientras tanto.
+export interface MatchStatRow {
+  label: string;
+  home: number;
+  away: number;
+  unit?: string | null;
+}
+
+// Evento del minuto a minuto de un partido. El endpoint GET /matches/:id/events
+// aún no existe en el back; la UI muestra fallback "llega pronto" mientras tanto.
+export interface MatchEvent {
+  minute: string;
+  type: "goal" | "yellow" | "red" | "sub" | "half" | "start" | "end";
+  team: "home" | "away" | null;
+  player: string | null;
+  detail: string | null;
 }
 
 export interface StandingRow {

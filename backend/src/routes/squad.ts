@@ -2,11 +2,19 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { AuthRequest, requireAuth } from "../middleware/auth";
+import { gwLabel } from "../lib/rounds";
 
 const router = Router();
 router.use(requireAuth);
 
 export const FORMATIONS = ["4-4-2", "4-3-3", "3-5-2"] as const;
+
+// No se puede editar la plantilla entre 1h antes y 1h después del primer
+// partido de una jornada (Gameweek.deadline ya ES ese primer kickoff, ver
+// prisma/seed-competitions.ts). Fuera de esa ventana sí se puede guardar
+// siempre: lo que cambia es a qué jornada "aplica" el cambio, y eso lo
+// decide recomputeScores() en services/sync.ts a partir del historial.
+const LOCK_WINDOW_MS = 60 * 60 * 1000;
 
 router.get("/", async (req, res) => {
   const userId = (req as AuthRequest).userId;
@@ -48,6 +56,25 @@ router.put("/", async (req, res) => {
     return res.status(400).json({ error: "El capitán debe estar en el once" });
   }
 
+  const league = await prisma.league.findUnique({ where: { id: leagueId }, select: { competitionId: true } });
+  if (!league) return res.status(404).json({ error: "Liga no encontrada" });
+
+  const now = new Date();
+  const lockedGw = await prisma.gameweek.findFirst({
+    where: {
+      competitionId: league.competitionId,
+      deadline: { gte: new Date(now.getTime() - LOCK_WINDOW_MS), lte: new Date(now.getTime() + LOCK_WINDOW_MS) },
+    },
+  });
+  if (lockedGw) {
+    const reopensAt = new Date(lockedGw.deadline.getTime() + LOCK_WINDOW_MS);
+    return res.status(400).json({
+      error: `No puedes editar tu plantilla entre 1 hora antes y 1 hora después del primer partido de esta jornada (${gwLabel(
+        lockedGw.number
+      )}). Se reabre a las ${reopensAt.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}.`,
+    });
+  }
+
   // Solo puedes alinear cartas que posees en ESTA liga.
   const owned = await prisma.ownedPlayer.findMany({
     where: { userId, leagueId, playerId: { in: playerIds } },
@@ -61,6 +88,12 @@ router.put("/", async (req, res) => {
     where: { userId_leagueId: { userId, leagueId } },
     update: { formation, playerIds: playerIds.join(","), captainId },
     create: { userId, leagueId, formation, playerIds: playerIds.join(","), captainId },
+  });
+  // Cada guardado queda registrado además en el historial: recomputeScores()
+  // lo usa para saber qué alineación estaba vigente al deadline de cada
+  // jornada, en vez de aplicar retroactivamente la plantilla actual a todas.
+  await prisma.fantasySquadHistory.create({
+    data: { userId, leagueId, formation, playerIds: playerIds.join(","), captainId },
   });
   res.json({ squad: { formation: squad.formation, playerIds, captainId } });
 });

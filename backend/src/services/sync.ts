@@ -169,18 +169,51 @@ export async function payGameweekRewards(): Promise<number> {
 
 // Recalcula UserGameweekScore: por cada liga (atada a su competencia) suma los
 // puntos del once de cada mánager en cada jornada de esa competencia (capitán x2).
+//
+// La plantilla que cuenta para la jornada G es la última guardada en
+// FantasySquadHistory ANTES (o justo en) el deadline de G — no la actual.
+// Así, si el mánager edita su once mientras la jornada ya está en juego (o
+// después de que terminó), ese cambio no le reescribe puntos a una jornada
+// que ya arrancó: recién es candidato para la próxima jornada cuyo deadline
+// caiga después del guardado. Ver la ventana de bloqueo en routes/squad.ts.
 export async function recomputeScores(): Promise<number> {
   const leagues = await prisma.league.findMany({ select: { id: true, competitionId: true } });
   const memberships = await prisma.leagueMembership.findMany({ select: { userId: true, leagueId: true } });
-  const squads = await prisma.fantasySquad.findMany();
-  const squadKey = (u: string, l: string) => `${u}::${l}`;
-  const squadMap = new Map(squads.map((s) => [squadKey(s.userId, s.leagueId), s]));
   const leagueComp = new Map(leagues.map((l) => [l.id, l.competitionId]));
+  const squadKey = (u: string, l: string) => `${u}::${l}`;
+
+  // Historial ordenado del más viejo al más nuevo, para poder tomar "la
+  // última guardada antes de tal fecha" con un recorrido lineal simple.
+  const history = await prisma.fantasySquadHistory.findMany({ orderBy: { savedAt: "asc" } });
+  const historyMap = new Map<string, typeof history>();
+  for (const h of history) {
+    const k = squadKey(h.userId, h.leagueId);
+    if (!historyMap.has(k)) historyMap.set(k, []);
+    historyMap.get(k)!.push(h);
+  }
+  // Respaldo para plantillas guardadas antes de que existiera esta tabla
+  // (sin fila en el historial todavía): usar la plantilla actual tal cual.
+  const liveSquads = await prisma.fantasySquad.findMany();
+  const liveMap = new Map(liveSquads.map((s) => [squadKey(s.userId, s.leagueId), s]));
+
+  function squadAsOf(userId: string, leagueId: string, deadline: Date) {
+    const rows = historyMap.get(squadKey(userId, leagueId));
+    if (!rows || rows.length === 0) {
+      const live = liveMap.get(squadKey(userId, leagueId));
+      return live ? { playerIds: live.playerIds, captainId: live.captainId } : null;
+    }
+    let last: (typeof rows)[number] | null = null;
+    for (const h of rows) {
+      if (h.savedAt.getTime() <= deadline.getTime()) last = h;
+      else break;
+    }
+    return last ? { playerIds: last.playerIds, captainId: last.captainId } : null;
+  }
 
   // Puntos por (gameweekId -> Map(playerId -> points))  y  jornadas por competencia
-  const gameweeks = await prisma.gameweek.findMany({ select: { id: true, competitionId: true } });
-  const gwsByComp = new Map<number, number[]>();
-  for (const g of gameweeks) gwsByComp.set(g.competitionId, [...(gwsByComp.get(g.competitionId) ?? []), g.id]);
+  const gameweeks = await prisma.gameweek.findMany({ select: { id: true, competitionId: true, deadline: true } });
+  const gwsByComp = new Map<number, { id: number; deadline: Date }[]>();
+  for (const g of gameweeks) gwsByComp.set(g.competitionId, [...(gwsByComp.get(g.competitionId) ?? []), g]);
 
   const allStats = await prisma.playerGameweekStats.findMany({ select: { gameweekId: true, playerId: true, points: true } });
   const ptsByGw = new Map<number, Map<number, number>>();
@@ -193,21 +226,21 @@ export async function recomputeScores(): Promise<number> {
   for (const m of memberships) {
     const compId = leagueComp.get(m.leagueId);
     if (compId == null) continue;
-    const squad = squadMap.get(squadKey(m.userId, m.leagueId));
-    if (!squad) continue;
-    const ids = squad.playerIds ? squad.playerIds.split(",").map(Number) : [];
-    for (const gwId of gwsByComp.get(compId) ?? []) {
-      const pts = ptsByGw.get(gwId);
+    for (const gw of gwsByComp.get(compId) ?? []) {
+      const pts = ptsByGw.get(gw.id);
       if (!pts) continue;
+      const squad = squadAsOf(m.userId, m.leagueId, gw.deadline);
+      if (!squad) continue;
+      const ids = squad.playerIds ? squad.playerIds.split(",").map(Number) : [];
       let total = 0;
       for (const pid of ids) {
         const base = pts.get(pid) ?? 0;
         total += squad.captainId === pid ? base * 2 : base;
       }
       await prisma.userGameweekScore.upsert({
-        where: { userId_leagueId_gameweekId: { userId: m.userId, leagueId: m.leagueId, gameweekId: gwId } },
+        where: { userId_leagueId_gameweekId: { userId: m.userId, leagueId: m.leagueId, gameweekId: gw.id } },
         update: { points: total },
-        create: { userId: m.userId, leagueId: m.leagueId, gameweekId: gwId, points: total },
+        create: { userId: m.userId, leagueId: m.leagueId, gameweekId: gw.id, points: total },
       });
       updated++;
     }

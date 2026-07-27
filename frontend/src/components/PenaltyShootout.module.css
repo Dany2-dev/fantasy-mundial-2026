@@ -1,0 +1,127 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 210;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(3, 5, 12, 0.88);
+  padding: var(--sp-4);
+  overflow-y: auto;
+}
+
+.card {
+  width: min(440px, 100%);
+  background: linear-gradient(180deg, var(--tribuna-alta) 0%, var(--noche) 100%);
+  border: 1px solid var(--linea);
+  border-radius: var(--r-card);
+  padding: var(--sp-5);
+  box-shadow: var(--shadow-lift);
+  color: var(--crema);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-3);
+}
+
+.cupLogo {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.eyebrow {
+  color: var(--oro-claro);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 11px;
+  margin: 0 0 2px;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  margin: 0;
+}
+
+.desc {
+  color: var(--gris);
+  font-size: 13px;
+  line-height: 1.55;
+  margin: 0 0 var(--sp-4);
+}
+
+.desc strong {
+  color: var(--crema);
+}
+
+.pitchWrap {
+  border-radius: var(--r-input);
+  overflow: hidden;
+  background: linear-gradient(180deg, #071a10 0%, #0d2e1c 100%);
+  margin-bottom: var(--sp-3);
+}
+
+.goalSvg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.zone {
+  cursor: pointer;
+}
+
+.zoneHit {
+  fill: transparent;
+}
+
+.zoneDot {
+  fill: rgba(255, 255, 255, 0.1);
+  stroke: rgba(255, 255, 255, 0.55);
+  stroke-width: 2;
+  stroke-dasharray: 4 4;
+  transition: fill 0.15s ease, stroke 0.15s ease;
+}
+
+.zone:hover .zoneDot {
+  fill: color-mix(in srgb, var(--pasto) 45%, transparent);
+  stroke: var(--pasto);
+}
+
+.hint {
+  text-align: center;
+  font-size: 12px;
+  color: var(--gris);
+  margin: 0;
+}
+
+.result {
+  text-align: center;
+}
+
+.goal,
+.miss {
+  font-family: var(--font-display);
+  font-size: 22px;
+  margin: 0 0 4px;
+}
+
+.goal {
+  color: var(--pasto);
+}
+
+.miss {
+  color: var(--rojo);
+}
+
+.resultDetail {
+  font-size: 12px;
+  color: var(--gris);
+  margin: 0 0 var(--sp-4);
+}
