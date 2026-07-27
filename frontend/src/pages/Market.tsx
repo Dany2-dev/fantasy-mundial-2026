@@ -1,4 +1,4 @@
-import { ReactNode, useCallback, useEffect, useState } from "react";
+import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import FlipReveal from "../components/FlipReveal";
@@ -32,6 +32,144 @@ function useCountdown(target: string | null) {
     return () => clearInterval(id);
   }, [target]);
   return left;
+}
+
+type PosFilter = "TODAS" | Player["position"];
+type SortKey = "precio-desc" | "precio-asc" | "media-desc" | "nombre";
+
+const POS_FILTERS: [PosFilter, string][] = [
+  ["TODAS", "Todas"],
+  ["POR", "POR"],
+  ["DEF", "DEF"],
+  ["MED", "MED"],
+  ["DEL", "DEL"],
+];
+
+const SORTS: [SortKey, string][] = [
+  ["precio-desc", "Más caros"],
+  ["precio-asc", "Más baratos"],
+  ["media-desc", "Mejor media"],
+  ["nombre", "Nombre"],
+];
+
+/** Quita acentos para que "gimenez" encuentre a "Giménez". */
+function normalize(s: string): string {
+  return s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+}
+
+/** Filtra por posición y por texto (nombre o equipo), y ordena. Sirve para las
+ *  tres pestañas con cartas, cada una diciendo dónde están su jugador y precio. */
+function filterAndSort<T>(items: T[], read: (item: T) => { player: Player; price: number }, pos: PosFilter, sort: SortKey, query: string): T[] {
+  const q = normalize(query.trim());
+  const out = items.filter((item) => {
+    const { player } = read(item);
+    if (pos !== "TODAS" && player.position !== pos) return false;
+    if (!q) return true;
+    return normalize(player.name).includes(q) || normalize(player.team?.name ?? "").includes(q);
+  });
+
+  return out.sort((a, b) => {
+    const A = read(a);
+    const B = read(b);
+    switch (sort) {
+      case "precio-asc":
+        return A.price - B.price;
+      case "media-desc":
+        return B.player.rating - A.player.rating || A.player.name.localeCompare(B.player.name);
+      case "nombre":
+        return A.player.name.localeCompare(B.player.name, "es");
+      default:
+        return B.price - A.price;
+    }
+  });
+}
+
+/** Barra de filtros: posición, orden y buscador. */
+function FilterBar({
+  pos,
+  sort,
+  query,
+  total,
+  shown,
+  onPos,
+  onSort,
+  onQuery,
+}: {
+  pos: PosFilter;
+  sort: SortKey;
+  query: string;
+  total: number;
+  shown: number;
+  onPos: (p: PosFilter) => void;
+  onSort: (s: SortKey) => void;
+  onQuery: (q: string) => void;
+}) {
+  const filtering = pos !== "TODAS" || query.trim() !== "";
+  return (
+    <div className={styles.filters}>
+      <div className={styles.posGroup} role="group" aria-label="Filtrar por posición">
+        {POS_FILTERS.map(([key, label]) => (
+          <button
+            key={key}
+            className={`${styles.posBtn} ${pos === key ? styles.posActive : ""}`}
+            aria-pressed={pos === key}
+            onClick={() => onPos(key)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <input
+        className={styles.search}
+        type="search"
+        value={query}
+        placeholder="Buscar jugador o selección…"
+        aria-label="Buscar jugador o selección"
+        onChange={(e) => onQuery(e.target.value)}
+      />
+
+      <select
+        className={styles.sortSelect}
+        value={sort}
+        aria-label="Ordenar por"
+        onChange={(e) => onSort(e.target.value as SortKey)}
+      >
+        {SORTS.map(([key, label]) => (
+          <option key={key} value={key}>
+            {label}
+          </option>
+        ))}
+      </select>
+
+      {filtering && (
+        <span className={styles.filterCount}>
+          {shown} de {total}
+          <button
+            className={styles.filterClear}
+            onClick={() => {
+              onPos("TODAS");
+              onQuery("");
+            }}
+          >
+            Limpiar
+          </button>
+        </span>
+      )}
+    </div>
+  );
+}
+
+/** Siluetas mientras llega el mercado, para que la página no salte. */
+function MarketSkeleton({ variant }: { variant: "cards" | "list" }) {
+  const count = variant === "cards" ? 6 : 3;
+  return (
+    <div className={variant === "cards" ? styles.agentGrid : styles.tradeList} aria-hidden="true">
+      {Array.from({ length: count }, (_, i) => (
+        <div key={i} className={`${styles.skel} ${variant === "cards" ? styles.skelCard : styles.skelRow}`} />
+      ))}
+    </div>
+  );
 }
 
 /** Una oferta puesta cara a cara: lo que se ofrece contra lo que se pide, con
@@ -136,24 +274,34 @@ export default function Market() {
   const [offeredId, setOfferedId] = useState<number | "">("");
   const [coins, setCoinsOffer] = useState(0);
   const [msg, setMsg] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
+  const [loading, setLoading] = useState(true);
+  // Filtros de las pestañas con cartas (libres, clausulazo y ventas).
+  const [pos, setPos] = useState<PosFilter>("TODAS");
+  const [sort, setSort] = useState<SortKey>("precio-desc");
+  const [query, setQuery] = useState("");
 
   const refresh = useCallback(() => {
     if (!activeLeagueId) return;
-    api<{ market: MarketCard[] }>(`/collection/market?leagueId=${activeLeagueId}`)
-      .then((d) => setMarket(d.market))
-      .catch(() => setMarket([]));
-    api<{ listings: Listing[] }>(`/listings?leagueId=${activeLeagueId}`)
-      .then((d) => setListings(d.listings))
-      .catch(() => setListings([]));
-    api<{ trades: Trade[] }>(`/trades?leagueId=${activeLeagueId}`)
-      .then((d) => setTrades(d.trades))
-      .catch(() => setTrades([]));
-    api<{ agents: FreeAgent[]; refreshesAt: string | null }>(`/free-agents?leagueId=${activeLeagueId}`)
-      .then((d) => {
-        setAgents(d.agents);
-        setRefreshesAt(d.refreshesAt);
-      })
-      .catch(() => setAgents([]));
+    setLoading(true);
+    const pending = [
+      api<{ market: MarketCard[] }>(`/collection/market?leagueId=${activeLeagueId}`)
+        .then((d) => setMarket(d.market))
+        .catch(() => setMarket([])),
+      api<{ listings: Listing[] }>(`/listings?leagueId=${activeLeagueId}`)
+        .then((d) => setListings(d.listings))
+        .catch(() => setListings([])),
+      api<{ trades: Trade[] }>(`/trades?leagueId=${activeLeagueId}`)
+        .then((d) => setTrades(d.trades))
+        .catch(() => setTrades([])),
+      api<{ agents: FreeAgent[]; refreshesAt: string | null }>(`/free-agents?leagueId=${activeLeagueId}`)
+        .then((d) => {
+          setAgents(d.agents);
+          setRefreshesAt(d.refreshesAt);
+        })
+        .catch(() => setAgents([])),
+    ];
+    // Los esqueletos se van cuando ya llegó todo, no con la primera respuesta.
+    Promise.allSettled(pending).then(() => setLoading(false));
     dispatch(fetchCollection(activeLeagueId));
   }, [activeLeagueId, dispatch]);
 
@@ -238,6 +386,20 @@ export default function Market() {
   // Valor de tu plantilla, para saber de un vistazo qué tan grande eres.
   const squadValue = myCards.reduce((sum, c) => sum + (c.basePrice ?? 0), 0);
 
+  // Cada pestaña de cartas se filtra y ordena con los mismos controles.
+  const shownAgents = useMemo(
+    () => filterAndSort(agents, (a) => ({ player: a.player, price: a.price }), pos, sort, query),
+    [agents, pos, sort, query]
+  );
+  const shownMarket = useMemo(
+    () => filterAndSort(market, (c) => ({ player: c, price: c.clause ?? c.basePrice }), pos, sort, query),
+    [market, pos, sort, query]
+  );
+  const shownListings = useMemo(
+    () => filterAndSort(listings, (l) => ({ player: l.player, price: l.price }), pos, sort, query),
+    [listings, pos, sort, query]
+  );
+
   return (
     <div>
       <h1>Mercado</h1>
@@ -312,12 +474,28 @@ export default function Market() {
             )}
           </div>
 
-          {agents.length === 0 && (
+          <FilterBar
+            pos={pos}
+            sort={sort}
+            query={query}
+            total={agents.length}
+            shown={shownAgents.length}
+            onPos={setPos}
+            onSort={setSort}
+            onQuery={setQuery}
+          />
+
+          {loading && agents.length === 0 && <MarketSkeleton variant="cards" />}
+
+          {!loading && agents.length === 0 && (
             <p className="muted">Ya no quedan jugadores libres. Aquí todo tiene dueño: ve por un clausulazo.</p>
+          )}
+          {agents.length > 0 && shownAgents.length === 0 && (
+            <p className="muted">Ningún jugador libre encaja con esa búsqueda.</p>
           )}
 
           <div className={styles.agentGrid}>
-            {agents.map((a) => {
+            {shownAgents.map((a) => {
               const tooExpensive = a.price > budget;
               return (
                 <div key={a.id} className={styles.agentCard}>
@@ -349,13 +527,31 @@ export default function Market() {
       {tab === "cartas" && (
         <>
           <p className="caption">Toca una carta y mueve ficha: paga su cláusula o manda una oferta.</p>
-          {market.length === 0 && (
+
+          <FilterBar
+            pos={pos}
+            sort={sort}
+            query={query}
+            total={market.length}
+            shown={shownMarket.length}
+            onPos={setPos}
+            onSort={setSort}
+            onQuery={setQuery}
+          />
+
+          {loading && market.length === 0 && <MarketSkeleton variant="cards" />}
+
+          {!loading && market.length === 0 && (
             <p className="muted">
               El mercado está quieto por ahora. Invita al grupo y que empiecen los fichajes.
             </p>
           )}
+          {market.length > 0 && shownMarket.length === 0 && (
+            <p className="muted">Ninguna carta encaja con esa búsqueda.</p>
+          )}
+
           <div className={styles.grid}>
-            {market.map((card) => (
+            {shownMarket.map((card) => (
               <PlayerCard
                 key={card.id}
                 player={card}
@@ -372,9 +568,28 @@ export default function Market() {
 
       {tab === "ventas" && (
         <>
-          {listings.length === 0 && <p className="muted">No hay cartas a la venta. Vuelve pronto o busca un clausulazo.</p>}
+          <FilterBar
+            pos={pos}
+            sort={sort}
+            query={query}
+            total={listings.length}
+            shown={shownListings.length}
+            onPos={setPos}
+            onSort={setSort}
+            onQuery={setQuery}
+          />
+
+          {loading && listings.length === 0 && <MarketSkeleton variant="list" />}
+
+          {!loading && listings.length === 0 && (
+            <p className="muted">No hay cartas a la venta. Vuelve pronto o busca un clausulazo.</p>
+          )}
+          {listings.length > 0 && shownListings.length === 0 && (
+            <p className="muted">Ninguna venta encaja con esa búsqueda.</p>
+          )}
+
           <div className={styles.listingGrid}>
-            {listings.map((l) => {
+            {shownListings.map((l) => {
               const mine = l.sellerId === user?.id;
               const tooExpensive = l.price > budget;
               // Comparar el precio pedido contra el valor de mercado dice si es ganga o robo.
