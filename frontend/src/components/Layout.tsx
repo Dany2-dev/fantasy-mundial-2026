@@ -23,6 +23,7 @@ import {
   IconLogOut,
   IconMore,
   IconPack,
+  IconStore,
   IconStar,
   IconTrophy,
   IconUsers,
@@ -47,6 +48,7 @@ const MORE_NAV = [
   { to: "/partidos", label: "Partidos", Icon: IconCalendar },
   { to: "/rivales", label: "Rivales", Icon: IconUsers },
   { to: "/jugar", label: "Jugar", Icon: IconGamepad },
+  { to: "/shop", label: "Tienda", Icon: IconStore },
   { to: "/leyenda", label: "Tu Leyenda", Icon: IconStar },
   { to: "/historial", label: "Historial", Icon: IconClock },
 ];
@@ -174,10 +176,10 @@ export default function Layout() {
         </nav>
 
         <div className={styles.sidebarFooter}>
-          <span className={styles.sidebarCoins} title="Tu presupuesto en esta liga">
+          <Link to="/shop" className={styles.sidebarCoins} title="Comprar monedas / Reclamar recompensa">
             <IconCoin size={20} className={styles.sidebarIcon} />
-            <span className={styles.sidebarLabel}>{formatMoney(budget)}</span>
-          </span>
+            <span className={styles.sidebarLabel}>{(user?.coins ?? 0).toLocaleString("es-MX")}</span>
+          </Link>
           <button className={styles.sidebarItem} onClick={handleLogout}>
             <IconLogOut size={20} aria-hidden="true" className={styles.sidebarIcon} />
             <span className={styles.sidebarLabel}>Salir</span>
@@ -231,23 +233,10 @@ export default function Layout() {
             )}
 
             <div className={styles.right}>
-              {gameweek && (
-                <span className={styles.headerStat} title="Jornada actual">
-                  <IconTrophy size={16} />
-                  <span className={styles.headerStatLabel}>{gameweek.label}</span>
-                </span>
-              )}
-              <span className={styles.headerStat} title="Media de tu club">
-                <IconCards size={16} />
-                <span className={styles.headerStatLabel}>Media {avgRating || "—"}</span>
-              </span>
-              <span className={styles.avatar} title={user?.name} aria-hidden="true">
-                {avatarInitial}
-              </span>
-              <span className={`${styles.coins} tabular`} title="Tu presupuesto en esta liga">
+              <Link to="/shop" className={`${styles.coins} tabular`} title="Comprar monedas / Reclamar recompensa">
                 <IconCoin size={17} />
-                {formatMoney(budget)}
-              </span>
+                {(user?.coins ?? 0).toLocaleString("es-MX")}
+              </Link>
               <button className={styles.logoutBtn} onClick={handleLogout} title="Cerrar sesión">
                 <IconLogOut size={16} />
                 <span className={styles.logoutLabel}>Salir</span>

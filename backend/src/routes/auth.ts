@@ -3,6 +3,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { AuthRequest, requireAuth, signToken } from "../middleware/auth";
+import { claimDailyReward } from "../services/faucet";
 
 const router = Router();
 
@@ -12,8 +13,8 @@ const registerSchema = z.object({
   password: z.string().min(6, "La contraseña necesita al menos 6 caracteres"),
 });
 
-// El presupuesto ya no vive en User: es por liga (LeagueMembership.coins).
-const publicUser = { id: true, name: true, email: true, avatarUrl: true } as const;
+// El presupuesto en liga es LeagueMembership.coins; coins es el saldo global de tienda de la cuenta.
+const publicUser = { id: true, name: true, email: true, coins: true, avatarUrl: true } as const;
 
 router.post("/register", async (req, res) => {
   const parsed = registerSchema.safeParse(req.body);
@@ -48,7 +49,7 @@ router.post("/login", async (req, res) => {
     return res.status(401).json({ error: "Email o contraseña incorrectos" });
   }
   const { password: _omit, ...safe } = user;
-  res.json({ token: signToken(user.id), user: { id: safe.id, name: safe.name, email: safe.email } });
+  res.json({ token: signToken(user.id), user: { id: safe.id, name: safe.name, email: safe.email, coins: safe.coins } });
 });
 
 // --------------------------------------------------------------------------
@@ -147,6 +148,23 @@ router.get("/me", requireAuth, async (req, res) => {
   });
   if (!user) return res.status(404).json({ error: "Usuario no encontrado" });
   res.json({ user });
+});
+
+router.post("/daily-reward", requireAuth, async (req, res) => {
+  const userId = (req as AuthRequest).userId;
+  const leagueId = String(req.body.leagueId ?? "");
+  const weekKey = String(req.body.weekKey ?? "");
+
+  if (!leagueId || !weekKey) {
+    return res.status(400).json({ error: "leagueId y weekKey son obligatorios" });
+  }
+
+  const result = await claimDailyReward(userId, leagueId, weekKey);
+  if (!result.success) {
+    return res.status(400).json({ error: result.error });
+  }
+
+  res.json({ success: true, coinsGranted: result.coinsGranted });
 });
 
 export default router;

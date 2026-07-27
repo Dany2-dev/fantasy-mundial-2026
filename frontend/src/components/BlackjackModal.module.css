@@ -1,0 +1,277 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 15, 25, 0.88);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+  animation: fadeIn 0.25s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal {
+  background: linear-gradient(145deg, #1e293b, #0b0f19);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 24px;
+  width: 100%;
+  max-width: 560px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 35px rgba(59, 130, 246, 0.2);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  color: #f8fafc;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.headerTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.headerTitle h2 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 0;
+  background: linear-gradient(135deg, #60a5fa, #818cf8, #a855f7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.closeBtn {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  color: #ffffff !important;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+}
+
+.closeBtn:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
+  color: #ffffff !important;
+  transform: scale(1.1);
+}
+
+.body {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.balanceRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+}
+
+.balanceValue {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  color: #f59e0b;
+}
+
+.tableFelt {
+  width: 100%;
+  background: radial-gradient(circle, #064e3b 0%, #022c22 100%);
+  border: 4px solid #1e293b;
+  border-radius: 18px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-shadow: inset 0 0 25px rgba(0, 0, 0, 0.8);
+}
+
+.handSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.handHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: #cbd5e1;
+  font-weight: 600;
+}
+
+.cardsRow {
+  display: flex;
+  gap: 8px;
+  min-height: 80px;
+  align-items: center;
+}
+
+.card {
+  width: 56px;
+  height: 80px;
+  background: #ffffff;
+  border-radius: 8px;
+  color: #0f172a;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px;
+  font-weight: 800;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+  animation: dealCard 0.3s ease-out;
+}
+
+@keyframes dealCard {
+  from { transform: translateY(-20px) scale(0.8); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.cardRed {
+  color: #dc2626;
+}
+
+.actionsRow {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+.actionBtn {
+  flex: 1;
+  padding: 12px;
+  border-radius: 12px;
+  border: none;
+  font-weight: 800;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #fff;
+}
+
+.hitBtn {
+  background: linear-gradient(135deg, #10b981, #059669);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.standBtn {
+  background: linear-gradient(135deg, #f43f5e, #e11d48);
+  box-shadow: 0 4px 12px rgba(244, 63, 94, 0.3);
+}
+
+.actionBtn:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.betsSection {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.betsLabel {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.betsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.betBtn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
+  padding: 8px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.betBtn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: #38bdf8;
+  color: #fff;
+}
+
+.betBtnActive {
+  background: linear-gradient(135deg, #0284c7, #2563eb) !important;
+  border-color: #38bdf8 !important;
+  color: #fff !important;
+}
+
+.allInBtn {
+  grid-column: span 3;
+  background: linear-gradient(135deg, #dc2626, #b91c1c) !important;
+  border-color: #ef4444 !important;
+  color: #fff !important;
+  font-weight: 800 !important;
+}
+
+.errorBox {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  width: 100%;
+  text-align: center;
+}
+
+.startBtn {
+  width: 100%;
+  padding: 14px;
+  border-radius: 14px;
+  border: none;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+}

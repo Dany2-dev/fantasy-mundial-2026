@@ -83,6 +83,17 @@ export function IconCoin(props: IconProps) {
   );
 }
 
+export function IconStore(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7" />
+      <path d="M4 12V22a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V12" />
+      <path d="M2 7h20" />
+      <path d="M10 12v4a2 2 0 0 0 4 0v-4" />
+    </svg>
+  );
+}
+
 export function IconLogOut(props: IconProps) {
   return (
     <svg {...base(props)}>
@@ -129,6 +140,25 @@ export function IconCalendar(props: IconProps) {
     <svg {...base(props)}>
       <rect x="4" y="5.5" width="16" height="15" rx="2" />
       <path d="M4 10h16M8 3.5v3.5M16 3.5v3.5" />
+    </svg>
+  );
+}
+
+export function IconPin(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M12 21s6.5-5.6 6.5-10.5a6.5 6.5 0 1 0-13 0C5.5 15.4 12 21 12 21Z" />
+      <circle cx="12" cy="10.5" r="2.4" />
+    </svg>
+  );
+}
+
+export function IconDownload(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M12 4v11" />
+      <path d="m7.5 10.5 4.5 4.5 4.5-4.5" />
+      <path d="M4.5 19.5h15" />
     </svg>
   );
 }
@@ -202,3 +232,38 @@ export function IconStar(props: IconProps) {
     </svg>
   );
 }
+
+export function IconShoppingCart(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <circle cx="9" cy="20" r="1.5" />
+      <circle cx="18" cy="20" r="1.5" />
+      <path d="M3 3h3l2.4 11.6a2 2 0 0 0 2 1.4h8.2a2 2 0 0 0 2-1.6L22 7H6" />
+    </svg>
+  );
+}
+
+export function IconTrash(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6" />
+    </svg>
+  );
+}
+
+export function IconPlus(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
+}
+
+export function IconMinus(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M5 12h14" />
+    </svg>
+  );
+}
+

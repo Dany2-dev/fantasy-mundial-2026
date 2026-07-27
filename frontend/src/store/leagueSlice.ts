@@ -40,6 +40,23 @@ export const joinLeague = createAsyncThunk("leagues/join", async (code: string) 
   return data;
 });
 
+// Solo el dueño puede llamar a estos dos (el backend lo revalida igual).
+export const renameLeague = createAsyncThunk(
+  "leagues/rename",
+  async ({ leagueId, name }: { leagueId: string; name: string }) => {
+    const data = await api<{ league: League }>(`/leagues/${leagueId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ name }),
+    });
+    return data.league;
+  }
+);
+
+export const deleteLeague = createAsyncThunk("leagues/delete", async (leagueId: string) => {
+  await api(`/leagues/${leagueId}`, { method: "DELETE" });
+  return leagueId;
+});
+
 const leagueSlice = createSlice({
   name: "leagues",
   initialState,
@@ -82,6 +99,18 @@ const leagueSlice = createSlice({
         state.leagues.push(action.payload.league);
         state.activeLeagueId = action.payload.league.id;
         localStorage.setItem(ACTIVE_KEY, action.payload.league.id);
+      })
+      .addCase(renameLeague.fulfilled, (state, action) => {
+        const league = state.leagues.find((l) => l.id === action.payload.id);
+        if (league) league.name = action.payload.name;
+      })
+      .addCase(deleteLeague.fulfilled, (state, action) => {
+        state.leagues = state.leagues.filter((l) => l.id !== action.payload);
+        if (state.activeLeagueId === action.payload) {
+          state.activeLeagueId = state.leagues[0]?.id ?? null;
+          if (state.activeLeagueId) localStorage.setItem(ACTIVE_KEY, state.activeLeagueId);
+          else localStorage.removeItem(ACTIVE_KEY);
+        }
       });
   },
 });
