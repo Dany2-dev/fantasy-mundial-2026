@@ -1,0 +1,398 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(6px);
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.25s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-carta);
+  width: 100%;
+  max-width: 580px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--borde);
+  background: var(--superficie-alta);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.headerTitleBox {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.paypalBadge {
+  background: #003087;
+  padding: 4px 10px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: Arial, sans-serif;
+  font-weight: 800;
+  font-size: 0.9rem;
+}
+
+.paypalText {
+  color: #0079C1;
+}
+
+.paypalTextAccent {
+  color: #ffffff;
+}
+
+.headerTitleBox h2 {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--tinta);
+  margin: 0;
+}
+
+.closeBtn {
+  background: transparent;
+  border: none;
+  color: var(--tinta-media);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 50%;
+  transition: color 0.15s, background 0.15s;
+}
+
+.closeBtn:hover {
+  color: var(--tinta);
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.modalBody {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Summary Box */
+.orderSummaryBox {
+  background: var(--superficie-alta);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-card);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.summaryHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--tinta-media);
+}
+
+.coinsGrantedText {
+  color: var(--wc-oro-oscuro);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.summaryItemsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.itemChip {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--tinta);
+}
+
+.totalPayRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 8px;
+  border-top: 1px solid var(--borde);
+  font-size: 0.95rem;
+  color: var(--tinta);
+}
+
+.totalAmount {
+  font-family: var(--font-body);
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: var(--wc-azul-vivo);
+}
+
+/* Formulario */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.titleWithIcon {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--tinta);
+}
+
+.sectionHeader h3 {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--tinta);
+  margin: 0;
+}
+
+.sandboxFillBtn {
+  background: rgba(243, 193, 74, 0.15);
+  border: 1px solid rgba(243, 193, 74, 0.4);
+  color: #b48008;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.sandboxFillBtn:hover {
+  background: rgba(243, 193, 74, 0.25);
+  color: #926600;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 500px) {
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Opción A: PayPal Oficial */
+.paypalOfficialBox {
+  background: rgba(0, 121, 193, 0.05);
+  border: 1px solid rgba(0, 121, 193, 0.25);
+  border-radius: var(--r-card);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.paypalBoxTitle {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #00457C;
+}
+
+.paypalWindowBtn {
+  background: #FFC439;
+  color: #111;
+  border: none;
+  padding: 12px 18px;
+  border-radius: 9999px;
+  font-size: 0.95rem;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background 0.15s, transform 0.1s, box-shadow 0.2s;
+  box-shadow: 0 4px 14px rgba(255, 196, 57, 0.35);
+}
+
+.paypalWindowBtn:hover:not(:disabled) {
+  background: #f2b427;
+  transform: translateY(-1px);
+}
+
+.approveStatusCard {
+  background: var(--superficie);
+  border: 1px solid rgba(47, 168, 79, 0.3);
+  padding: 12px;
+  border-radius: var(--r-input);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 0.85rem;
+  color: #1b6630;
+}
+
+.confirmCaptureBtn {
+  background: var(--wc-verde);
+  color: #fff;
+  border: none;
+  padding: 10px;
+  border-radius: var(--r-input);
+  font-weight: 800;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.cardFormBox {
+  background: var(--superficie-alta);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-card);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fieldFull {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field label,
+.fieldFull label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--tinta-media);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.field input,
+.fieldFull input {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  color: var(--tinta);
+  padding: 10px 12px;
+  border-radius: var(--r-input);
+  font-size: 0.9rem;
+  font-family: var(--font-body);
+  transition: border-color 0.15s;
+}
+
+.field input:focus,
+.fieldFull input:focus {
+  border-color: var(--wc-azul-vivo);
+  outline: none;
+}
+
+.errorBox {
+  background: rgba(230, 29, 37, 0.08);
+  border: 1px solid rgba(230, 29, 37, 0.25);
+  color: #991b1b;
+  padding: 10px 14px;
+  border-radius: var(--r-input);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.paymentFooter {
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--borde);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.securityNote {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--tinta-media);
+}
+
+.submitPayBtn {
+  background: var(--wc-azul-vivo);
+  color: #fff;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 9999px;
+  font-size: 0.95rem;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background 0.15s, transform 0.1s;
+}
+
+.submitPayBtn:hover:not(:disabled) {
+  background: var(--wc-azul-oscuro, #1e3a8a);
+  transform: translateY(-1px);
+}
+
+.submitPayBtn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.btnPaypalBadge {
+  display: inline-flex;
+  align-items: center;
+  font-family: Arial, sans-serif;
+  font-weight: 900;
+  font-size: 1.05rem;
+  margin-left: 2px;
+}

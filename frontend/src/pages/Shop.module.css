@@ -426,3 +426,326 @@
   color: var(--wc-rojo);
   font-weight: 700;
 }
+
+/* Toast flotante */
+.toastNotification {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 1000;
+  background: var(--tinta);
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  animation: popIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes popIn {
+  from { opacity: 0; transform: translateY(16px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Encabezado de la sección de paquetes */
+.sectionTitleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--sp-4);
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.currencyBadge {
+  background: rgba(47, 168, 79, 0.1);
+  color: #1b6630;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  border: 1px solid rgba(47, 168, 79, 0.25);
+}
+
+/* Botón de agregar */
+.addBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--wc-azul-vivo);
+  color: #fff;
+  border: none;
+  padding: 9px 16px;
+  border-radius: var(--r-input);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+}
+
+.addBtn:hover {
+  background: var(--wc-azul-oscuro, #1e3a8a);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(47, 67, 196, 0.25);
+}
+
+.addBtnActive {
+  background: #1b6630;
+}
+
+.addBtnActive:hover {
+  background: #144d24;
+}
+
+/* Sección Carrito / Lista de Pedidos */
+.cartSection {
+  margin-top: var(--sp-6);
+  margin-bottom: var(--sp-6);
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-carta);
+  padding: 28px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+}
+
+.cartHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--borde);
+}
+
+.cartTitleBox {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cartHeaderIcon {
+  color: var(--wc-azul-vivo);
+}
+
+.cartTitleBox h2 {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--tinta);
+  margin: 0;
+}
+
+.clearBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid var(--borde);
+  color: var(--tinta-media);
+  padding: 6px 14px;
+  border-radius: var(--r-input);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.clearBtn:hover {
+  background: rgba(230, 29, 37, 0.06);
+  color: var(--wc-rojo);
+  border-color: rgba(230, 29, 37, 0.2);
+}
+
+/* Estado vacío del carrito */
+.cartEmptyCard {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--tinta-media);
+}
+
+.emptyCartIcon {
+  color: var(--borde);
+  margin-bottom: 12px;
+}
+
+.cartEmptyCard h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--tinta);
+  margin-bottom: 6px;
+}
+
+/* Grilla del carrito con items y resumen */
+.cartContentGrid {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 28px;
+}
+
+@media (max-width: 900px) {
+  .cartContentGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cartItemsList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cartItemRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: var(--superficie-alta);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-card);
+  padding: 16px 20px;
+  flex-wrap: wrap;
+}
+
+.itemInfo h4 {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--tinta);
+  margin-bottom: 4px;
+}
+
+.itemCoinBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--wc-oro-oscuro);
+}
+
+.itemUnitPrice {
+  font-size: 0.85rem;
+}
+
+.qtyControl {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 9999px;
+  padding: 4px 8px;
+}
+
+.qtyBtn {
+  background: transparent;
+  border: none;
+  color: var(--tinta);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.qtyBtn:hover {
+  background: var(--superficie-alta);
+}
+
+.qtyValue {
+  font-size: 0.9rem;
+  font-weight: 800;
+  min-width: 20px;
+  text-align: center;
+}
+
+.itemSubtotal {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--wc-azul-vivo);
+}
+
+.removeBtn {
+  background: transparent;
+  border: none;
+  color: var(--tinta-media);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.removeBtn:hover {
+  color: var(--wc-rojo);
+  background: rgba(230, 29, 37, 0.08);
+}
+
+/* Tarjeta Resumen */
+.cartSummaryCard {
+  background: var(--superficie-alta);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-card);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-self: flex-start;
+}
+
+.cartSummaryCard h3 {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--tinta);
+  margin-bottom: 4px;
+}
+
+.summaryRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+  color: var(--tinta-media);
+}
+
+.summaryCoins {
+  color: var(--wc-oro-oscuro);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.summaryDivider {
+  height: 1px;
+  background: var(--borde);
+  margin: 4px 0;
+}
+
+.totalRow {
+  font-size: 1rem;
+  color: var(--tinta);
+  font-weight: 800;
+}
+
+.totalMXN {
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: var(--wc-azul-vivo);
+}
+
+.checkoutBtn {
+  width: 100%;
+  margin-top: 8px;
+  padding: 14px;
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+

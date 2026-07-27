@@ -15,6 +15,9 @@ import squadRouter from "./routes/squad";
 import tradesRouter from "./routes/trades";
 import { handleStripeWebhook } from "./routes/webhook";
 import checkoutRouter from "./routes/checkout";
+import rouletteRouter from "./routes/roulette";
+import penaltiesRouter from "./routes/penalties";
+import blackjackRouter from "./routes/blackjack";
 
 const app = express();
 app.use(compression());
@@ -39,6 +42,9 @@ app.use("/api/matches", matchesRouter);
 app.use("/api/clause", clauseRouter);
 app.use("/api/listings", listingsRouter);
 app.use("/api/checkout", checkoutRouter);
+app.use("/api/roulette", rouletteRouter);
+app.use("/api/penalties", penaltiesRouter);
+app.use("/api/blackjack", blackjackRouter);
 
 // Manejador de errores: nunca filtrar detalles internos al cliente
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

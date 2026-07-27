@@ -27,6 +27,9 @@ services:
       JWT_SECRET: cambia-esto-en-la-defensa
       PORT: "4000"
       FRONTEND_URL: "http://localhost:8080"
+      PAYPAL_CLIENT_ID: "AeeJ7NVMMQQ1t9UmQQkztvZ1mEiNZzz6-KqYs93DEDwuNWR7bVPZYFF3ikk6GnNmrYmggV_VT1k_mpU8"
+      PAYPAL_CLIENT_SECRET: "EAAeYFxAxaDPEeeKtjfcx8IyZoTYkEQhgkAondD4lWYzpaqXV7HBzApC7qDuq-Khzxb3FYsNrPzBS725"
+      PAYPAL_MODE: "sandbox"
     ports:
       - "4000:4000"
     depends_on:

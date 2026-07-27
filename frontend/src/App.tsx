@@ -18,12 +18,13 @@ const Play = lazy(() => import("./pages/Play"));
 const Rivals = lazy(() => import("./pages/Rivals"));
 const Squad = lazy(() => import("./pages/Squad"));
 const Shop = lazy(() => import("./pages/Shop"));
+const PayPalCallback = lazy(() => import("./pages/PayPalCallback"));
 
 const PageFallback = () => <p style={{ textAlign: "center", padding: 48 }}>Cargando…</p>;
 
 export default function App() {
   const dispatch = useAppDispatch();
-  const { user, status } = useAppSelector((s) => s.auth);
+  const { user, status, checkingSession } = useAppSelector((s) => s.auth);
 
   useEffect(() => {
     if (getToken() && !user) dispatch(fetchMe());
@@ -33,7 +34,7 @@ export default function App() {
     if (user) dispatch(fetchLeagues());
   }, [dispatch, user]);
 
-  if (status === "loading" && !user) {
+  if ((checkingSession || (getToken() && !user)) && status === "loading") {
     return <PageFallback />;
   }
 
@@ -41,6 +42,7 @@ export default function App() {
     <Suspense fallback={<PageFallback />}>
       <Routes>
         <Route path="/acceso" element={<Auth />} />
+        <Route path="/paypal-callback" element={<PayPalCallback />} />
         {user ? (
           <Route element={<Layout />}>
             <Route path="/" element={<Home />} />

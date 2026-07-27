@@ -54,7 +54,8 @@ const authSlice = createSlice({
     },
     setCoins(state, action: PayloadAction<number>) {
       if (state.user) {
-        state.user.coins = action.payload;
+        const val = Number(action.payload);
+        state.user.coins = Number.isNaN(val) ? (state.user.coins ?? 0) : val;
       }
     },
   },
@@ -67,7 +68,10 @@ const authSlice = createSlice({
         })
         .addCase(thunk.fulfilled, (state, action) => {
           state.status = "ready";
-          state.user = action.payload;
+          state.user = {
+            ...action.payload,
+            coins: typeof action.payload?.coins === "number" && !Number.isNaN(action.payload.coins) ? action.payload.coins : 0,
+          };
           if (thunk === fetchMe) state.checkingSession = false;
         })
         .addCase(thunk.rejected, (state, action) => {

@@ -3,7 +3,15 @@ import { useSearchParams } from "react-router-dom";
 import { api } from "../api/client";
 import { useAppDispatch, useAppSelector } from "../store/store";
 import { fetchMe, setCoins } from "../store/authSlice";
-import { IconCoin, IconCheck } from "../components/icons";
+import {
+  IconCoin,
+  IconCheck,
+  IconShoppingCart,
+  IconTrash,
+  IconPlus,
+  IconMinus,
+} from "../components/icons";
+import PayPalCheckoutModal from "../components/PayPalCheckoutModal";
 import styles from "./Shop.module.css";
 
 interface Transaction {
@@ -15,31 +23,39 @@ interface Transaction {
   createdAt: string;
 }
 
+export interface CartItem {
+  packageId: string;
+  quantity: number;
+}
+
 const PACKS = [
   {
     id: "coins-pack-small",
-    name: "Bolsa de Monedas",
-    coins: 5000,
-    price: "$4.99 USD",
+    name: "Bolsa de 5 Millones",
+    coins: 5000000,
+    priceLabel: "$25.00 MXN",
+    priceMXN: 25,
     badge: null,
     desc: "Perfecta para comprar tus primeros sobres de bronce y plata.",
     styleClass: "bronzePack",
   },
   {
     id: "coins-pack-medium",
-    name: "Cofre de Monedas",
-    coins: 11000,
-    price: "$9.99 USD",
-    badge: "10% BONUS INCLUIDO",
+    name: "Cofre de 12 Millones",
+    coins: 12000000,
+    priceLabel: "$50.00 MXN",
+    priceMXN: 50,
+    badge: "20% BONUS INCLUIDO",
     desc: "Excelente valor para expandir tu plantilla y asegurar jugadores oro.",
     styleClass: "goldPack",
   },
   {
     id: "coins-pack-large",
-    name: "Caja Fuerte de Monedas",
-    coins: 25000,
-    price: "$19.99 USD",
-    badge: "25% BONUS INCLUIDO",
+    name: "Caja Fuerte de 28 Millones",
+    coins: 28000000,
+    priceLabel: "$100.00 MXN",
+    priceMXN: 100,
+    badge: "40% BONUS INCLUIDO",
     desc: "Para los mánagers más competitivos. ¡Domina el mercado y las cláusulas!",
     styleClass: "cyanPack",
   },
@@ -58,13 +74,15 @@ export default function Shop() {
   
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [txLoading, setTxLoading] = useState(false);
-  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
 
-  // Determinar status de pago (success o cancel) en los params de la url
+  // Carrito / Lista de Pedidos
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isPayPalModalOpen, setIsPayPalModalOpen] = useState(false);
+
   const paymentStatus = searchParams.get("payment");
 
   useEffect(() => {
-    // Sincronizar liga activa por defecto
     if (activeLeagueId) {
       setSelectedLeagueId(activeLeagueId);
     } else if (leagues.length > 0) {
@@ -88,19 +106,77 @@ export default function Shop() {
     }
   }
 
-  async function handleBuy(packageId: string) {
-    setCheckoutLoading(packageId);
-    try {
-      const data = await api<{ url: string }>("/checkout/buy-coins", {
-        method: "POST",
-        body: JSON.stringify({ packageId }),
-      });
-      // Redirigir a Stripe Checkout
-      window.location.href = data.url;
-    } catch (e: any) {
-      alert(e.message || "Error al iniciar el pago con Stripe");
-      setCheckoutLoading(null);
+  function showToast(msg: string) {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage((current) => (current === msg ? null : current));
+    }, 2500);
+  }
+
+  function addToCart(packageId: string) {
+    const pkg = PACKS.find((p) => p.id === packageId);
+    setCart((prev) => {
+      const existing = prev.find((item) => item.packageId === packageId);
+      if (existing) {
+        return prev.map((item) =>
+          item.packageId === packageId ? { ...item, quantity: item.quantity + 1 } : item
+        );
+      }
+      return [...prev, { packageId, quantity: 1 }];
+    });
+    if (pkg) {
+      showToast(`¡${pkg.name} agregado a tu lista!`);
     }
+  }
+
+  function updateQuantity(packageId: string, delta: number) {
+    setCart((prev) =>
+      prev
+        .map((item) => {
+          if (item.packageId === packageId) {
+            const newQty = item.quantity + delta;
+            return newQty > 0 ? { ...item, quantity: newQty } : null;
+          }
+          return item;
+        })
+        .filter(Boolean) as CartItem[]
+    );
+  }
+
+  function removeFromCart(packageId: string) {
+    setCart((prev) => prev.filter((item) => item.packageId !== packageId));
+  }
+
+  function clearCart() {
+    setCart([]);
+  }
+
+  const cartDetails = cart.map((item) => {
+    const pkg = PACKS.find((p) => p.id === item.packageId)!;
+    return {
+      ...item,
+      pkg,
+      itemCoins: pkg.coins * item.quantity,
+      itemPriceMXN: pkg.priceMXN * item.quantity,
+    };
+  });
+
+  const totalCartCoins = cartDetails.reduce((sum, item) => sum + item.itemCoins, 0);
+  const totalCartMXN = cartDetails.reduce((sum, item) => sum + item.itemPriceMXN, 0);
+  const totalCartItemsCount = cartDetails.reduce((sum, item) => sum + item.quantity, 0);
+
+  function handleCheckoutCart() {
+    if (cart.length === 0) return;
+    setIsPayPalModalOpen(true);
+  }
+
+  function handlePayPalSuccess(coinsGranted: number) {
+    if (user) {
+      dispatch(setCoins(user.coins + coinsGranted));
+    }
+    setCart([]);
+    fetchTransactions();
+    showToast(`¡Pago exitoso con PayPal! Acreditadas ${coinsGranted.toLocaleString("es-MX")} monedas.`);
   }
 
   async function handleClaimDaily() {
@@ -109,7 +185,6 @@ export default function Shop() {
       return;
     }
     
-    // Obtener la semana del año actual (formato YYYY-Www)
     const today = new Date();
     const target = new Date(today.valueOf());
     const dayNr = (today.getDay() + 6) % 7;
@@ -133,7 +208,6 @@ export default function Shop() {
         }),
       });
 
-      // Actualizar monedas localmente en Redux
       if (user) {
         dispatch(setCoins(user.coins + data.coinsGranted));
       }
@@ -155,16 +229,73 @@ export default function Shop() {
   }
 
   useEffect(() => {
-    if (paymentStatus === "success") {
+    const token = searchParams.get("token") || searchParams.get("orderId");
+    const isPayPalReturn = paymentStatus === "paypal_success" || paymentStatus === "success" || !!token;
+
+    // Detectar si la ejecución actual ocurre dentro del Pop-up emergente de PayPal
+    const isPopup = window.name === "PayPalCheckout" || (window.opener && window.opener !== window);
+
+    if (isPopup && isPayPalReturn) {
+      // 1. Notificar por BroadcastChannel
+      if ("BroadcastChannel" in window) {
+        try {
+          const bc = new BroadcastChannel("paypal_checkout");
+          bc.postMessage({ type: "PAYPAL_APPROVED", orderId: token });
+          bc.close();
+        } catch (e) {}
+      }
+
+      // 2. Notificar por evento de localStorage
+      try {
+        localStorage.setItem("paypal_success_event", JSON.stringify({ orderId: token, time: Date.now() }));
+      } catch (e) {}
+
+      // 3. Notificar por postMessage a la ventana padre
+      if (window.opener) {
+        try {
+          window.opener.postMessage({ type: "PAYPAL_APPROVED", orderId: token }, "*");
+        } catch (e) {}
+      }
+
+      // 4. Cerrar la ventana emergente automáticamente
+      setTimeout(() => {
+        window.close();
+      }, 100);
+      return;
+    }
+
+    // Si la redirección ocurre en la misma ventana principal
+    if (token && isPayPalReturn) {
+      api<{ success: boolean; coinsGranted: number; orderId: string }>("/checkout/paypal/capture-order", {
+        method: "POST",
+        body: JSON.stringify({ orderId: token }),
+      })
+        .then((res) => {
+          if (res.success) {
+            dispatch(fetchMe());
+            fetchTransactions();
+            showToast(`¡Pago exitoso con PayPal! Acreditadas ${res.coinsGranted.toLocaleString("es-MX")} monedas.`);
+          }
+        })
+        .catch((err) => console.error("Error al auto-capturar orden de PayPal:", err));
+    } else if (isPayPalReturn) {
       dispatch(fetchMe());
       fetchTransactions();
     }
-  }, [paymentStatus]);
+  }, [paymentStatus, searchParams]);
 
   return (
     <div className={styles.container}>
+      {/* Toast flotante de confirmación */}
+      {toastMessage && (
+        <div className={styles.toastNotification}>
+          <IconCheck size={18} />
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
       {/* Banner de Estado de Pago */}
-      {paymentStatus === "success" && (
+      {(paymentStatus === "success" || paymentStatus === "paypal_success") && (
         <div className={`${styles.banner} ${styles.successBanner}`}>
           <div className={styles.bannerContent}>
             <IconCheck size={28} className={styles.bannerIcon} />
@@ -185,7 +316,7 @@ export default function Shop() {
             <div className={styles.bannerIcon}>⚠️</div>
             <div>
               <h3>Pago cancelado</h3>
-              <p className="muted">La transacción de Stripe fue cancelada y no se realizó ningún cobro.</p>
+              <p className="muted">La transacción fue cancelada y no se realizó ningún cobro.</p>
             </div>
           </div>
           <button className={styles.bannerClose} onClick={dismissBanner}>
@@ -196,11 +327,11 @@ export default function Shop() {
 
       <header className={styles.header}>
         <h1>Tienda de Monedas</h1>
-        <p className="muted">Consigue monedas virtuales para abrir sobres y pagar cláusulas de rescisión en el mercado.</p>
+        <p className="muted">Selecciona los paquetes de monedas en pesos (MXN), agrégalos a tu lista de compra y confirma tu pedido.</p>
         <div className={styles.balanceWidget}>
           <span className={styles.balanceLabel}>Tu Saldo actual:</span>
           <span className={styles.balanceValue}>
-            {(user?.coins ?? 0).toLocaleString("es-MX")} <IconCoin size={24} className={styles.goldCoin} />
+            {(Number(user?.coins) || 0).toLocaleString("es-MX")} <IconCoin size={24} className={styles.goldCoin} />
           </span>
         </div>
       </header>
@@ -248,35 +379,146 @@ export default function Shop() {
         </div>
       </section>
 
-      {/* Sección Tienda Stripe */}
+      {/* Sección Tienda: Catálogo de Paquetes */}
       <section className={styles.packagesSection}>
-        <h2>Paquetes de Monedas</h2>
+        <div className={styles.sectionTitleRow}>
+          <h2>Paquetes Disponibles</h2>
+          <span className={styles.currencyBadge}>Precios accesibles en Pesos (MXN)</span>
+        </div>
         <div className={styles.grid}>
-          {PACKS.map((pkg) => (
-            <div key={pkg.id} className={`${styles.packCard} ${styles[pkg.styleClass]}`}>
-              <div className={styles.cardHeader}>
-                <h3>{pkg.name}</h3>
-                {pkg.badge && <span className={styles.badge}>{pkg.badge}</span>}
+          {PACKS.map((pkg) => {
+            const inCart = cart.find((item) => item.packageId === pkg.id);
+            return (
+              <div key={pkg.id} className={`${styles.packCard} ${styles[pkg.styleClass]}`}>
+                <div className={styles.cardHeader}>
+                  <h3>{pkg.name}</h3>
+                  {pkg.badge && <span className={styles.badge}>{pkg.badge}</span>}
+                </div>
+                <div className={styles.coinsAmount}>
+                  {pkg.coins.toLocaleString("es-MX")}{" "}
+                  <IconCoin size={28} className={styles.packageCoinIcon} />
+                </div>
+                <p className={styles.desc}>{pkg.desc}</p>
+                <div className={styles.footerRow}>
+                  <span className={styles.price}>{pkg.priceLabel}</span>
+                  <button
+                    className={`${styles.addBtn} ${inCart ? styles.addBtnActive : ""}`}
+                    onClick={() => addToCart(pkg.id)}
+                  >
+                    <IconPlus size={16} />
+                    {inCart ? `Agregar otro (${inCart.quantity})` : "Agregar a la lista"}
+                  </button>
+                </div>
               </div>
-              <div className={styles.coinsAmount}>
-                {pkg.coins.toLocaleString("es-MX")}{" "}
-                <IconCoin size={28} className={styles.packageCoinIcon} />
-              </div>
-              <p className={styles.desc}>{pkg.desc}</p>
-              <div className={styles.footerRow}>
-                <span className={styles.price}>{pkg.price}</span>
-                <button
-                  className="primary"
-                  onClick={() => handleBuy(pkg.id)}
-                  disabled={checkoutLoading !== null}
-                >
-                  {checkoutLoading === pkg.id ? "Cargando..." : "Comprar"}
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
+
+      {/* Sección Lista de Pedidos / Carrito de Compras */}
+      <section className={styles.cartSection} id="lista-de-compras">
+        <div className={styles.cartHeader}>
+          <div className={styles.cartTitleBox}>
+            <IconShoppingCart size={24} className={styles.cartHeaderIcon} />
+            <h2>Lista de Pedido ({totalCartItemsCount})</h2>
+          </div>
+          {cart.length > 0 && (
+            <button className={styles.clearBtn} onClick={clearCart}>
+              <IconTrash size={16} /> Vaciar lista
+            </button>
+          )}
+        </div>
+
+        {cart.length === 0 ? (
+          <div className={styles.cartEmptyCard}>
+            <IconShoppingCart size={40} className={styles.emptyCartIcon} />
+            <h3>Tu lista de compras está vacía</h3>
+            <p className="muted">Explora los paquetes arriba y haz clic en <strong>"Agregar a la lista"</strong> para armar tu pedido.</p>
+          </div>
+        ) : (
+          <div className={styles.cartContentGrid}>
+            <div className={styles.cartItemsList}>
+              {cartDetails.map((item) => (
+                <div key={item.packageId} className={styles.cartItemRow}>
+                  <div className={styles.itemInfo}>
+                    <h4>{item.pkg.name}</h4>
+                    <span className={styles.itemCoinBadge}>
+                      +{item.itemCoins.toLocaleString("es-MX")} <IconCoin size={14} />
+                    </span>
+                  </div>
+                  <div className={styles.itemUnitPrice}>
+                    <span className="muted">{item.pkg.priceLabel} c/u</span>
+                  </div>
+                  <div className={styles.qtyControl}>
+                    <button
+                      className={styles.qtyBtn}
+                      onClick={() => updateQuantity(item.packageId, -1)}
+                      title="Disminuir"
+                    >
+                      <IconMinus size={14} />
+                    </button>
+                    <span className={styles.qtyValue}>{item.quantity}</span>
+                    <button
+                      className={styles.qtyBtn}
+                      onClick={() => updateQuantity(item.packageId, 1)}
+                      title="Aumentar"
+                    >
+                      <IconPlus size={14} />
+                    </button>
+                  </div>
+                  <div className={styles.itemSubtotal}>
+                    <span>${item.itemPriceMXN.toFixed(2)} MXN</span>
+                  </div>
+                  <button
+                    className={styles.removeBtn}
+                    onClick={() => removeFromCart(item.packageId)}
+                    title="Eliminar de la lista"
+                  >
+                    <IconTrash size={16} />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* Resumen y Botón de Pago */}
+            <div className={styles.cartSummaryCard}>
+              <h3>Resumen del Pedido</h3>
+              <div className={styles.summaryRow}>
+                <span>Items seleccionados:</span>
+                <strong>{totalCartItemsCount}</strong>
+              </div>
+              <div className={styles.summaryRow}>
+                <span>Monedas a acreditar:</span>
+                <strong className={styles.summaryCoins}>
+                  +{totalCartCoins.toLocaleString("es-MX")} <IconCoin size={16} />
+                </strong>
+              </div>
+              <div className={styles.summaryDivider} />
+              <div className={`${styles.summaryRow} ${styles.totalRow}`}>
+                <span>Total a Pagar:</span>
+                <span className={styles.totalMXN}>${totalCartMXN.toFixed(2)} MXN</span>
+              </div>
+              <button
+                className={`primary ${styles.checkoutBtn}`}
+                onClick={handleCheckoutCart}
+              >
+                Proceder al Pago (${totalCartMXN.toFixed(2)} MXN)
+              </button>
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* Modal Checkout PayPal */}
+      <PayPalCheckoutModal
+        isOpen={isPayPalModalOpen}
+        onClose={() => setIsPayPalModalOpen(false)}
+        cartItems={cart}
+        cartDetails={cartDetails}
+        totalCartCoins={totalCartCoins}
+        totalCartMXN={totalCartMXN}
+        onSuccess={handlePayPalSuccess}
+      />
 
       {/* Sección Historial de Transacciones */}
       <section className={styles.historySection}>
