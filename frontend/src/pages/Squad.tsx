@@ -298,7 +298,7 @@ export default function Squad() {
 
   if (!activeLeagueId) {
     return (
-      <div className={styles.empty}>
+      <div className={`${styles.page} ${styles.empty}`}>
         <h1>Mi Once</h1>
         <p className="muted">Tu once necesita un club… Entra a una liga, recibe tus cartas y empieza a armarlo.</p>
         <Link to="/ligas">
@@ -367,7 +367,7 @@ export default function Squad() {
   }
 
   return (
-    <div>
+    <div className={styles.page}>
       <div className={styles.headerRow}>
         <h1>Mi Once</h1>
         <div className={styles.stats}>
