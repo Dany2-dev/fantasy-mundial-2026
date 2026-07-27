@@ -103,16 +103,34 @@ model League {
   owner         User        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   competition   Competition @relation(fields: [competitionId], references: [id])
 
-  members      LeagueMembership[]
-  ownedPlayers OwnedPlayer[]
-  squads       FantasySquad[]
-  squadHistory FantasySquadHistory[]
-  scores       UserGameweekScore[]
-  trades       TradeOffer[]
-  listings     PlayerListing[]
-  freeAgents   FreeAgent[]
+  members          LeagueMembership[]
+  ownedPlayers     OwnedPlayer[]
+  squads           FantasySquad[]
+  squadHistory     FantasySquadHistory[]
+  scores           UserGameweekScore[]
+  trades           TradeOffer[]
+  listings         PlayerListing[]
+  freeAgents       FreeAgent[]
+  weeklyChallenges WeeklyChallenge[]
 
   @@index([competitionId])
+}
+
+// Reto que el dueño de la liga elige (de un catálogo fijo en código, no en la
+// DB) para el último lugar de esa jornada. `text` guarda una copia del texto
+// al momento de elegirlo, para que si el catálogo cambia después el reto ya
+// asignado no cambie de redacción retroactivamente.
+model WeeklyChallenge {
+  id          String   @id @default(cuid())
+  leagueId    String
+  gameweekId  Int
+  challengeId String
+  text        String
+  createdAt   DateTime @default(now())
+  league      League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  gameweek    Gameweek @relation(fields: [gameweekId], references: [id], onDelete: Cascade)
+
+  @@unique([leagueId, gameweekId])
 }
 
 // Agentes libres: cada 24 h la liga saca un lote de jugadores SIN dueño que
@@ -241,8 +259,9 @@ model Gameweek {
   status        String      @default("upcoming")
   competition   Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
 
-  stats  PlayerGameweekStats[]
-  scores UserGameweekScore[]
+  stats            PlayerGameweekStats[]
+  scores           UserGameweekScore[]
+  weeklyChallenges WeeklyChallenge[]
 
   @@unique([competitionId, number])
 }

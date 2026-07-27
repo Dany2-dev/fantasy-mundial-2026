@@ -1,16 +1,18 @@
 import { AnimatePresence, motion } from "motion/react";
-import { FormEvent, MouseEvent, useEffect, useState } from "react";
+import { FormEvent, MouseEvent, useCallback, useEffect, useState } from "react";
 import { api } from "../api/client";
 import FlipReveal from "../components/FlipReveal";
-import { IconCheck, IconShield, IconTrophy, IconUsers } from "../components/icons";
+import { IconCheck, IconClose, IconShield, IconTrophy, IconUsers } from "../components/icons";
 import { formatMoney } from "../lib/money";
 import { fetchCollection } from "../store/collectionSlice";
-import { createLeague, joinLeague, setActiveLeague } from "../store/leagueSlice";
+import { createLeague, deleteLeague, joinLeague, renameLeague, setActiveLeague } from "../store/leagueSlice";
 import { useAppDispatch, useAppSelector } from "../store/store";
-import { Competition, League, Player, Standing } from "../types";
+import { Competition, League, Player, Standing, WeeklyChallenge, WeeklyChallengeOption } from "../types";
 import styles from "./Leagues.module.css";
 
 const MEDALS = ["🥇", "🥈", "🥉"];
+// Debe coincidir con CUSTOM_CHALLENGE_ID del backend (lib/weeklyChallenges.ts).
+const CUSTOM_CHALLENGE_ID = "custom";
 
 // Foco radial que sigue al cursor sobre la tarjeta del podio (técnica de
 // ChromaGrid). Se escribe la posición en variables CSS y el degradado vive en
@@ -33,12 +35,26 @@ export default function Leagues() {
   const [code, setCode] = useState("");
   const [standings, setStandings] = useState<Standing[]>([]);
   const [leagueDetail, setLeagueDetail] = useState<{ currentGameweek: League["currentGameweek"]; competition: League["competition"] } | null>(null);
+  const [loser, setLoser] = useState<Standing | null>(null);
+  const [weeklyChallenge, setWeeklyChallenge] = useState<WeeklyChallenge | null>(null);
   const [msg, setMsg] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
   const [copied, setCopied] = useState(false);
   const [starterPack, setStarterPack] = useState<Player[] | null>(null);
 
+  // Panel de administración (solo lo ve el dueño de la liga).
+  const [challengeCatalog, setChallengeCatalog] = useState<WeeklyChallengeOption[]>([]);
+  const [selectedChallengeId, setSelectedChallengeId] = useState("");
+  const [customChallengeText, setCustomChallengeText] = useState("");
+  const [renaming, setRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState("");
+  const [kickConfirmId, setKickConfirmId] = useState<string | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [adminBusy, setAdminBusy] = useState(false);
+
   const activeLeague = leagues.find((l) => l.id === activeLeagueId);
   const selectedCompetition = competitions.find((c) => c.id === competitionId);
+  const isOwner = !!activeLeague && !!user && activeLeague.ownerId === user.id;
 
   useEffect(() => {
     api<{ competitions: Competition[] }>("/competitions").then((d) => {
@@ -47,22 +63,54 @@ export default function Leagues() {
     });
   }, []);
 
+  // Se reutiliza tras crear/unirse (efecto de abajo) y tras cualquier acción
+  // de administración (expulsar, asignar reto…), para no repetir el fetch.
+  const refreshLeagueDetail = useCallback((leagueId: string) => {
+    return api<{
+      standings: Standing[];
+      league: { currentGameweek: League["currentGameweek"]; competition: League["competition"] };
+      loser: Standing | null;
+      weeklyChallenge: WeeklyChallenge | null;
+    }>(`/leagues/${leagueId}`)
+      .then((d) => {
+        setStandings(d.standings);
+        setLeagueDetail(d.league);
+        setLoser(d.loser);
+        setWeeklyChallenge(d.weeklyChallenge);
+      })
+      .catch(() => {
+        setStandings([]);
+        setLeagueDetail(null);
+        setLoser(null);
+        setWeeklyChallenge(null);
+      });
+  }, []);
+
   useEffect(() => {
-    if (activeLeagueId) {
-      api<{ standings: Standing[]; league: typeof leagueDetail }>(`/leagues/${activeLeagueId}`)
-        .then((d) => {
-          setStandings(d.standings);
-          setLeagueDetail(d.league);
-        })
-        .catch(() => {
-          setStandings([]);
-          setLeagueDetail(null);
-        });
-    } else {
+    if (activeLeagueId) refreshLeagueDetail(activeLeagueId);
+    else {
       setStandings([]);
       setLeagueDetail(null);
+      setLoser(null);
+      setWeeklyChallenge(null);
     }
-  }, [activeLeagueId, leagues.length]);
+    // Se cierran los paneles de administración al cambiar de liga.
+    setRenaming(false);
+    setKickConfirmId(null);
+    setDeleteConfirmOpen(false);
+    setDeleteConfirmText("");
+  }, [activeLeagueId, leagues.length, refreshLeagueDetail]);
+
+  // El catálogo de retos solo lo necesita el dueño; se pide una vez que se
+  // sabe que lo es, no en cada render.
+  useEffect(() => {
+    if (isOwner && challengeCatalog.length === 0) {
+      api<{ challenges: WeeklyChallengeOption[] }>("/leagues/challenges/catalog").then((d) => {
+        setChallengeCatalog(d.challenges);
+        setSelectedChallengeId((prev) => prev || d.challenges[0]?.id || "");
+      });
+    }
+  }, [isOwner, challengeCatalog.length]);
 
   async function handleCreate(e: FormEvent) {
     e.preventDefault();
@@ -106,6 +154,75 @@ export default function Leagues() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
+  }
+
+  async function handleRename(e: FormEvent) {
+    e.preventDefault();
+    if (!activeLeague) return;
+    setMsg(null);
+    const result = await dispatch(renameLeague({ leagueId: activeLeague.id, name: renameValue }));
+    if (renameLeague.fulfilled.match(result)) {
+      setRenaming(false);
+      setMsg({ kind: "ok", text: "Nombre de la liga actualizado." });
+    } else {
+      setMsg({ kind: "error", text: result.error.message ?? "No se pudo renombrar la liga" });
+    }
+  }
+
+  async function handleKick(targetUserId: string) {
+    if (!activeLeague) return;
+    setAdminBusy(true);
+    setMsg(null);
+    try {
+      await api(`/leagues/${activeLeague.id}/members/${targetUserId}`, { method: "DELETE" });
+      setKickConfirmId(null);
+      await refreshLeagueDetail(activeLeague.id);
+      setMsg({ kind: "ok", text: "Mánager expulsado de la liga." });
+    } catch (err) {
+      setMsg({ kind: "error", text: err instanceof Error ? err.message : "No se pudo expulsar al mánager" });
+    } finally {
+      setAdminBusy(false);
+    }
+  }
+
+  async function handleDeleteLeague() {
+    if (!activeLeague) return;
+    setAdminBusy(true);
+    setMsg(null);
+    const result = await dispatch(deleteLeague(activeLeague.id));
+    setAdminBusy(false);
+    if (deleteLeague.fulfilled.match(result)) {
+      setDeleteConfirmOpen(false);
+      setDeleteConfirmText("");
+    } else {
+      setMsg({ kind: "error", text: result.error.message ?? "No se pudo eliminar la liga" });
+    }
+  }
+
+  async function handleSetChallenge(e: FormEvent) {
+    e.preventDefault();
+    if (!activeLeague || !selectedChallengeId) return;
+    const isCustom = selectedChallengeId === CUSTOM_CHALLENGE_ID;
+    if (isCustom && customChallengeText.trim().length < 3) {
+      setMsg({ kind: "error", text: "Escribe el reto (al menos 3 caracteres)" });
+      return;
+    }
+    setAdminBusy(true);
+    setMsg(null);
+    try {
+      await api(`/leagues/${activeLeague.id}/challenge`, {
+        method: "POST",
+        body: JSON.stringify(
+          isCustom ? { challengeId: CUSTOM_CHALLENGE_ID, text: customChallengeText.trim() } : { challengeId: selectedChallengeId }
+        ),
+      });
+      await refreshLeagueDetail(activeLeague.id);
+      setMsg({ kind: "ok", text: "Reto de la semana asignado." });
+    } catch (err) {
+      setMsg({ kind: "error", text: err instanceof Error ? err.message : "No se pudo asignar el reto" });
+    } finally {
+      setAdminBusy(false);
+    }
   }
 
   const podium = standings.slice(0, 3);
@@ -185,7 +302,7 @@ export default function Leagues() {
     <div className={styles.page}>
       {/* ===== Cabecera ===== */}
       <section className={styles.hero}>
-        <img src="/stadium/stadium-akron.jpg" alt="" className={styles.heroArt} aria-hidden="true" />
+        <img src="/brand/stripes.jpg" alt="" className={styles.heroArt} aria-hidden="true" />
         <span className={styles.heroWash} aria-hidden="true" />
         <div className={styles.heroInner}>
           <span className={styles.eyebrow}>Compite con tus amigos</span>
@@ -292,6 +409,25 @@ export default function Leagues() {
             </button>
           </div>
 
+          {/* El reto de la semana lo ve toda la liga, no solo el dueño — el
+              chiste es que el último lugar sepa que le tocó. */}
+          {weeklyChallenge && loser && (
+            <div className={styles.challengeCallout}>
+              <span className={styles.challengeEmoji} aria-hidden="true">
+                🎯
+              </span>
+              <p>
+                <strong>Reto de {weeklyChallenge.gameweekLabel ?? "la semana"}:</strong> {weeklyChallenge.text}
+                <br />
+                <span className={styles.challengeLoser}>
+                  Le toca a {loser.name}
+                  {loser.userId === user?.id ? " (tú 😬)" : ""} — va último con {loser.points.toLocaleString("es-MX")}{" "}
+                  pts.
+                </span>
+              </p>
+            </div>
+          )}
+
           {/* Podio real: 2º a la izquierda, 1º al centro (más alto), 3º a la derecha.
               Con menos de 3 mánagers no hay podio que enseñar, basta la tabla. */}
           {podium.length === 3 && (
@@ -376,13 +512,169 @@ export default function Leagues() {
         </section>
       )}
 
+      {/* ===== Administración de la liga: solo la ve el dueño ===== */}
+      {isOwner && activeLeague && (
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>Administrar liga</h2>
+          <div className={styles.adminGrid}>
+            {/* Nombre de la liga */}
+            <div className={styles.formCard}>
+              <h3>Nombre de la liga</h3>
+              {renaming ? (
+                <form onSubmit={handleRename} className={styles.adminInlineForm}>
+                  <input
+                    value={renameValue}
+                    onChange={(e) => setRenameValue(e.target.value)}
+                    minLength={3}
+                    required
+                    autoFocus
+                  />
+                  <button className="primary" type="submit" disabled={adminBusy}>
+                    Guardar
+                  </button>
+                  <button type="button" className="ghost" onClick={() => setRenaming(false)}>
+                    Cancelar
+                  </button>
+                </form>
+              ) : (
+                <div className={styles.adminInlineForm}>
+                  <p className={styles.adminCurrentValue}>{activeLeague.name}</p>
+                  <button
+                    type="button"
+                    className="ghost"
+                    onClick={() => {
+                      setRenameValue(activeLeague.name);
+                      setRenaming(true);
+                    }}
+                  >
+                    Cambiar nombre
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Reto de la semana */}
+            <div className={styles.formCard}>
+              <h3>Reto de la semana</h3>
+              <p className={styles.formHint}>
+                Elige el castigo para el que vaya último en {leagueDetail?.currentGameweek?.label ?? "la jornada actual"}.
+              </p>
+              <form onSubmit={handleSetChallenge} className={styles.adminInlineForm}>
+                <select value={selectedChallengeId} onChange={(e) => setSelectedChallengeId(e.target.value)}>
+                  <option value={CUSTOM_CHALLENGE_ID}>✏️ Escribir mi propio reto…</option>
+                  {challengeCatalog.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.text}
+                    </option>
+                  ))}
+                </select>
+                {selectedChallengeId === CUSTOM_CHALLENGE_ID && (
+                  <input
+                    value={customChallengeText}
+                    onChange={(e) => setCustomChallengeText(e.target.value)}
+                    placeholder="Ej. cambiar el nombre del equipo por 'Soy el peor'"
+                    minLength={3}
+                    maxLength={200}
+                    required
+                    autoFocus
+                  />
+                )}
+                <button className="primary" type="submit" disabled={adminBusy || !selectedChallengeId}>
+                  Asignar reto
+                </button>
+              </form>
+            </div>
+
+            {/* Miembros */}
+            <div className={styles.formCard}>
+              <h3>Mánagers ({standings.length})</h3>
+              <ul className={styles.memberList}>
+                {standings.map((s) => (
+                  <li key={s.userId} className={styles.memberRow}>
+                    <span>
+                      {s.name}
+                      {s.userId === activeLeague.ownerId && <span className={styles.ownerTag}> · dueño</span>}
+                    </span>
+                    {s.userId !== activeLeague.ownerId &&
+                      (kickConfirmId === s.userId ? (
+                        <span className={styles.confirmInline}>
+                          <span className="caption">¿Seguro?</span>
+                          <button type="button" className="danger" disabled={adminBusy} onClick={() => handleKick(s.userId)}>
+                            Sí, expulsar
+                          </button>
+                          <button type="button" className="ghost" onClick={() => setKickConfirmId(null)}>
+                            No
+                          </button>
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          className={`ghost ${styles.kickBtn}`}
+                          onClick={() => setKickConfirmId(s.userId)}
+                        >
+                          <IconClose size={14} /> Expulsar
+                        </button>
+                      ))}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Zona de peligro */}
+            <div className={`${styles.formCard} ${styles.dangerZone}`}>
+              <h3>Eliminar liga</h3>
+              <p className={styles.formHint}>
+                Borra la liga para todos los mánagers: cartas, historial y clasificación se pierden para siempre.
+              </p>
+              {deleteConfirmOpen ? (
+                <div className={styles.adminInlineForm}>
+                  <input
+                    value={deleteConfirmText}
+                    onChange={(e) => setDeleteConfirmText(e.target.value)}
+                    placeholder={activeLeague.name}
+                  />
+                  <button
+                    type="button"
+                    className="danger"
+                    disabled={adminBusy || deleteConfirmText.trim() !== activeLeague.name}
+                    onClick={handleDeleteLeague}
+                  >
+                    Eliminar para siempre
+                  </button>
+                  <button
+                    type="button"
+                    className="ghost"
+                    onClick={() => {
+                      setDeleteConfirmOpen(false);
+                      setDeleteConfirmText("");
+                    }}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              ) : (
+                <button type="button" className="danger" onClick={() => setDeleteConfirmOpen(true)}>
+                  Eliminar liga
+                </button>
+              )}
+              {deleteConfirmOpen && (
+                <p className={styles.formHint}>
+                  Escribe <strong>{activeLeague.name}</strong> para confirmar.
+                </p>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {leagues.length > 0 && msgBanner}
+
       {/* Ya con ligas, crear una nueva o unirte a otra pasa a un segundo
           plano: se ofrece hasta abajo, después de ver tu clasificación. */}
       {leagues.length > 0 && (
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>¿Otra liga?</h2>
           {formsSection}
-          {msgBanner}
         </section>
       )}
 
