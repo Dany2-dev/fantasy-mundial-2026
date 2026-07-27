@@ -2,6 +2,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  coins: number;
   /** Foto de Google, si la cuenta entró por ahí. */
   avatarUrl?: string | null;
 }

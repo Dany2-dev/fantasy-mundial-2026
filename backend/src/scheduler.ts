@@ -9,10 +9,13 @@
 //     partido) y recalcula puntuaciones fantasy.
 // Ambos se saltan la corrida si la anterior sigue en curso (evita solapes si
 // FotMob responde lento) y corren una vez de inmediato al arrancar el server.
-import { refreshScoreboards, syncResults } from "./services/sync";
+import { syncResults } from "./services/sync";
+import { processPendingRefunds, recoverStuckProcessingJobs } from "./services/refund.worker";
 
 const SCOREBOARD_INTERVAL_MS = 3 * 60 * 1000;
 const FULL_SYNC_INTERVAL_MS = 10 * 60 * 1000;
+const REFUND_INTERVAL_MS = 5 * 60 * 1000;
+const RECOVERY_INTERVAL_MS = 15 * 60 * 1000;
 
 let scoreboardBusy = false;
 let fullSyncBusy = false;
@@ -21,8 +24,8 @@ async function runScoreboardRefresh() {
   if (scoreboardBusy) return;
   scoreboardBusy = true;
   try {
-    const updated = await refreshScoreboards();
-    if (updated > 0) console.log(`🔄 [scheduler] marcador actualizado: ${updated} partido(s)`);
+    const res = await syncResults({ limit: 10 });
+    if (res.matchesUpdated > 0) console.log(`🔄 [scheduler] marcador actualizado: ${res.matchesUpdated} partido(s)`);
   } catch (e) {
     console.warn("⚠️  [scheduler] refresco de marcador falló:", (e as Error).message);
   } finally {
@@ -47,14 +50,45 @@ async function runFullSync() {
   }
 }
 
+let refundBusy = false;
+let recoveryBusy = false;
+
+async function runRefundWorker() {
+  if (refundBusy) return;
+  refundBusy = true;
+  try {
+    await processPendingRefunds();
+  } catch (e) {
+    console.warn("⚠️  [scheduler] worker de reembolsos falló:", (e as Error).message);
+  } finally {
+    refundBusy = false;
+  }
+}
+
+async function runRecoveryWorker() {
+  if (recoveryBusy) return;
+  recoveryBusy = true;
+  try {
+    await recoverStuckProcessingJobs();
+  } catch (e) {
+    console.warn("⚠️  [scheduler] cron de recuperación de reembolsos falló:", (e as Error).message);
+  } finally {
+    recoveryBusy = false;
+  }
+}
+
 export function startScheduler() {
   runScoreboardRefresh();
   setTimeout(runFullSync, 15_000);
+  setTimeout(runRefundWorker, 30_000);
+  setTimeout(runRecoveryWorker, 45_000);
 
   setInterval(runScoreboardRefresh, SCOREBOARD_INTERVAL_MS);
   setInterval(runFullSync, FULL_SYNC_INTERVAL_MS);
+  setInterval(runRefundWorker, REFUND_INTERVAL_MS);
+  setInterval(runRecoveryWorker, RECOVERY_INTERVAL_MS);
 
   console.log(
-    `⏱️  scheduler activo — marcador cada ${SCOREBOARD_INTERVAL_MS / 60000} min, sync completo cada ${FULL_SYNC_INTERVAL_MS / 60000} min`
+    `⏱️  scheduler activo — marcador cada ${SCOREBOARD_INTERVAL_MS / 60000} min, sync completo cada ${FULL_SYNC_INTERVAL_MS / 60000} min, reembolsos cada ${REFUND_INTERVAL_MS / 60000} min`
   );
 }

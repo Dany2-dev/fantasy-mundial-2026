@@ -18,10 +18,19 @@ import freePackRouter from "./routes/freePack";
 import playersRouter from "./routes/players";
 import squadRouter from "./routes/squad";
 import tradesRouter from "./routes/trades";
+import { handleStripeWebhook } from "./routes/webhook";
+import checkoutRouter from "./routes/checkout";
+import rouletteRouter from "./routes/roulette";
+import penaltiesRouter from "./routes/penalties";
+import blackjackRouter from "./routes/blackjack";
 
 const app = express();
 app.use(compression());
 app.use(cors());
+
+// Capturar body raw para la validación de firma de Stripe Webhook
+app.post("/api/checkout/webhook", express.raw({ type: "application/json" }), handleStripeWebhook);
+
 app.use(express.json());
 
 app.get("/api/health", (_req, res) => res.json({ ok: true, name: "Fantasy Mundial 2026 API" }));
@@ -39,6 +48,10 @@ app.use("/api/trades", tradesRouter);
 app.use("/api/matches", matchesRouter);
 app.use("/api/clause", clauseRouter);
 app.use("/api/listings", listingsRouter);
+app.use("/api/checkout", checkoutRouter);
+app.use("/api/roulette", rouletteRouter);
+app.use("/api/penalties", penaltiesRouter);
+app.use("/api/blackjack", blackjackRouter);
 app.use("/api/free-agents", freeAgentsRouter);
 app.use("/api/admin", adminRouter);
 

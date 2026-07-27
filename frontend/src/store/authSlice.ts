@@ -63,6 +63,12 @@ const authSlice = createSlice({
       state.status = "idle";
       state.error = null;
     },
+    setCoins(state, action: PayloadAction<number>) {
+      if (state.user) {
+        const val = Number(action.payload);
+        state.user.coins = Number.isNaN(val) ? (state.user.coins ?? 0) : val;
+      }
+    },
   },
   extraReducers(builder) {
     for (const thunk of [login, register, loginWithGoogle, fetchMe]) {
@@ -73,7 +79,10 @@ const authSlice = createSlice({
         })
         .addCase(thunk.fulfilled, (state, action) => {
           state.status = "ready";
-          state.user = action.payload;
+          state.user = {
+            ...action.payload,
+            coins: typeof action.payload?.coins === "number" && !Number.isNaN(action.payload.coins) ? action.payload.coins : 0,
+          };
           if (thunk === fetchMe) state.checkingSession = false;
         })
         .addCase(thunk.rejected, (state, action) => {
@@ -88,5 +97,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { logout } = authSlice.actions;
+export const { logout, setCoins } = authSlice.actions;
 export default authSlice.reducer;
