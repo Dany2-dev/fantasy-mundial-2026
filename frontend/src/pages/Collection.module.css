@@ -19,15 +19,14 @@
   box-shadow: 0 8px 24px -18px rgba(13, 17, 23, 0.5);
 }
 
-/* El patrón de banderas es mucho más cargado que una foto: va a baja opacidad
-   para que quede como textura y no compita con el texto ni con las stats. */
+/* Patrón dibujado (hexágonos/pentágonos tipo balón), no una foto: opacidad
+   baja para que quede como textura y no compita con el texto ni las stats. */
 .heroArt {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  opacity: 0.32;
+  opacity: 0.3;
 }
 
 .heroWash {

@@ -45,6 +45,43 @@ const ELECTRIC: Record<Rarity, string> = {
   bronce: "#a9713c",
 };
 
+// Textura de fondo del hero: hexágonos y pentágonos como los paneles de un
+// balón, en los colores del design system. Dibujo propio en vez de una foto
+// o un patrón de banderas, para que se sienta "fútbol en general" y no
+// quede atado a una competencia (Mundial, liga o país) en particular.
+const BALL_COLORS = ["#e61d25", "#2a398d", "#2fa84f", "#d49a17"]; // rojo, azul, verde, oro
+function BallPatternArt({ className }: { className?: string }) {
+  const cols = 9;
+  const rows = 4;
+  const size = 90;
+  const cells: { x: number; y: number; color: string }[] = [];
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      cells.push({
+        x: col * size + (row % 2 ? size / 2 : 0),
+        y: row * size * 0.86,
+        color: BALL_COLORS[(row + col) % BALL_COLORS.length],
+      });
+    }
+  }
+  return (
+    <svg
+      className={className}
+      viewBox={`0 0 ${cols * size} ${rows * size * 0.86 + size}`}
+      preserveAspectRatio="xMidYMid slice"
+      aria-hidden="true"
+      focusable="false"
+    >
+      {cells.map(({ x, y, color }, i) => (
+        <g key={i} transform={`translate(${x} ${y})`}>
+          <polygon points="30,0 60,15 60,45 30,60 0,45 0,15" fill="none" stroke={color} strokeWidth="2.5" />
+          <polygon points="30,12 44,22 39,38 21,38 16,22" fill={color} />
+        </g>
+      ))}
+    </svg>
+  );
+}
+
 // Copa decorativa del hero. Dibujo propio (no es el trofeo oficial de la FIFA,
 // que está protegido): copa estilizada con el dorado de las cartas oro.
 function TrophyArt() {
@@ -69,12 +106,16 @@ function TrophyArt() {
         <path d="M70 164h60v14H70z" />
         <path d="M58 182h84v22H58z" />
       </g>
-      {/* Globo grabado en la copa */}
-      <g stroke="#8a6a1f" strokeWidth="3" opacity="0.5" fill="none">
-        <circle cx="100" cy="76" r="24" />
-        <ellipse cx="100" cy="76" rx="10" ry="24" />
-        <path d="M77 68h46M77 85h46" />
-      </g>
+      {/* Estrella grabada: "campeón" genérico, sin referencia a un torneo
+          en particular (antes tenía un globo terráqueo, muy Mundial). */}
+      <path
+        d="M100 56l7 16 17 2-13 12 4 17-15-9-15 9 4-17-13-12 17-2z"
+        stroke="#8a6a1f"
+        strokeWidth="3"
+        opacity="0.5"
+        fill="none"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
@@ -235,7 +276,7 @@ export default function Collection() {
     <div className={styles.page}>
       {/* ===== Cabecera con estadísticas ===== */}
       <section className={styles.hero}>
-        <img src="/brand/confetti.jpg" alt="" className={styles.heroArt} aria-hidden="true" />
+        <BallPatternArt className={styles.heroArt} />
         <span className={styles.heroWash} aria-hidden="true" />
         <span className={styles.heroTrophy} aria-hidden="true">
           <TrophyArt />

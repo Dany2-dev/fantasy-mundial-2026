@@ -73,6 +73,18 @@ export interface Standing {
   netWorth: number;
 }
 
+/** Reto de la semana ya asignado a la jornada actual de una liga. */
+export interface WeeklyChallenge {
+  text: string;
+  gameweekLabel: string | null;
+}
+
+/** Una opción del catálogo fijo de retos, para que el dueño elija una. */
+export interface WeeklyChallengeOption {
+  id: string;
+  text: string;
+}
+
 export interface MarketCard extends Player {
   owner: { id: string; name: string };
 }
