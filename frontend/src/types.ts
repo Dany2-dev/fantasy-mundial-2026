@@ -115,6 +115,13 @@ export interface MatchTeam {
   logoUrl: string | null;
 }
 
+/** Estadio donde se juega el partido. El back todavía no lo manda; mientras
+ *  tanto la UI lo deduce del equipo local (lib/venues.ts). */
+export interface MatchVenue {
+  name: string;
+  city?: string | null;
+}
+
 export interface Match {
   id: number;
   home: MatchTeam;
@@ -129,6 +136,8 @@ export interface Match {
   // Minuto en vivo ("45'", "90+2'") — FotMob ya lo provee; el endpoint lo
   // expondrá después. Mientras tanto llega undefined y la UI muestra solo "EN VIVO".
   liveMinute?: string | null;
+  // Estadio del partido; opcional hasta que el back lo exponga.
+  venue?: MatchVenue | null;
 }
 
 // Estadística bilateral de un partido (posesión, tiros...). El endpoint

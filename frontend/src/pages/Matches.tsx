@@ -1,9 +1,19 @@
 import { CSSProperties, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import Flag from "../components/Flag";
-import { IconBall, IconClock, IconClose, IconTrophy } from "../components/icons";
+import {
+  IconBall,
+  IconCalendar,
+  IconClock,
+  IconClose,
+  IconDownload,
+  IconPin,
+  IconTrophy,
+} from "../components/icons";
 import { stadiumPhotoFor } from "../lib/stadiumPhotos";
+import { venueOf } from "../lib/venues";
 import { useAppSelector } from "../store/store";
 import { Match, MatchEvent, MatchStatRow, MatchTeam, ScorerRow, StandingsGroup } from "../types";
 import styles from "./Matches.module.css";
@@ -209,6 +219,15 @@ function kickoff(iso: string | null): string {
     : "Por definir";
 }
 
+// Fecha larga ("dom 26 de julio") y hora suelta, para el pie de cada partido.
+function fullDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("es-MX", { weekday: "short", day: "numeric", month: "long" });
+}
+
+function hourOnly(iso: string): string {
+  return new Date(iso).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
+}
+
 // Cuenta regresiva viva hacia el arranque del próximo partido.
 function Countdown({ target }: { target: string }) {
   const [now, setNow] = useState(() => Date.now());
@@ -218,7 +237,18 @@ function Countdown({ target }: { target: string }) {
     return () => clearInterval(iv);
   }, []);
 
-  const diff = Math.max(0, new Date(target).getTime() - now);
+  const diff = new Date(target).getTime() - now;
+
+  // La hora de arranque ya pasó pero el partido sigue como programado (el back
+  // todavía no lo marca en vivo): mejor avisar que dejar el reloj en ceros.
+  if (diff <= 0) {
+    return (
+      <div className={styles.countdown}>
+        <span className={styles.countStarting}>Por comenzar</span>
+      </div>
+    );
+  }
+
   const d = Math.floor(diff / 86400000);
   const h = Math.floor((diff % 86400000) / 3600000);
   const min = Math.floor((diff % 3600000) / 60000);
@@ -277,6 +307,8 @@ export default function Matches() {
   // Jornadas/grupos desplegados manualmente; sin entrada aquí, las secciones
   // con partidos pendientes o en vivo abren solas y las ya jugadas se pliegan.
   const [openRounds, setOpenRounds] = useState<Record<string, boolean>>({});
+  // Jornada elegida para el reporte imprimible (null = no hay reporte abierto).
+  const [printRound, setPrintRound] = useState<string | null>(null);
 
   const competitionId = activeLeague?.competitionId;
 
@@ -304,7 +336,17 @@ export default function Matches() {
   const live = useMemo(() => matches.filter((m) => m.status === "live"), [matches]);
   const finished = matches.filter((m) => m.status === "finished").length;
 
-  // Próximo partido (el de arranque más cercano en el futuro) para cuando no hay nada en vivo.
+  // Partidos de hoy aún por jugarse (para la franja cuando no hay nada en vivo).
+  const todayUpcoming = useMemo(
+    () =>
+      matches
+        .filter((m) => m.status === "scheduled" && isToday(m.utcTime))
+        .sort((a, b) => (a.utcTime ?? "").localeCompare(b.utcTime ?? "")),
+    [matches]
+  );
+
+  // Próximo partido (el de arranque más cercano en el futuro) cuando no hay ni
+  // partidos en vivo ni partidos hoy.
   const nextMatch = useMemo(() => {
     const now = Date.now();
     return matches
@@ -345,10 +387,24 @@ export default function Matches() {
       const g = roundByWeek && m.utcTime ? roundByWeek.get(weekKey(m.utcTime))! : groupOf(m, isCup);
       (map.get(g) ?? map.set(g, []).get(g)!).push(m);
     }
-    const order = [...map.keys()].sort((a, b) =>
-      a === "Eliminatorias" ? 1 : b === "Eliminatorias" ? -1 : a.localeCompare(b, "es", { numeric: true })
-    );
-    for (const g of order) map.get(g)!.sort((a, b) => (a.utcTime ?? "").localeCompare(b.utcTime ?? ""));
+    // Ordena los partidos dentro de cada sección por hora de arranque.
+    for (const ms of map.values()) ms.sort((a, b) => (a.utcTime ?? "").localeCompare(b.utcTime ?? ""));
+    // Ordena las secciones: los grupos van alfabéticos (A, B, C… corren en
+    // paralelo) y todo lo demás cronológico por su primer partido, para que las
+    // jornadas y las fases finales sigan el calendario real en vez de que el
+    // orden alfabético meta "Cuartos de final" antes que "Jornada 1".
+    const isGroup = (k: string) => k.startsWith("Grupo ");
+    const order = [...map.keys()].sort((a, b) => {
+      if (isGroup(a) && isGroup(b)) return a.localeCompare(b, "es", { numeric: true });
+      if (isGroup(a)) return -1;
+      if (isGroup(b)) return 1;
+      const ta = map.get(a)!.find((m) => m.utcTime)?.utcTime ?? "";
+      const tb = map.get(b)!.find((m) => m.utcTime)?.utcTime ?? "";
+      if (ta && tb) return ta.localeCompare(tb);
+      if (ta) return -1;
+      if (tb) return 1;
+      return a.localeCompare(b, "es", { numeric: true });
+    });
     return { map, order };
   }, [matches, filter, isCup, roundByWeek]);
 
@@ -404,6 +460,20 @@ export default function Matches() {
             ))}
           </div>
         </section>
+      ) : todayUpcoming.length > 0 ? (
+        <section className={styles.liveHero}>
+          <div className={styles.heroHead}>
+            <h2 className={styles.heroTitle}>Partidos de hoy</h2>
+            <span className={styles.updated}>
+              {todayUpcoming.length} {todayUpcoming.length === 1 ? "partido" : "partidos"}
+            </span>
+          </div>
+          <div className={styles.heroGrid}>
+            {todayUpcoming.map((m) => (
+              <HeroMatch key={m.id} m={m} upcoming onOpen={() => setOpenMatch(m)} />
+            ))}
+          </div>
+        </section>
       ) : (
         nextMatch && (
           <section className={styles.liveHero}>
@@ -445,24 +515,35 @@ export default function Matches() {
         const isOpen = openRounds[g] ?? ms.some((m) => m.status !== "finished");
         return (
           <section key={g} className={styles.groupSection}>
-            <button
-              className={styles.roundHeader}
-              aria-expanded={isOpen}
-              onClick={() => setOpenRounds((prev) => ({ ...prev, [g]: !isOpen }))}
-            >
-              <span className={styles.roundTitle}>{g}</span>
-              <span className={styles.roundMeta}>
-                {liveCount > 0 && (
-                  <span className={styles.statusLive}>
-                    <span className={styles.pulseDot} /> {liveCount}
+            <div className={styles.roundBar}>
+              <button
+                className={styles.roundHeader}
+                aria-expanded={isOpen}
+                onClick={() => setOpenRounds((prev) => ({ ...prev, [g]: !isOpen }))}
+              >
+                <span className={styles.roundTitle}>{g}</span>
+                <span className={styles.roundMeta}>
+                  {liveCount > 0 && (
+                    <span className={styles.statusLive}>
+                      <span className={styles.pulseDot} /> {liveCount}
+                    </span>
+                  )}
+                  <span className="tabular">
+                    {playedCount}/{ms.length}
                   </span>
-                )}
-                <span className="tabular">
-                  {playedCount}/{ms.length}
+                  <span className={styles.chevron} data-open={isOpen} aria-hidden="true" />
                 </span>
-                <span className={styles.chevron} data-open={isOpen} aria-hidden="true" />
-              </span>
-            </button>
+              </button>
+              <button
+                className={styles.pdfBtn}
+                onClick={() => setPrintRound(g)}
+                title={`Descargar ${g} en PDF`}
+                aria-label={`Descargar ${g} en PDF`}
+              >
+                <IconDownload size={15} />
+                <span>PDF</span>
+              </button>
+            </div>
             {isOpen && (
               <div className={styles.grid}>
                 {ms.map((m, i) => (
@@ -488,7 +569,166 @@ export default function Matches() {
       {openMatch && (
         <MatchDetailModal m={openMatch} allMatches={matches} onClose={() => setOpenMatch(null)} />
       )}
+
+      {printRound && (
+        <RoundReport
+          round={printRound}
+          roundMatches={groups.map.get(printRound) ?? []}
+          allMatches={matches}
+          competitionName={activeLeague.competition?.name ?? "Competencia"}
+          onClose={() => setPrintRound(null)}
+        />
+      )}
     </div>
+  );
+}
+
+// Reporte imprimible de una jornada: resultados de la fecha y tabla general
+// hasta ese punto del torneo. Se monta en un portal fuera de #root para que al
+// imprimir (Guardar como PDF del navegador) salga solo la hoja, sin la app.
+function RoundReport({
+  round,
+  roundMatches,
+  allMatches,
+  competitionName,
+  onClose,
+}: {
+  round: string;
+  roundMatches: Match[];
+  allMatches: Match[];
+  competitionName: string;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  // Corte del torneo: el último partido de esta jornada. La tabla acumula todo
+  // lo jugado hasta esa fecha, no solo los partidos de la jornada.
+  const cutoff = useMemo(
+    () => roundMatches.reduce((max, m) => (m.utcTime && m.utcTime > max ? m.utcTime : max), ""),
+    [roundMatches]
+  );
+
+  const standings = useMemo(() => {
+    const upTo = cutoff
+      ? allMatches.filter((m) => m.status === "finished" && m.utcTime && m.utcTime <= cutoff)
+      : allMatches.filter((m) => m.status === "finished");
+    return computeStandings(summarizeTeams(upTo));
+  }, [allMatches, cutoff]);
+
+  const played = roundMatches.filter((m) => m.status === "finished");
+  const pending = roundMatches.filter((m) => m.status !== "finished");
+  const generated = new Date().toLocaleString("es-MX", { dateStyle: "long", timeStyle: "short" });
+
+  return createPortal(
+    <div className={styles.reportRoot}>
+      <div className={styles.reportBar}>
+        <button className={styles.reportClose} onClick={onClose}>
+          <IconClose size={16} /> Cerrar
+        </button>
+        <button className="primary" onClick={() => window.print()}>
+          <IconDownload size={16} /> Guardar PDF
+        </button>
+      </div>
+
+      <div className={styles.sheet}>
+        <header className={styles.sheetHead}>
+          <div>
+            <p className={styles.sheetKicker}>{competitionName}</p>
+            <h1 className={styles.sheetTitle}>{round}</h1>
+          </div>
+          <p className={styles.sheetDate}>Generado el {generated}</p>
+        </header>
+
+        <section>
+          <h2 className={styles.sheetSection}>Resultados de la jornada</h2>
+          {roundMatches.length === 0 ? (
+            <p className="muted">Sin partidos en esta jornada.</p>
+          ) : (
+            <table className={styles.sheetTable}>
+              <thead>
+                <tr>
+                  <th className={styles.sheetLeft}>Local</th>
+                  <th>Marcador</th>
+                  <th className={styles.sheetLeft}>Visitante</th>
+                  <th className={styles.sheetLeft}>Fecha y hora</th>
+                  <th className={styles.sheetLeft}>Estadio</th>
+                </tr>
+              </thead>
+              <tbody>
+                {roundMatches.map((m) => {
+                  const v = venueOf(m);
+                  return (
+                    <tr key={m.id}>
+                      <td className={styles.sheetLeft}>{m.home.name}</td>
+                      <td className={styles.sheetScore}>
+                        {m.status === "finished" ? `${m.homeScore ?? 0} - ${m.awayScore ?? 0}` : m.status === "live" ? `${m.homeScore ?? 0} - ${m.awayScore ?? 0} (${m.liveMinute ?? "en vivo"})` : "vs"}
+                      </td>
+                      <td className={styles.sheetLeft}>{m.away.name}</td>
+                      <td className={styles.sheetLeft}>
+                        {m.utcTime ? `${fullDate(m.utcTime)}, ${hourOnly(m.utcTime)}` : "Por definir"}
+                      </td>
+                      <td className={styles.sheetLeft}>{v ? (v.city ? `${v.name}, ${v.city}` : v.name) : "—"}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+          <p className={`caption ${styles.sheetNote}`}>
+            {played.length} jugados · {pending.length} por jugarse
+          </p>
+        </section>
+
+        {standings.map((g) => (
+          <section key={g.group} className={styles.sheetBlock}>
+            <h2 className={styles.sheetSection}>
+              Tabla general hasta esta jornada{g.group !== "General" ? ` · Grupo ${g.group}` : ""}
+            </h2>
+            <table className={styles.sheetTable}>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th className={styles.sheetLeft}>Equipo</th>
+                  <th>PJ</th>
+                  <th>G</th>
+                  <th>E</th>
+                  <th>P</th>
+                  <th>GF</th>
+                  <th>GC</th>
+                  <th>DG</th>
+                  <th>PTS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {g.rows.map((r, i) => (
+                  <tr key={r.name}>
+                    <td>{i + 1}</td>
+                    <td className={styles.sheetLeft}>{r.name}</td>
+                    <td>{r.played}</td>
+                    <td>{r.won}</td>
+                    <td>{r.drawn}</td>
+                    <td>{r.lost}</td>
+                    <td>{r.goalsFor}</td>
+                    <td>{r.goalsAgainst}</td>
+                    <td>{r.goalDiff > 0 ? `+${r.goalDiff}` : r.goalDiff}</td>
+                    <td className={styles.sheetPts}>{r.points}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+        ))}
+
+        <footer className={styles.sheetFoot}>
+          Fantasy Mundial 2026 · Datos de FotMob · Documento generado desde la sección Partidos
+        </footer>
+      </div>
+    </div>,
+    document.body
   );
 }
 
@@ -634,6 +874,21 @@ function MatchDetailModal({
               <span className={styles.pulseDot} /> {m.liveMinute ?? "EN VIVO"}
             </span>
           )}
+          <div className={`${styles.matchMeta} ${styles.matchMetaHero}`}>
+            {m.utcTime && (
+              <span className={styles.metaItem}>
+                <IconCalendar size={13} />
+                {fullDate(m.utcTime)} · {hourOnly(m.utcTime)}
+              </span>
+            )}
+            {venueOf(m) && (
+              <span className={styles.metaItem}>
+                <IconPin size={13} />
+                {venueOf(m)!.name}
+                {venueOf(m)!.city ? ` · ${venueOf(m)!.city}` : ""}
+              </span>
+            )}
+          </div>
         </div>
 
         <div className={styles.modalBody}>
@@ -1121,6 +1376,30 @@ function MatchCard({ m, index = 0, onOpen }: { m: Match; index?: number; onOpen?
       </div>
       <MatchRow team={m.home} score={m.homeScore} show={show} dim={awayWin} />
       <MatchRow team={m.away} score={m.awayScore} show={show} dim={homeWin} />
+      <MatchMeta m={m} />
+    </div>
+  );
+}
+
+// Pie de la tarjeta: fecha, hora y estadio del partido.
+function MatchMeta({ m }: { m: Match }) {
+  const venue = venueOf(m);
+  if (!m.utcTime && !venue) return null;
+  return (
+    <div className={styles.matchMeta}>
+      {m.utcTime && (
+        <span className={styles.metaItem}>
+          <IconCalendar size={13} />
+          {fullDate(m.utcTime)} · {hourOnly(m.utcTime)}
+        </span>
+      )}
+      {venue && (
+        <span className={styles.metaItem} title={venue.city ? `${venue.name}, ${venue.city}` : venue.name}>
+          <IconPin size={13} />
+          {venue.name}
+          {venue.city ? ` · ${venue.city}` : ""}
+        </span>
+      )}
     </div>
   );
 }

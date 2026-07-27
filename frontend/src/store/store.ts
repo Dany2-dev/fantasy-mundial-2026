@@ -3,12 +3,14 @@ import { TypedUseSelectorHook, useDispatch, useSelector } from "react-redux";
 import authReducer from "./authSlice";
 import collectionReducer from "./collectionSlice";
 import leagueReducer from "./leagueSlice";
+import marketReducer from "./marketSlice";
 
 export const store = configureStore({
   reducer: {
     auth: authReducer,
     leagues: leagueReducer,
     collection: collectionReducer,
+    market: marketReducer,
   },
 });
 
