@@ -13,6 +13,8 @@ import leaguesRouter from "./routes/leagues";
 import listingsRouter from "./routes/listings";
 import matchesRouter from "./routes/matches";
 import packsRouter from "./routes/packs";
+import packsByTeamRouter from "./routes/packsByTeam";
+import freePackRouter from "./routes/freePack";
 import playersRouter from "./routes/players";
 import squadRouter from "./routes/squad";
 import tradesRouter from "./routes/trades";
@@ -29,6 +31,8 @@ app.use("/api", playersRouter); // /api/players, /api/countries
 app.use("/api/competitions", competitionsRouter);
 app.use("/api/leagues", leaguesRouter);
 app.use("/api/packs", packsRouter);
+app.use("/api/packs", packsByTeamRouter); // NUEVO (Derek): abrir sobres filtrando por selección/país
+app.use("/api/packs", freePackRouter); // NUEVO (Derek): sobre gratis diario (bronce/plata, cooldown en memoria)
 app.use("/api/collection", collectionRouter);
 app.use("/api/squad", squadRouter);
 app.use("/api/trades", tradesRouter);

@@ -1,0 +1,55 @@
+.bubbleGrid {
+  list-style: none;
+  margin: 0;
+  padding: 2px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.bubbleCol {
+  display: flex;
+}
+
+.bubbleLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: var(--r-chip);
+  border: 1px solid var(--borde);
+  background: var(--superficie-alta);
+  color: var(--tinta);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.25s ease, color 0.25s ease, border-color 0.25s ease, transform 0.2s ease;
+  will-change: transform;
+}
+
+.bubbleLink:hover:not(:disabled) {
+  background: var(--wc-rojo);
+  color: #fff;
+  transform: scale(1.06);
+}
+
+.bubbleLink:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.bubbleLink:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.bubbleSelected {
+  border-color: var(--wc-rojo);
+  box-shadow: 0 0 0 2px var(--wc-rojo);
+}
+
+.bubbleLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
