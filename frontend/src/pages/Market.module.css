@@ -165,3 +165,340 @@
   text-align: center;
   padding: var(--sp-7) var(--sp-4);
 }
+
+/* ---- Tu caja: presupuesto, plantilla y ofertas de un vistazo ------------ */
+
+.wallet {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+  margin: var(--sp-4) 0;
+  padding: var(--sp-4) var(--sp-5);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-carta);
+  background:
+    radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--wc-oro) 12%, transparent), transparent 60%),
+    var(--superficie);
+}
+
+.walletMain {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-right: auto;
+}
+
+.walletLabel {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--tinta-media);
+}
+
+.walletAmount {
+  font-family: var(--font-sport, var(--font-display));
+  font-size: 34px;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+  color: var(--wc-oro-oscuro);
+}
+
+.walletStats {
+  display: flex;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+}
+
+.walletStat {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 68px;
+}
+
+.walletStatValue {
+  font-weight: 800;
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+}
+
+.walletStatLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--tinta-media);
+}
+
+.walletTimer {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--r-chip);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--wc-rojo);
+  background: color-mix(in srgb, var(--wc-rojo) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--wc-rojo) 28%, transparent);
+  white-space: nowrap;
+}
+
+/* Aviso de ofertas sin responder en la pestaña */
+.tab {
+  position: relative;
+}
+
+.tabDot {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--wc-rojo);
+  animation: tabPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes tabPulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.8);
+  }
+}
+
+/* ---- Ofertas cara a cara ----------------------------------------------- */
+
+.duel {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-carta);
+  padding: var(--sp-4);
+}
+
+.duelHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+}
+
+.duelWho {
+  font-size: 14px;
+}
+
+.duelWhen {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--tinta-media);
+  white-space: nowrap;
+}
+
+.duelBody {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.duelSide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.duelTag {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--tinta-media);
+}
+
+.duelMiddle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.duelSwap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--superficie-alta);
+  border: 1px solid var(--borde);
+  color: var(--tinta-media);
+}
+
+.duelCoins {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: var(--r-chip);
+  font-size: 12px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--wc-oro-oscuro);
+  background: color-mix(in srgb, var(--wc-oro) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--wc-oro) 38%, transparent);
+  white-space: nowrap;
+}
+
+.duelFoot {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: var(--sp-3);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--borde);
+}
+
+/* ---- Ventas como tarjetas ---------------------------------------------- */
+
+.listingGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--sp-3);
+}
+
+.listing {
+  display: flex;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-carta);
+}
+
+.listingInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.listingSeller {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--tinta-media);
+}
+
+.listingPrice {
+  font-family: var(--font-sport, var(--font-display));
+  font-size: 24px;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.listingDiff {
+  align-self: flex-start;
+  padding: 2px 8px;
+  border-radius: var(--r-chip);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.listingDiff[data-deal="si"] {
+  color: var(--wc-verde);
+  background: color-mix(in srgb, var(--wc-verde) 14%, transparent);
+}
+
+.listingDiff[data-deal="no"] {
+  color: var(--tinta-media);
+  background: var(--superficie-alta);
+}
+
+.listingWhen {
+  font-size: 11px;
+  color: var(--tinta-media);
+}
+
+.listingBuy {
+  margin-top: auto;
+  font-size: 13px;
+  padding: 8px 12px;
+}
+
+/* ---- Celebración del fichaje ------------------------------------------- */
+
+.signOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+  padding: var(--sp-5) var(--sp-4);
+  text-align: center;
+  background:
+    radial-gradient(90% 70% at 50% 30%, color-mix(in srgb, var(--wc-oro) 22%, transparent), transparent 70%),
+    rgba(13, 17, 23, 0.92);
+  color: #fff;
+  animation: signIn 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes signIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.signKicker {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--wc-oro);
+}
+
+.signTitle {
+  margin: 0;
+  color: #fff;
+}
+
+.signPrice {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+@media (max-width: 720px) {
+  .walletAmount {
+    font-size: 28px;
+  }
+
+  .duelBody {
+    gap: var(--sp-2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tabDot,
+  .signOverlay {
+    animation: none;
+  }
+}
